@@ -1,3 +1,5 @@
+@import './screens/dashboard.css';
+
 :root {
   --navy-top: #083e60;
   --navy-sidebar: #253545;

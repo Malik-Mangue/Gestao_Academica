@@ -314,6 +314,15 @@ CREATE TABLE `Qualificacao` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `Tipo_Sala`
+--
+DROP TABLE IF EXISTS Tipo_Sala;
+
+CREATE TABLE Tipo_Sala(
+  `codigo` int NOT NULL AUTO_INCREMENT,
+  `desging`
+)
+--
 -- Table structure for table `Sala`
 --
 

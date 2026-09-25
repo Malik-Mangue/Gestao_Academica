@@ -4,11 +4,7 @@ $active_menu = 'dashboard';
 $screen_css = 'dashboard';
 require_once __DIR__ . '/../partials/header.php';
 require_once __DIR__ . '/../partials/sidebar.php';
-$deep = substr_count(trim($_SERVER['SCRIPT_NAME'], '/'), '/');
-$rel_root = str_repeat('../', max(0, $deep - 1));
-if (empty($rel_root)) {
-    $rel_root = './';
-}
+
 ?>
 
 <!DOCTYPE html>

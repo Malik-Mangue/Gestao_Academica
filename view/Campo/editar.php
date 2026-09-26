@@ -5,7 +5,7 @@ $controller = new CampoController();
 $codigo = $_GET['codigo'] ?? $_POST['codigo'];
 
 if (isset($_POST['gravar'])) {
-    $controller->update($codigo);
+    $controller->atualizarCampo($_POST['codigo'], $_POST['nome']);
     header('Location: index.php');
     exit;
 }
@@ -14,7 +14,7 @@ if (isset($_POST['cancelar'])) {
     exit;
 }
 
-$campo = $controller->buscar($codigo);
+$campo = $controller->buscarCampo($codigo);
 ?>
 <!DOCTYPE html>
 <html lang="pt">

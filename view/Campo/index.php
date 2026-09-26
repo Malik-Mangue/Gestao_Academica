@@ -1,7 +1,10 @@
 <?php
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
 require_once __DIR__ . '/../../controller/CampoController.php';
 $controller = new CampoController();
-$campos = $controller->listar();
+$campos = $controller->listarCampo();
 ?>
 <!DOCTYPE html>
 <html lang="pt">

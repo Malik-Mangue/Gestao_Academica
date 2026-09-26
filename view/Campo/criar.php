@@ -3,7 +3,7 @@ require_once __DIR__ . '/../../controller/CampoController.php';
 $controller = new CampoController();
 
 if (isset($_POST['gravar'])) {
-    $controller->store();
+    $controller->cadastrarCampo($_POST['nome']);
     header('Location: index.php');
     exit;
 }

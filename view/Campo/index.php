@@ -1,4 +1,7 @@
 <?php
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
 require_once __DIR__ . '/../../controller/CampoController.php';
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -19,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'type' => 'danger',
                 'msg' => 'O nome do campo não pode estar vazio.'
             ];
-        } elseif ($controller->store()) {
+        } elseif ($controller->cadastrarCampo($nome)) {
             $_SESSION['flash'] = [
                 'type' => 'success',
                 'msg' => 'Campo cadastrado com sucesso!'
@@ -42,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'type' => 'danger',
                 'msg' => 'Dados inválidos para atualização do campo.'
             ];
-        } elseif ($controller->update($codigo)) {
+        } elseif ($controller->atualizarCampo($codigo, $nome)) {
             $_SESSION['flash'] = [
                 'type' => 'success',
                 'msg' => 'Campo atualizado com sucesso!'
@@ -64,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'type' => 'danger',
                 'msg' => 'Código inválido para remoção.'
             ];
-        } elseif ($controller->delete($codigo)) {
+        } elseif ($controller->apagarCampo($codigo)) {
             $_SESSION['flash'] = [
                 'type' => 'success',
                 'msg' => 'Campo removido com sucesso!'
@@ -80,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$campos = $controller->listar();
+$campos = $controller->listarCampo();
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
 

@@ -1,33 +1,49 @@
 <?php
 require_once __DIR__ . '/../Dao/CampoDao.php';
+require_once __DIR__ . '/../model/Campo.php';
 
 class CampoController {
     private $dao;
 
     public function __construct() {
-        $this->dao = new CampoDao();
+        $this->dao = new CampoDAO();
     }
 
-    public function listar() {
+    public function cadastrarCampo($nome) {
+        if ($nome != null && strlen($nome) > 0) {
+            $campo = new Campo(null, $nome);
+            $this->dao->create($campo);
+            return true;
+        }
+        return false;
+    }
+
+    public function listarCampo() {
         return $this->dao->getAll();
     }
 
-    public function buscar($codigo) {
-        return $this->dao->getById($codigo);
+    public function buscarCampo($codigo) {
+        if ($codigo > 0) {
+            return $this->dao->getById($codigo);
+        }
+        return null;
     }
 
-    public function store() {
-        $campo = new Campo(null, $_POST['nome']);
-        return $this->dao->create($campo);
+    public function atualizarCampo($codigo, $nome) {
+        if ($codigo > 0 && $nome != null && strlen($nome) > 0) {
+            $campo = new Campo($codigo, $nome);
+            $this->dao->update($campo);
+            return true;
+        }
+        return false;
     }
 
-    public function update($codigo) {
-        $campo = new Campo($codigo, $_POST['nome']);
-        return $this->dao->update($campo);
-    }
-
-    public function delete($codigo) {
-        return $this->dao->delete($codigo);
+    public function apagarCampo($codigo) {
+        if ($codigo != 0) {
+            $this->dao->delete($codigo);
+            return true;
+        }
+        return false;
     }
 }
 ?>

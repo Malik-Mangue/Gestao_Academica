@@ -1,7 +1,6 @@
 <?php
 $page_title = 'Dashboard Geral';
 $active_menu = 'dashboard';
-$screen_css = 'dashboard';
 require_once __DIR__ . '/../partials/header.php';
 require_once __DIR__ . '/../partials/sidebar.php';
 
@@ -89,14 +88,14 @@ require_once __DIR__ . '/../partials/sidebar.php';
             <a href="#modal-info" class="btn btn-primary btn-sm">+ Informações do Sistema</a>
         </div>
         <div class="card-body">
-            <p style="margin-bottom: 16px; color: var(--text-secondary);">
+            <p class="dashboard-intro">
                 Bem-vindo ao Sistema de Gestão Acadêmica. Utilize o menu lateral para navegar entre todos os módulos do sistema. Todas as telas seguem a identidade visual padronizada do projeto.
             </p>
 
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <div class="quick-actions">
                 <a href="../professor/index.php" class="btn btn-primary">Gerir Professores</a>
                 <a href="../turma/index.php" class="btn btn-success">Gerir Turmas</a>
-                <a href="../campo/index.php" class="btn btn-edit">Campos e Áreas</a>
+                <a href="../Campo/index.php" class="btn btn-edit">Campos e Áreas</a>
                 <a href="#modal-novo-exemplo" class="btn btn-secondary">Abrir Modal de Teste</a>
             </div>
         </div>

@@ -17,6 +17,7 @@ Qualquer decisão de implementação técnica, arquitetural ou de interface toma
 | :--- | :--- | :--- |
 | **HTML5 Semântico Puro** | Garantir acessibilidade, padronização W3C e estrutura documental limpa sem a sobrecarga de pré-processadores. | Representar de forma direta e semântica as tabelas de listagem, formulários e modais da instituição de ensino. |
 | **CSS3 Puro em Arquitetura Global e Modular** (`assets/css/style.css` e `assets/css/screens/`) | Isolar variáveis mestres (`:root`), componentes universais (Topbar, Sidebar, Modais, Tabelas) no CSS global e permitir personalização atômica não conflitante via folhas de estilo por tela. | Reproduzir fielmente os modelos visuais da pasta `docs/dashboard/` mantendo consistência absoluta e leveza máxima sem frameworks. |
+| **Vedação Absoluta ao CSS Inline** | Nenhum atributo `style="..."`, bloco `<style>` ou manipulação de estilo por script é admitido em `view/`. Toda regra reside em arquivo externo: universalidades em `assets/css/style.css` e especificidades em `assets/css/screens/{tela}.css`, carregadas exclusivamente pelos `@import` declarados no topo da folha global. Modificadores que sobrepõem regras globais usam seletor composto (ex: `.modal-header.modal-header-danger`) para vencer a cascata, sendo vedado o uso de `!important`. | Garantir separação estrita entre estrutura HTML e apresentação CSS, permitindo auditoria visual centralizada e reutilização das 11 entidades sem reescrita de regras. |
 | **PHP 8 Puro Orientado a Objetos sem Bibliotecas** | Eliminar vulnerabilidades de supply chain, dependências de Composer e complexidade de configuração em servidores locais de avaliação. | Seguir estritamente o modelo de ensino preconizado nas Fichas 10, 12 e 15. |
 | **Persistência Exclusiva via MySQLi** | Uso da extensão nativa `mysqli` orientada a objetos com Prepared Statements (`prepare`, `bind_param`, `execute`, `get_result`). | Atender à exigência de banco relacional e manipulação nativa demonstrada nas fichas práticas de PHP sem camadas de abstração externas. |
 | **Arquitetura MVC em Pastas Separadas** (`config/`, `model/`, `controller/`, `view/`) | Desacoplar regras de negócio, persistência de dados e camadas de apresentação. | Conformidade direta com a Ficha 15 ("MVC: Em pastas diferentes"). |
@@ -56,13 +57,14 @@ Para evitar código quebrado ou duplicações estruturais de tags HTML (`<!DOCTY
 1. **`view/partials/header.php`**:
    - Inicia sessão se inativa.
    - Computa a raiz relativa do projeto.
-   - Emite o `<!DOCTYPE html>`, `<head>`, folha de estilos global `assets/css/style.css`, folha de tela opcional `assets/css/screens/{screen_css}.css` e abre a tag `<body>`.
+   - Emite o `<!DOCTYPE html>`, `<head>`, a folha de estilos única `assets/css/style.css` e abre a tag `<body>`.
+   - A folha global é a única requisição de estilo do header e atua como orquestradora, importando no seu topo as folhas de tela residentes em `assets/css/screens/`.
    - Renderiza a barra horizontal superior (Topbar) com logo local, título e perfil do usuário.
 2. **`view/partials/sidebar.php`**:
    - Renderiza a barra vertical com avatar, saudação e toda a lista de navegação entre as 11 entidades.
    - Destaca o item correspondente à variável `$active_menu`.
 3. **Arquivo da View (`view/{entidade}/index.php`)**:
-   - Define `$page_title`, `$active_menu` e `$screen_css`.
+   - Define `$page_title` e `$active_menu`.
    - Inclui `header.php` e `sidebar.php`.
    - Renderiza o elemento `<main class="main-wrapper">` contendo breadcrumb, cartões, tabelas e janelas modais nativas `:target`.
    - Fecha `</main>` e inclui `footer.php`.

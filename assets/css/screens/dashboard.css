@@ -85,3 +85,14 @@
   font-weight: 500;
   opacity: 0.9;
 }
+
+.dashboard-intro {
+  margin-bottom: 16px;
+  color: var(--text-secondary);
+}
+
+.quick-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}

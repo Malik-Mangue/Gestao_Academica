@@ -1,4 +1,5 @@
 @import './screens/dashboard.css';
+@import './screens/campo.css';
 
 :root {
   --navy-top: #083e60;

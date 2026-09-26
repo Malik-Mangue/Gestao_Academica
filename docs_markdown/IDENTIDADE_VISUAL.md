@@ -128,7 +128,7 @@ Para preservar a consistência visual e a integridade da arquitetura em qualquer
 
 1. **Vedação a Frameworks e Libs**:
    - É terminantemente proibido incluir Bootstrap, Tailwind, Bulma, jQuery, FontAwesome ou qualquer CDN externa.
-   - Toda e qualquer regra de apresentação deve estar contida em `assets/css/style.css` ou derivar diretamente das variáveis CSS `--navy-top`, `--navy-sidebar`, `--color-cyan`, etc.
+   - Toda e qualquer regra de apresentação deve estar contida em `assets/css/style.css` ou nas folhas de tela `assets/css/screens/{tela}.css`, derivando sempre das variáveis CSS `--navy-top`, `--navy-sidebar`, `--color-cyan`, etc.
 2. **Proibição de Roteamento Dinâmico**:
    - É proibido criar sistemas de `router.php`, `.htaccess` de rotas limpas ou bibliotecas de navegação. A navegação entre todos os recursos é realizada exclusivamente através da Sidebar com links diretos e parâmetros explícitos (`?action=...`).
 3. **Padrão Obrigatório de Janelas e Diálogos**:
@@ -137,4 +137,10 @@ Para preservar a consistência visual e a integridade da arquitetura em qualquer
 4. **Fidelidade da Sidebar como Eixo Dorsal**:
    - A barra lateral (`view/partials/sidebar.php`) deve estar presente e acessível em todas as interfaces do sistema.
    - Cada tela deve declarar `$active_menu = '{recurso}'` antes de incluir os partials, garantindo o feedback visual instantâneo do item ativo com a borda de realce lateral ciano `#00c0ef`.
+5. **Vedação Absoluta ao Estilo Inline**:
+   - É terminantemente proibido o uso de atributos `style="..."`, blocos `<style>` ou manipulação de estilo por script em qualquer arquivo de `view/`.
+   - Toda regra de apresentação deve residir em arquivo externo: universalidades em `assets/css/style.css` e especificidades de tela em `assets/css/screens/{tela}.css`.
+   - As folhas de tela são carregadas exclusivamente pelos `@import` declarados no topo de `assets/css/style.css`, mantendo o `view/partials/header.php` com uma única requisição de folha de estilos.
+   - Como os `@import` são resolvidos antes das regras globais, modificadores que sobrepõem componentes universais devem usar seletor composto (ex: `.modal-header.modal-header-danger`), sendo vedado o recurso a `!important`.
+   - Cores, larguras, espaçamentos e sombras devem obrigatoriamente derivar das variáveis de `:root` (`--color-red`, `--border-radius`, `--text-secondary`, etc.), nunca de valores soltos duplicados.
 

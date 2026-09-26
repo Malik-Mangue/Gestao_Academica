@@ -4,6 +4,10 @@ require_once __DIR__ . '/../../controller/CampoController.php';
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+if (!isset($_SESSION['user_id'])) {
+    header('Location: /login');
+    exit;
+}
 
 $controller = new CampoController();
 

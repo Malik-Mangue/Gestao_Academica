@@ -1,4 +1,13 @@
 <?php
+// if (!isset($_SESSION['user_id'])) {
+//     header('Location: /login');
+//     exit;
+// }
+require_once __DIR__ . '/../../controller/FormandoController.php'; 
+$FormandoController = new FormandoController();
+
+$formandos = $FormandoController->listar();
+
 $page_title = 'Dashboard Geral';
 $active_menu = 'dashboard';
 require_once __DIR__ . '/../partials/header.php';
@@ -20,6 +29,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
         <div class="stat-card card-cyan">
             <div class="stat-card-inner">
                 <div>
+                    
                     <div class="stat-number">24</div>
                     <div class="stat-label">Professores Cadastrados</div>
                 </div>
@@ -36,7 +46,13 @@ require_once __DIR__ . '/../partials/sidebar.php';
         <div class="stat-card card-green">
             <div class="stat-card-inner">
                 <div>
-                    <div class="stat-number">150</div>
+                    <?php if(!empty($formandos)): ?>
+                    
+                    <div class="stat-number"><?= count($formandos) ?></div>
+
+
+                    <?php endif; ?>
+
                     <div class="stat-label">Formandos Ativos</div>
                 </div>
                 <div class="stat-icon">

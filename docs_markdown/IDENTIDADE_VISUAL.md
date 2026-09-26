@@ -105,6 +105,9 @@ Qualquer interface desenvolvida no sistema deve, obrigatoriamente, obedecer às 
 - Botões de Ação na tabela:
   - Botão Editar: `.btn .btn-edit` (Azul, `#007bff`, cantos de `3px`, padding `4px 8px`, texto `12px`).
   - Botão Excluir: `.btn .btn-delete` (Vermelho, `#dc3545`, cantos de `3px`, padding `4px 8px`, texto `12px`).
+- Larguras de coluna padronizadas: `.col-codigo` (100px) para a coluna de identificador e `.col-opcoes` (180px, alinhamento à direita) para a coluna de ações.
+- Barra de ações alinhada ao fim da célula através de `.table-actions.table-actions-end`.
+- Estado vazio de listagem com `.table-empty` aplicada a um `<td>` com `colspan` total, centrado e em `var(--text-secondary)`.
 
 #### 5.4. Padrão de Formulários e Botões
 - Grupos de formulário com `.form-group`.
@@ -119,6 +122,8 @@ Qualquer interface desenvolvida no sistema deve, obrigatoriamente, obedecer às 
 - Máscara escura: `.modal-overlay` com `background: rgba(0, 0, 0, 0.55)` e transição suave.
 - Caixa do Modal: `.modal-box` com fundo branco `#ffffff`, cantos arredondados de `4px`, largura máxima de `500px` a `700px`, e cabeçalho com botão fechar `&times;`.
 - Acionamento via seletor `:target`: Não requer JavaScript para abrir ou fechar, garantindo compatibilidade total e carregamento instantâneo.
+- Cabeçalho de modal destrutivo: `.modal-header.modal-header-danger` com fundo `var(--color-red)`, reservado às confirmações de exclusão.
+- Bloco de confirmação de exclusão, obrigatoriamente nesta ordem: `.confirm-question` (pergunta ao utilizador), `.confirm-detail-box` (lista dos dados do registo a eliminar, com um parágrafo por campo) e `.confirm-warning` (aviso de irreversibilidade da ação).
 
 
 ---
@@ -141,6 +146,6 @@ Para preservar a consistência visual e a integridade da arquitetura em qualquer
    - É terminantemente proibido o uso de atributos `style="..."`, blocos `<style>` ou manipulação de estilo por script em qualquer arquivo de `view/`.
    - Toda regra de apresentação deve residir em arquivo externo: universalidades em `assets/css/style.css` e especificidades de tela em `assets/css/screens/{tela}.css`.
    - As folhas de tela são carregadas exclusivamente pelos `@import` declarados no topo de `assets/css/style.css`, mantendo o `view/partials/header.php` com uma única requisição de folha de estilos.
-   - Como os `@import` são resolvidos antes das regras globais, modificadores que sobrepõem componentes universais devem usar seletor composto (ex: `.modal-header.modal-header-danger`), sendo vedado o recurso a `!important`.
-   - Cores, larguras, espaçamentos e sombras devem obrigatoriamente derivar das variáveis de `:root` (`--color-red`, `--border-radius`, `--text-secondary`, etc.), nunca de valores soltos duplicados.
+   - Modificadores que sobrepõem componentes universais devem usar seletor composto (ex: `.modal-header.modal-header-danger`), garantindo a vitória na cascata independentemente da ordem das folhas, sendo vedado o recurso a `!important`.
+   - Cores, larguras, espaçamentos e sombras devem derivar das variáveis de `:root` (`--color-red`, `--border-radius`, `--text-secondary`, etc.). Quando um valor literal for inevitável por ausência de variável correspondente, deve reaproveitar exatamente o mesmo hexadecimal já empregado pelos componentes globais (`#f8f9fa`, `#fafbfc`, `#edf0f2`), nunca introduzindo um tom novo.
 

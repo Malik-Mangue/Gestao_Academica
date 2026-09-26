@@ -1,11 +1,11 @@
 <?php
-require_once __DIR__ . '/../Dao/CampoDao.php';
+require_once __DIR__ . '/../Dao/NivelDao.php';
 
-class CampoController {
+class NivelController {
     private $dao;
 
     public function __construct() {
-        $this->dao = new CampoDao();
+        $this->dao = new NivelDao();
     }
 
     public function listar() {
@@ -17,13 +17,13 @@ class CampoController {
     }
 
     public function store() {
-        $campo = new Campo(null, $_POST['nome']);
-        return $this->dao->create($campo);
+        $nivel = new Nivel(null, $_POST['nome']);
+        return $this->dao->create($nivel);
     }
 
     public function update($codigo) {
-        $campo = new Campo($codigo, $_POST['nome']);
-        return $this->dao->update($campo);
+        $nivel = new Nivel($codigo, $_POST['nome']);
+        return $this->dao->update($nivel);
     }
 
     public function delete($codigo) {

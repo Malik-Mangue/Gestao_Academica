@@ -20,7 +20,7 @@ Qualquer decisão de implementação técnica, arquitetural ou de interface toma
 | **Vedação Absoluta ao CSS Inline** | Nenhum atributo `style="..."`, bloco `<style>` ou manipulação de estilo por script é admitido em `view/`. Toda regra reside em arquivo externo: universalidades em `assets/css/style.css` e especificidades em `assets/css/screens/{tela}.css`, carregadas exclusivamente pelos `@import` declarados no topo da folha global. Modificadores que sobrepõem regras globais usam seletor composto (ex: `.modal-header.modal-header-danger`) para vencer a cascata, sendo vedado o uso de `!important`. | Garantir separação estrita entre estrutura HTML e apresentação CSS, permitindo auditoria visual centralizada e reutilização das 11 entidades sem reescrita de regras. |
 | **PHP 8 Puro Orientado a Objetos sem Bibliotecas** | Eliminar vulnerabilidades de supply chain, dependências de Composer e complexidade de configuração em servidores locais de avaliação. | Seguir estritamente o modelo de ensino preconizado nas Fichas 10, 12 e 15. |
 | **Persistência Exclusiva via MySQLi** | Uso da extensão nativa `mysqli` orientada a objetos com Prepared Statements (`prepare`, `bind_param`, `execute`, `get_result`). | Atender à exigência de banco relacional e manipulação nativa demonstrada nas fichas práticas de PHP sem camadas de abstração externas. |
-| **Arquitetura MVC em Pastas Separadas** (`config/`, `model/`, `controller/`, `view/`) | Desacoplar regras de negócio, persistência de dados e camadas de apresentação. | Conformidade direta com a Ficha 15 ("MVC: Em pastas diferentes"). |
+| **Arquitetura MVC em Pastas Separadas** (`config/`, `model/`, `Dao/`, `controller/`, `view/`) | Desacoplar regras de negócio, persistência de dados e camadas de apresentação. | Conformidade direta com a Ficha 15 ("MVC: Em pastas diferentes"). |
 | **Ausência de Rotas Virtuais / Chamadas Diretas** | Eliminar dependência de módulos de reescrita de servidor (`mod_rewrite`, `.htaccess` complexo) que variam entre ambientes de execução. | Permitir execução portátil em qualquer ambiente web com links previsíveis e envio de ações explícitas (`?action=...`). |
 | **Sidebar como Eixo Dorsal de Navegação** | Centralizar visualmente o acesso a todos os 11 recursos do sistema em uma barra lateral permanente com feedback ativo (`$active_menu`). | Garantir usabilidade imediata ao usuário sem necessidade de árvore de menus oculta ou rotas dinâmicas. |
 | **Uso de Modais Nativos para Pop-ups** (via `:target`) | Prover janelas sobrepostas de confirmação rápida de exclusão e formulários pontuais sem recarregar o contexto da tela. | Alinhar o fluxo de confirmação e revisão da Ficha 8 com a permissão expressa de modais pop-up, sem violar a proibição de bibliotecas JS. |
@@ -40,9 +40,9 @@ Qualquer decisão de implementação técnica, arquitetural ou de interface toma
 | **Módulo** | `cod_modulo` (Int) | `nome_modulo`, `carga_horario` | Unidades curriculares lecionadas. Relaciona-se com Lição, Inscrição e Qualificação. |
 | **Turma** | `cod_turma` (Int) | `nome_turma`, `ano_ingresso`, `turno`, `cod_quali`, `cod_professor` | Agrupamento de alunos por turno e qualificação. Supervisionada por Diretor de Turma. |
 | **Sala** | `cod_sala` (Int) | `designacao_sala`, `tipo_sala` | Espaços físicos (ex: Teórica, Laboratório, Oficina, Manutenção). |
-| **Nível** | `cod_nivel` (Int) | `nome_nivel` | Níveis vocacionais da formação (ex: CV3, CV4, CV5). |
+| **Nível** | `codigo` (Int) | `nome` (VARCHAR 60) | Níveis vocacionais da formação (ex: CV3, CV4, CV5). Referenciado por `Quali_Nivel.cod_Nivel`. |
 | **Qualificação** | `cod_quali` (Int) | `titulo` | Cursos centrais da instituição. Relaciona-se com Matrícula, Turma e Níveis. |
-| **Campo** | `cod_campo` (Int) | `nome_campo` | Áreas de formação / categoria profissional. Categoriza qualificações. |
+| **Campo** | `codigo` (Int) | `nome` (VARCHAR 60) | Áreas de formação / categoria profissional. Categoriza qualificações através de `Classificacao.cod_Campo`. |
 | **Lição** | `cod_licao` (Int) | `cod_professor`, `cod_modulo`, `cod_turma`, `cod_sala`, `data`, `hora_inicio`, `hora_fim` | Diário de classe com registro de aulas ministradas. |
 | **Matrícula** | `cod_matricula` (Int) | `cod_formando`, `cod_quali`, `data_matricula`, `ano_letivo` | Ingresso oficial do formando na qualificação/curso. |
 | **Inscrição** | `cod_inscricao` (Int) | `cod_formando`, `cod_modulo`, `data_inscricao`, `semestre` | Inscrição periódica do formando em módulo curricular. |
@@ -97,3 +97,72 @@ O modal substitui o redirecionamento de telas para confirmação ou edições si
     </div>
 </div>
 ```
+
+---
+
+### 6. Contrato de Tela de Listagem (CRUD Padrão)
+
+Todas as 11 entidades do sistema implementam exatamente o mesmo esqueleto de gestão. Nenhuma tela inventa estrutura própria: os nomes de ficheiro, métodos, classes CSS, identificadores de modal e campos de formulário abaixo são obrigatórios.
+
+#### 6.1. Quatro Ficheiros por Entidade
+
+| Camada | Caminho | Responsabilidade |
+| :--- | :--- | :--- |
+| Entidade | `model/{Entidade}.php` | POJO com atributos privados espelhando as colunas da tabela, construtor e par get/set por atributo. Não contém SQL. |
+| Persistência | `Dao/{Entidade}Dao.php` | Acesso à base de dados através de `Database::getConnection()`. |
+| Controlo | `controller/{Entidade}Controller.php` | Orquestração entre a camada de apresentação e o DAO. |
+| Apresentação | `view/{entidade}/index.php` | Ecrã único de gestão, com listagem e modais. A pasta da view é sempre em minúsculas. |
+
+#### 6.2. Métodos Obrigatórios do DAO
+
+`getAll()` · `getById($codigo)` · `create($entidade)` · `update($entidade)` · `delete($codigo)`
+
+- Todos usam `prepare` → `bind_param` → `execute` → `get_result`/`fetch_assoc`.
+- `getAll()` inclui sempre `order by codigo`.
+- `getById()` devolve `null` quando o registo não existe.
+- `create`, `update` e `delete` capturam `mysqli_sql_exception` e devolvem `false`, impedindo erro fatal em caso de violação de chave estrangeira ou estouro de `varchar`.
+
+#### 6.3. Métodos Obrigatórios do Controller
+
+`listar()` · `buscar($codigo)` · `store()` · `update($codigo)` · `delete($codigo)`
+
+Todos devolvem o booleano devolvido pelo DAO.
+
+#### 6.4. Processamento de Ações na View
+
+A própria `view/{entidade}/index.php` trata o `POST` antes de qualquer saída HTML, através de três gatilhos:
+
+| Campo POST | Método invocado | Mensagem de sucesso |
+| :--- | :--- | :--- |
+| `gravar` | `store()` | Registo cadastrado com sucesso. |
+| `editar` | `update($codigo)` | Registo atualizado com sucesso. |
+| `deletar` | `delete($codigo)` | Registo removido com sucesso. |
+
+Depois da operação segue-se `header('Location: index.php')` e `exit`. A mensagem é transportada em `$_SESSION['flash'] = ['type' => ..., 'msg' => ...]` e consumida com `unset` durante a renderização.
+
+#### 6.5. Identificadores e Classes Obrigatórias
+
+| Elemento | Valor obrigatório |
+| :--- | :--- |
+| Modal de criação | `id="modal-novo"` |
+| Modal de edição | `id="modal-editar-{codigo}"` |
+| Modal de exclusão | `id="modal-deletar-{codigo}"` |
+| Cabeçalho do modal de exclusão | `class="modal-header modal-header-danger"` |
+| Coluna de código | `class="col-codigo"` |
+| Coluna de ações | `class="col-opcoes"` |
+| Barra de ações de linha | `class="table-actions table-actions-end"` |
+| Estado vazio | `class="table-empty"` no `<td>` com `colspan` total |
+| Bloco de confirmação | `class="confirm-question"`, seguido de `class="confirm-detail-box"` e de `class="confirm-warning"` |
+| Alerta de feedback | `class="alert alert-success"` ou `class="alert alert-danger"` |
+
+#### 6.6. Campos de Formulário
+
+- Os inputs textuais usam `class="form-control"` e declaram `maxlength` igual ao limite `varchar` real da coluna.
+- As labels usam `<span class="required">*</span>` nos campos obrigatórios.
+- Rodapé do modal de criação: Cancelar (`.btn-secondary`), Limpar (`.btn-reset` com `type="reset"`) e Salvar (`.btn-success`).
+- Rodapé do modal de exclusão: Cancelar (`.btn-secondary`) e Sim, Deletar (`.btn-delete`).
+- O botão fechar de qualquer modal usa a imagem `assets/icons/close.svg`.
+
+#### 6.7. Telas Sem CSS Próprio
+
+Enquanto a tela reutilizar exclusivamente os componentes universais, não deve existir folha própria em `assets/css/screens/`. Só se cria `assets/css/screens/{tela}.css` — e se acrescenta o respetivo `@import` no topo de `assets/css/style.css` — quando existir uma regra genuinamente exclusiva daquela tela.

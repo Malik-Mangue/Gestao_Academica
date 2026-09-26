@@ -1,8 +1,8 @@
 <?php
 require_once __DIR__ . '/../config/conexao.php';
-require_once __DIR__ . '/../model/Campo.php';
+require_once __DIR__ . '/../model/Nivel.php';
 
-class CampoDAO {
+class NivelDAO {
     private $db;
 
     public function __construct() {
@@ -11,19 +11,19 @@ class CampoDAO {
     }
 
     public function getAll() {
-        $sql = "select codigo, nome from Campo order by codigo";
+        $sql = "select codigo, nome from Nivel order by codigo";
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
         $result = $stmt->get_result();
-        $campos = [];
+        $niveis = [];
         while ($rs = $result->fetch_assoc()) {
-            $campos[] = new Campo($rs['codigo'], $rs['nome']);
+            $niveis[] = new Nivel($rs['codigo'], $rs['nome']);
         }
-        return $campos;
+        return $niveis;
     }
 
     public function getById($codigo) {
-        $sql = "select codigo, nome from Campo where codigo = ?";
+        $sql = "select codigo, nome from Nivel where codigo = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("i", $codigo);
         $stmt->execute();
@@ -31,13 +31,13 @@ class CampoDAO {
         if ($rs === null) {
             return null;
         }
-        return new Campo($rs['codigo'], $rs['nome']);
+        return new Nivel($rs['codigo'], $rs['nome']);
     }
 
-    public function create(Campo $campo) {
-        $sql = "insert into Campo (nome) values (?)";
+    public function create(Nivel $nivel) {
+        $sql = "insert into Nivel (nome) values (?)";
         $stmt = $this->db->prepare($sql);
-        $nome = $campo->getNome();
+        $nome = $nivel->getNome();
         $stmt->bind_param("s", $nome);
         try {
             return $stmt->execute();
@@ -46,11 +46,11 @@ class CampoDAO {
         }
     }
 
-    public function update(Campo $campo) {
-        $sql = "update Campo set nome = ? where codigo = ?";
+    public function update(Nivel $nivel) {
+        $sql = "update Nivel set nome = ? where codigo = ?";
         $stmt = $this->db->prepare($sql);
-        $nome = $campo->getNome();
-        $codigo = $campo->getCodigo();
+        $nome = $nivel->getNome();
+        $codigo = $nivel->getCodigo();
         $stmt->bind_param("si", $nome, $codigo);
         try {
             return $stmt->execute();
@@ -60,7 +60,7 @@ class CampoDAO {
     }
 
     public function delete($codigo) {
-        $sql = "delete from Campo where codigo = ?";
+        $sql = "delete from Nivel where codigo = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("i", $codigo);
         try {

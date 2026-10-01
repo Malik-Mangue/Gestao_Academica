@@ -23,7 +23,7 @@ $active = $active_menu ?? 'dashboard';
         </li>
     </ul>
 
-    <div class="sidebar-heading">Corpo Docente</div>
+    <div class="sidebar-heading"></div>
     <ul class="sidebar-menu">
         <li class="<?php echo $active === 'professor' ? 'active' : ''; ?>">
             <a href="../../view/professor/index.php">
@@ -38,7 +38,7 @@ $active = $active_menu ?? 'dashboard';
                 <span class="sidebar-icon">
                     <img src="../../assets/icons/licao.svg" alt="Lições">
                 </span>
-                <span>Diário de Lições</span>
+                <span>Horarios</span>
             </a>
         </li>
     </ul>
@@ -110,7 +110,7 @@ $active = $active_menu ?? 'dashboard';
                 <span class="sidebar-icon">
                     <img src="../../assets/icons/campo.svg" alt="Campos">
                 </span>
-                <span>Campos / Áreas</span>
+                <span>Campos</span>
             </a>
         </li>
         <li class="<?php echo $active === 'sala' ? 'active' : ''; ?>">

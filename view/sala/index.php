@@ -102,7 +102,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
 
 <main class="main-wrapper">
     <div class="content-header">
-        <h1>Salas de Formação</h1>
+        <h1>Gestao de Salas</h1>
         <div class="breadcrumb">
             <a href="../../view/dashboard/index.php">Home</a>
             <span class="divider">/</span>

@@ -1,8 +1,8 @@
 <?php
 require_once __DIR__ . '/../config/conexao.php';
-require_once __DIR__ . '/../model/Qualificacao.php';
+require_once __DIR__ . '/../model/Quali_Nivel.php';
 
-class QualificacaoDAO {
+class Quali_NivelDAO {
     private $db;
 
     public function __construct() {
@@ -11,19 +11,19 @@ class QualificacaoDAO {
     }
 
     public function getAll() {
-        $sql = "select cod_Quali, titulo, cod_Coordenador from Qualificacao order by cod_Quali";
+        $sql = "select codigo_Quali_Nivel, cod_Quali, cod_Nivel from Quali_Nivel order by codigo_Quali_Nivel";
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
         $result = $stmt->get_result();
-        $qualificacaos = [];
+        $qualiNivels = [];
         while ($rs = $result->fetch_assoc()) {
-            $qualificacaos[] = new Qualificacao($rs['cod_Quali'], $rs['titulo'], $rs['cod_Coordenador']);
+            $qualiNivels[] = new Quali_Nivel($rs['codigo_Quali_Nivel'], $rs['cod_Quali'], $rs['cod_Nivel']);
         }
-        return $qualificacaos;
+        return $qualiNivels;
     }
 
     public function getById($codigo) {
-        $sql = "select cod_Quali, titulo, cod_Coordenador from Qualificacao where cod_Quali = ?";
+        $sql = "select codigo_Quali_Nivel, cod_Quali, cod_Nivel from Quali_Nivel where codigo_Quali_Nivel = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("i", $codigo);
         $stmt->execute();
@@ -31,15 +31,15 @@ class QualificacaoDAO {
         if ($rs === null) {
             return null;
         }
-        return new Qualificacao($rs['cod_Quali'], $rs['titulo'], $rs['cod_Coordenador']);
+        return new Quali_Nivel($rs['codigo_Quali_Nivel'], $rs['cod_Quali'], $rs['cod_Nivel']);
     }
 
-    public function create(Qualificacao $qualificacao) {
-        $sql = "insert into Qualificacao (titulo, cod_Coordenador) values (?, ?)";
+    public function create(Quali_Nivel $qualiNivel) {
+        $sql = "insert into Quali_Nivel (cod_Quali, cod_Nivel) values (?, ?)";
         $stmt = $this->db->prepare($sql);
-        $titulo = $qualificacao->getTitulo();
-        $cod_coordenador = $qualificacao->getCod_coordenador();
-        $stmt->bind_param("si", $titulo, $cod_coordenador);
+        $cod_quali = $qualiNivel->getCod_quali();
+        $cod_nivel = $qualiNivel->getCod_nivel();
+        $stmt->bind_param("ii", $cod_quali, $cod_nivel);
         try {
             return $stmt->execute();
         } catch (mysqli_sql_exception $e) {
@@ -47,13 +47,13 @@ class QualificacaoDAO {
         }
     }
 
-    public function update(Qualificacao $qualificacao) {
-        $sql = "update Qualificacao set titulo = ?, cod_Coordenador = ? where cod_Quali = ?";
+    public function update(Quali_Nivel $qualiNivel) {
+        $sql = "update Quali_Nivel set cod_Quali = ?, cod_Nivel = ? where codigo_Quali_Nivel = ?";
         $stmt = $this->db->prepare($sql);
-        $titulo = $qualificacao->getTitulo();
-        $cod_coordenador = $qualificacao->getCod_coordenador();
-        $codigo = $qualificacao->getCodigo();
-        $stmt->bind_param("sii", $titulo, $cod_coordenador, $codigo);
+        $cod_quali = $qualiNivel->getCod_quali();
+        $cod_nivel = $qualiNivel->getCod_nivel();
+        $codigo = $qualiNivel->getCodigo();
+        $stmt->bind_param("iii", $cod_quali, $cod_nivel, $codigo);
         try {
             return $stmt->execute();
         } catch (mysqli_sql_exception $e) {
@@ -62,7 +62,7 @@ class QualificacaoDAO {
     }
 
     public function delete($codigo) {
-        $sql = "delete from Qualificacao where cod_Quali = ?";
+        $sql = "delete from Quali_Nivel where codigo_Quali_Nivel = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("i", $codigo);
         try {
@@ -83,8 +83,12 @@ class QualificacaoDAO {
         return $opcoes;
     }
 
-    public function getCoordenadores() {
-        return $this->listaOpcoes("select c.cod_Formador as codigo, concat(f.nome, ' ', f.apelido) as descricao from Coordenador c inner join Formador f on f.codigo = c.cod_Formador order by f.nome");
+    public function getQualificacoes() {
+        return $this->listaOpcoes("select cod_Quali as codigo, titulo as descricao from Qualificacao order by titulo");
+    }
+
+    public function getNiveis() {
+        return $this->listaOpcoes("select codigo, nome as descricao from Nivel order by nome");
     }
 }
 ?>

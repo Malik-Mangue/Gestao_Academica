@@ -3,7 +3,7 @@ class Database {
     private $host = "127.0.0.1";
     private $db_name = "GestaoProfessor";
     private $user_name = "root";
-    private $password = "Kenny@1109";
+    private $password = "Malikdb123!";
 
     private static $conn = null;
 

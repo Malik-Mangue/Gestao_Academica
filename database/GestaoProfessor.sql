@@ -390,4 +390,9 @@ CREATE TABLE `Usuario` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
+insert into Perfil values (1,'Operador');
+insert into Perfil values (2,'SuperOperador');
+insert into Perfil values (3,'Administrador');
+insert into Perfil values (4,'Auditor');
+
 -- Dump completed on 2026-08-03 15:41:20

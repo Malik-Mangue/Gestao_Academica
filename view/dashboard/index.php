@@ -98,24 +98,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-header">
-            <h2>Acesso Rápido e Operações</h2>
-            <a href="#modal-info" class="btn btn-primary btn-sm">+ Informações do Sistema</a>
-        </div>
-        <div class="card-body">
-            <p class="dashboard-intro">
-                Bem-vindo ao Sistema de Gestão Acadêmica. Utilize o menu lateral para navegar entre todos os módulos do sistema. Todas as telas seguem a identidade visual padronizada do projeto.
-            </p>
-
-            <div class="quick-actions">
-                <a href="../professor/index.php" class="btn btn-primary">Gerir Professores</a>
-                <a href="../turma/index.php" class="btn btn-success">Gerir Turmas</a>
-                <a href="../Campo/index.php" class="btn btn-edit">Campos e Áreas</a>
-                <a href="#modal-novo-exemplo" class="btn btn-secondary">Abrir Modal de Teste</a>
-            </div>
-        </div>
-    </div>
+   
 
     <div id="modal-info" class="modal-overlay">
         <div class="modal-box">

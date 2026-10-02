@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/conexao.php';
-require_once __DIR__ . '/../config/sessao.php';
+require_once __DIR__ . '/../config/Sessao.php';
 require_once __DIR__ . '/../model/Diretor_turma.php';
 require_once __DIR__ . '/../model/Formador.php';
 require_once __DIR__ . '/../model/Logs.php';

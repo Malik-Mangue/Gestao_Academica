@@ -26,11 +26,11 @@ $active = $active_menu ?? 'dashboard';
     <div class="sidebar-heading"></div>
     <ul class="sidebar-menu">
         <li class="<?php echo $active === 'professor' ? 'active' : ''; ?>">
-            <a href="../../view/professor/index.php">
+            <a href="../../view/formadores/index.php">
                 <span class="sidebar-icon">
                     <img src="../../assets/icons/professor.svg" alt="Professores">
                 </span>
-                <span>Professores / Formadores</span>
+                <span>Formadores</span>
             </a>
         </li>
         <li class="<?php echo $active === 'licao' ? 'active' : ''; ?>">
@@ -123,6 +123,7 @@ $active = $active_menu ?? 'dashboard';
         </li>
     </ul>
 
+    
     <div class="sidebar-heading">Administração</div>
     <ul class="sidebar-menu">
         <li class="<?php echo $active === 'usuario' ? 'active' : ''; ?>">

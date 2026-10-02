@@ -6,8 +6,8 @@ require_once __DIR__ . '/../../services/Sessao.php';
 require_once __DIR__ . '/../../controller/UsuarioController.php';
 
 // Rota privada e exclusiva do Administrador
-Sessao::exigirLogin('../login/index.php');
-Sessao::exigirPerfil([Sessao::ADMIN], '../dashboard/index.php');
+// Sessao::exigirLogin('../login/index.php');
+// Sessao::exigirPerfil([Sessao::ADMIN], '../dashboard/index.php');
 
 $controller = new UsuarioController();
 

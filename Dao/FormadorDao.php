@@ -20,29 +20,22 @@ class FormadorDao {
         $genero = $formador->getGenero();
         $estadoCivil = $formador->getEstadoCivil();
         $contacto = $formador->getContacto();
-        $valorHoras = $formador->getValor_Horas();
-        $horasMes = $formador->getHoras_Mes();
+        $valorHoras = $formador->getValorHoras();
+        $horasMes = $formador->getHorasMes();
         $salario = $formador->getSalario();
 
         $stmt->bind_param("sssssiiid", $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valorHoras, $horasMes, $salario);
         return $stmt->execute();
     }
 
-    public function getAll($nome = null) {
-        if ($nome != null && strlen($nome) > 0) {
-            $sql = "select * from Formador where nome like ?";
-            $stmt = $this->db->prepare($sql);
-            $busca = "%" . $nome . "%";
-            $stmt->bind_param("s", $busca);
-            $stmt->execute();
-            $result = $stmt->get_result();
-        } else {
-            $sql = "select * from Formador";
-            $result = mysqli_query($this->db, $sql);
-        }
-
+    public function getAll() {
+        $sql = "select * from Formador";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        $result = $stmt->get_result();       
+        
         $formadores = [];
-        while ($rs = mysqli_fetch_assoc($result)) {
+        while ($rs = $result->fetch_assoc()) {
             $formadores[] = $this->montarFormador($rs);
         }
         return $formadores;
@@ -71,8 +64,8 @@ class FormadorDao {
         $genero = $formador->getGenero();
         $estadoCivil = $formador->getEstadoCivil();
         $contacto = $formador->getContacto();
-        $valorHoras = $formador->getValor_Horas();
-        $horasMes = $formador->getHoras_Mes();
+        $valorHoras = $formador->getValorHoras();
+        $horasMes = $formador->getHorasMes();
         $salario = $formador->getSalario();
         $codigo = $formador->getCodigo();
 

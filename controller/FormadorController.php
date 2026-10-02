@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/../Dao/FormadorDao.php';
 require_once __DIR__ . '/../model/Formador.php';
-require_once __DIR__ . '/Diretor_TurmaController.php';
+require_once __DIR__ . '/Diretor_turmaController.php';
 require_once __DIR__ . '/CoordenadorController.php';
 require_once __DIR__ . '/LicaoController.php';
 require_once __DIR__ . '/TurmaController.php';
@@ -35,8 +35,8 @@ class FormadorController {
         return false;
     }
 
-    public function listarFormador($nome) {
-        return $this->dao->getAll($nome);
+    public function listar() {
+        return $this->dao->getAll();
     }
 
     public function atualizarFormador($codigo, $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valor_horas, $horas_mes, $salario, $isDiretor, $isCoordenador) {

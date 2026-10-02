@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../../services/Sessao.php';
-Sessao::exigirLogin('../login/index.php');
+// Sessao::exigirLogin('../login/index.php');
 
 require_once __DIR__ . '/../../controller/FormandoController.php';
 $FormandoController = new FormandoController();

@@ -7,7 +7,7 @@ require_once __DIR__ . '/../Dao/PerfilDao.php';
 
 class UsuarioController {
     // Senha utilizada pelo "Reset senha" da gestão de utilizadores
-    const SENHA_PADRAO = '0000';
+    const SENHA_PADRAO = '1234';
 
     private $dao;
 

@@ -1,0 +1,102 @@
+/* Ecrãs públicos de autenticação (Login / Redefinir senha)
+   Conformes ao modelo docs/AutenticacaoUI — reutiliza as variáveis de :root. */
+
+body.auth-body {
+  background-color: var(--color-green);
+  min-height: 100vh;
+}
+
+.auth-main {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.auth-card {
+  background-color: var(--bg-card);
+  width: 100%;
+  max-width: 360px;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.auth-title {
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.auth-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: 22px;
+}
+
+.auth-card .form-group {
+  margin-bottom: 18px;
+}
+
+.auth-card .form-group label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.auth-card .form-control {
+  height: 40px;
+  border-color: var(--text-primary);
+  border-radius: 8px;
+}
+
+.auth-links {
+  display: flex;
+  justify-content: flex-end;
+  margin: -4px 0 18px;
+}
+
+.auth-links a {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.auth-links a:hover {
+  color: var(--color-green-dark);
+  text-decoration: underline;
+}
+
+.auth-links-center {
+  justify-content: center;
+  margin: 16px 0 0;
+}
+
+/* Botão do modelo: verde profundo (#02542d), largura fixa e centrada
+   Seletor composto para sobrepor .btn-success na cascata (sem !important) */
+.btn.auth-submit {
+  display: block;
+  width: 200px;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 9px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 8px;
+  background-color: var(--color-green-deep);
+}
+
+.btn.auth-submit:hover {
+  background-color: var(--color-green-dark);
+}
+
+.auth-card .alert {
+  margin-bottom: 18px;
+  font-size: 13px;
+}

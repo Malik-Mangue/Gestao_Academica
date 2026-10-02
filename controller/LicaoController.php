@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../Dao/LicaoDao.php';
 require_once __DIR__ . '/../model/Licao.php';
+require_once __DIR__ . '/../services/Validador.php';
 
 class LicaoController {
     private $dao;
@@ -9,27 +10,63 @@ class LicaoController {
         $this->dao = new LicaoDao();
     }
 
+    // Constroi a lição a partir de códigos validados e persiste-a.
     public function cadastrarLicao($modulo, $formador, $sala, $turma, $data, $hora_inicio, $hora_fim) {
-        if ($modulo != null && $formador != null && $sala != null && $turma != null
-            && $data != null && strlen($data) > 0
-            && $hora_inicio != null && strlen($hora_inicio) > 0
-            && $hora_fim != null && strlen($hora_fim) > 0) {
-
-            $licao = new Licao(null, $modulo, $formador, $sala, $turma, $data, $hora_inicio, $hora_fim);
-            $this->dao->create($licao);
-            return true;
+        if (!$this->dadosValidos($modulo, $formador, $sala, $turma, $data, $hora_inicio, $hora_fim)) {
+            return false;
         }
-        return false;
+
+        $licao = new Licao(null, $modulo, $formador, $sala, $turma, $data, $hora_inicio, $hora_fim);
+
+        return (bool) $this->dao->create($licao);
     }
 
-    public function listarLicao($texto) {
-        return $this->dao->getAll($texto);
+    public function atualizarLicao($codigo, $modulo, $formador, $sala, $turma, $data, $hora_inicio, $hora_fim) {
+        if (!$codigo || !$this->dadosValidos($modulo, $formador, $sala, $turma, $data, $hora_inicio, $hora_fim)) {
+            return false;
+        }
+
+        $licao = new Licao($codigo, $modulo, $formador, $sala, $turma, $data, $hora_inicio, $hora_fim);
+
+        return (bool) $this->dao->update($licao);
+    }
+
+    private function dadosValidos($modulo, $formador, $sala, $turma, $data, $hora_inicio, $hora_fim) {
+        return $modulo !== null && $formador !== null && $sala !== null && $turma !== null
+            && Validador::data($data)
+            && Validador::hora($hora_inicio)
+            && Validador::hora($hora_fim)
+            // A hora de fim tem de ser posterior a hora de inicio.
+            && $hora_fim > $hora_inicio;
+    }
+
+    public function listarLicao($texto = '') {
+        return $this->dao->getAll($texto ?? '');
+    }
+
+    public function listarModulos() {
+        return $this->dao->getModulos();
+    }
+
+    public function listarFormadores() {
+        return $this->dao->getFormadores();
+    }
+
+    public function listarSalas() {
+        return $this->dao->getSalas();
+    }
+
+    public function listarTurmas() {
+        return $this->dao->getTurmas();
+    }
+
+    public function existeConflito($codSala, $codFormador, $data, $horaInicio, $horaFim, $codigoIgnorado = null) {
+        return $this->dao->existeConflito($codSala, $codFormador, $data, $horaInicio, $horaFim, $codigoIgnorado);
     }
 
     public function apagarLicao($codigo) {
-        if ($codigo != 0) {
-            $this->dao->delete($codigo);
-            return true;
+        if ($codigo) {
+            return (bool) $this->dao->delete($codigo);
         }
         return false;
     }

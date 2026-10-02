@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/conexao.php';
-require_once __DIR__ . '/../config/sessao.php';
+require_once __DIR__ . '/../services/Sessao.php';
 require_once __DIR__ . '/../model/Licao.php';
 require_once __DIR__ . '/../model/Modulo.php';
 require_once __DIR__ . '/../model/Formador.php';
@@ -74,6 +74,36 @@ class LicaoDao {
         return $licoes;
     }
 
+    public function update(Licao $licao) {
+        $sql = "update Licao set cod_Modulo = ?, cod_Formador = ?, cod_Sala = ?, cod_Turma = ?,
+                       data = ?, hora_inicio = ?, hora_fim = ?
+                where codigo = ?";
+        $stmt = $this->db->prepare($sql);
+
+        $codModulo   = $licao->getModulo()->getCodigo();
+        $codFormador = $licao->getFormador()->getCodigo();
+        $codSala     = $licao->getSala()->getCodigo();
+        $codTurma    = $licao->getTurma()->getCodigo();
+        $data        = $licao->getData();
+        $horaInicio  = substr($licao->getHoraInicio(), 0, 5) . ':00';
+        $horaFim     = substr($licao->getHoraFim(), 0, 5) . ':00';
+        $codigo      = $licao->getCodigo();
+
+        $stmt->bind_param("iiiisssi", $codModulo, $codFormador, $codSala, $codTurma, $data, $horaInicio, $horaFim, $codigo);
+        $result = $stmt->execute();
+
+        if ($result) {
+            $usuario = Sessao::obterUtilizador();
+            if ($usuario != null) {
+                $log = new Logs(null, "UPDATE", "Lição (ID: " . $codigo . ") foi atualizada", $usuario);
+                $log->setData(date('Y-m-d H:i:s'));
+                (new LogDao())->salvar($log);
+            }
+        }
+
+        return $result;
+    }
+
     public function delete($codigo) {
         $sql = "delete from Licao where codigo = ?";
         $stmt = $this->db->prepare($sql);
@@ -126,6 +156,57 @@ class LicaoDao {
         $stmt->execute();
         $rs = $stmt->get_result()->fetch_assoc();
         return $rs['total'] > 0;
+    }
+
+    // Listas de opcoes para preencher os <select> do formulario de lição.
+    public function listarOpcoes($sql) {
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $opcoes = [];
+        while ($rs = $result->fetch_assoc()) {
+            $opcoes[] = ['codigo' => $rs['codigo'], 'descricao' => $rs['descricao']];
+        }
+        return $opcoes;
+    }
+
+    public function getModulos() {
+        return $this->listarOpcoes("select codigo, nome_modulo as descricao from Modulo order by nome_modulo");
+    }
+
+    public function getFormadores() {
+        return $this->listarOpcoes("select codigo, concat(nome, ' ', apelido) as descricao from Formador order by nome");
+    }
+
+    public function getSalas() {
+        return $this->listarOpcoes("select codigo, designacao as descricao from Sala order by designacao");
+    }
+
+    public function getTurmas() {
+        return $this->listarOpcoes("select codigo, nome as descricao from Turma order by nome");
+    }
+
+    // Impede a sobreposicao de horario para a mesma sala e formador.
+    public function existeConflito($codSala, $codFormador, $data, $horaInicio, $horaFim, $codigoIgnorado = null) {
+        $sql = "select count(*) as total from Licao
+                where cod_Sala = ? and cod_Formador = ? and data = ?
+                and hora_inicio < ? and hora_fim > ?";
+        $params = [$codSala, $codFormador, $data, $horaFim, $horaInicio];
+        $types  = "iiiss";
+
+        if ($codigoIgnorado !== null) {
+            $sql .= " and codigo <> ?";
+            $params[] = $codigoIgnorado;
+            $types   .= "i";
+        }
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $rs = $stmt->get_result()->fetch_assoc();
+
+        return (int) $rs['total'] > 0;
     }
 
     public function existeLicaoPorQualificacao($codigoQualificacao) {

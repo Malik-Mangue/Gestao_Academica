@@ -12,57 +12,83 @@ class TurmaController {
         $this->dao = new TurmaDao();
     }
 
-    public function cadastrarTurma($nome, $ano_ingresso, $turno, $diretorTurma, $qualificacao, $nivel) {
-        if ($nome != null && strlen($nome) > 0 && $ano_ingresso > 0 && $turno != null && strlen($turno) > 0 && $diretorTurma != null) {
-
-            if ($qualificacao != null && $nivel != null) {
-                $qualiNivelController = new Quali_NivelController();
-                $codigo = $qualiNivelController->buscarCodigo($qualificacao, $nivel);
-
-                if ($codigo > 0) {
-                    $qualiNivel = new Quali_Nivel($codigo, null, null);
-
-                    $turma = new Turma(null, $nome, $ano_ingresso, $turno, $diretorTurma, $qualificacao, $qualiNivel);
-                    $this->dao->create($turma);
-                    return true;
-                }
-            }
+    public function cadastrarTurma($nome, $ano_ingresso, $turno, $diretorTurma, $qualificacao, $nivel, $qualiNivel = null) {
+        if (!Validador::texto($nome, 40) || !Validador::inteiroPositivo($ano_ingresso)
+            || $turno === null || $turno === '' || $diretorTurma === null) {
+            return false;
         }
-        return false;
+
+        // A view escolhe o par Qualificacao/Nivel ja definido em Quali_Nivel.
+        // Sem esse par, tenta resolver a partir da qualificacao e nivel.
+        if ($qualiNivel === null) {
+            if ($qualificacao === null || $nivel === null) {
+                return false;
+            }
+            $codigo = (new Quali_NivelController())->buscarCodigo($qualificacao, $nivel);
+            if (!$codigo) {
+                return false;
+            }
+            $qualiNivel = new Quali_Nivel($codigo, null, null);
+        }
+
+        $turma = new Turma(null, $nome, (int) $ano_ingresso, $turno, $diretorTurma, $qualificacao, $qualiNivel);
+
+        return (bool) $this->dao->create($turma);
     }
 
-    public function listarTurma($nome) {
-        return $this->dao->getAll($nome);
+    public function listarTurma($nome = '') {
+        return $this->dao->getAll($nome ?? '');
     }
 
-    public function atualizarTurma($codigo, $nome, $ano_ingresso, $turno, $diretorTurma, $qualificacao, $nivel) {
-        if ($nome != null && strlen($nome) > 0 && $codigo != 0 && $ano_ingresso > 0 && $turno != null && strlen($turno) > 0) {
+    public function buscarTurma($codigo) {
+        return $codigo ? $this->dao->getById($codigo) : null;
+    }
 
-            if ($qualificacao != null && $nivel != null) {
-                $qualiNivelController = new Quali_NivelController();
-                $codigoQualiNivel = $qualiNivelController->buscarCodigo($qualificacao, $nivel);
+    public function listarDiretores() {
+        return $this->dao->getDiretores();
+    }
 
-                if ($codigoQualiNivel > 0) {
-                    $qualiNivel = new Quali_Nivel($codigoQualiNivel, null, null);
+    public function listarQualificacoes() {
+        return $this->dao->getQualificacoes();
+    }
 
-                    $turma = new Turma($codigo, $nome, $ano_ingresso, $turno, $diretorTurma, $qualificacao, $qualiNivel);
-                    $this->dao->update($turma);
-                    return true;
-                }
-            }
+    public function listarNiveis() {
+        return $this->dao->getNiveis();
+    }
+
+    public function listarParesQualiNivel() {
+        return $this->dao->getParesQualiNivel();
+    }
+
+    public function atualizarTurma($codigo, $nome, $ano_ingresso, $turno, $diretorTurma, $qualificacao, $nivel, $qualiNivel = null) {
+        if (!$codigo || !Validador::texto($nome, 40) || !Validador::inteiroPositivo($ano_ingresso)
+            || $turno === null || $turno === '' || $diretorTurma === null) {
+            return false;
         }
-        return false;
+
+        if ($qualiNivel === null) {
+            if ($qualificacao === null || $nivel === null) {
+                return false;
+            }
+            $qualiNivel = new Quali_Nivel(
+                (new Quali_NivelController())->buscarCodigo($qualificacao, $nivel),
+                null,
+                null
+            );
+        }
+
+        $turma = new Turma($codigo, $nome, (int) $ano_ingresso, $turno, $diretorTurma, $qualificacao, $qualiNivel);
+
+        return (bool) $this->dao->update($turma);
     }
 
     public function apagarTurma($codigo) {
-        if ($codigo != 0) {
-            $licaoController = new LicaoController();
-            if ($licaoController->existeLicaoPorTurma($codigo)) {
+        if ($codigo) {
+            if ((new LicaoController())->existeLicaoPorTurma($codigo)) {
                 throw new Exception("Não é possível eliminar esta turma pois está sendo usada em uma ou mais lições.");
             }
 
-            $this->dao->delete($codigo);
-            return true;
+            return (bool) $this->dao->delete($codigo);
         }
         return false;
     }

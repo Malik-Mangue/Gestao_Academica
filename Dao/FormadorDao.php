@@ -11,7 +11,7 @@ class FormadorDao {
     }
 
     public function create(Formador $formador) {
-        $sql = "insert into Formador (nome, apelido, email, genero, estadoCivil, contacto, valor_horas, horas_mes, salario) values (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql = "insert into Formador (nome, apelido, email, genero, estadoCivil, contacto, valor_hora, horas_mes, salario) values (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $this->db->prepare($sql);
 
         $nome = $formador->getNome();
@@ -29,11 +29,13 @@ class FormadorDao {
     }
 
     public function getAll() {
-        $sql = "select * from Formador";
+        $sql = "select codigo, nome, apelido, email, genero, estadoCivil, contacto,
+                       valor_hora, horas_mes, salario
+                from Formador order by nome";
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
-        $result = $stmt->get_result();       
-        
+        $result = $stmt->get_result();
+
         $formadores = [];
         while ($rs = $result->fetch_assoc()) {
             $formadores[] = $this->montarFormador($rs);
@@ -42,7 +44,9 @@ class FormadorDao {
     }
 
     public function getById($codigo) {
-        $sql = "select * from Formador where codigo = ?";
+        $sql = "select codigo, nome, apelido, email, genero, estadoCivil, contacto,
+                       valor_hora, horas_mes, salario
+                from Formador where codigo = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("i", $codigo);
         $stmt->execute();
@@ -55,7 +59,7 @@ class FormadorDao {
     }
 
     public function update(Formador $formador) {
-        $sql = "update Formador set nome = ?, apelido = ?, email = ?, genero = ?, estadoCivil = ?, contacto = ?, valor_horas = ?, horas_mes = ?, salario = ? where codigo = ?";
+        $sql = "update Formador set nome = ?, apelido = ?, email = ?, genero = ?, estadoCivil = ?, contacto = ?, valor_hora = ?, horas_mes = ?, salario = ? where codigo = ?";
         $stmt = $this->db->prepare($sql);
 
         $nome = $formador->getNome();
@@ -89,7 +93,7 @@ class FormadorDao {
             $rs['genero'],
             $rs['estadoCivil'],
             $rs['contacto'],
-            $rs['valor_horas'],
+            $rs['valor_hora'],
             $rs['horas_mes'],
             $rs['salario']
         );

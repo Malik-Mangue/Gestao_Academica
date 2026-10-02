@@ -10,28 +10,43 @@ class FormandoDAO {
         $this->db = $database->getConnection();
     }
 
+    // Ordem do construtor Formando: (codigo, nome, apelido, email, bi, contacto)
+    private function montarFormando($rs) {
+        return new Formando(
+            $rs['codigo_formando'],
+            $rs['nome_formando'],
+            $rs['apelido_formando'],
+            $rs['email'],
+            $rs['BI'],
+            $rs['contacto_formando']
+        );
+    }
+
     public function getAll() {
-        $sql = "select codigo_formando, nome_formando, apelido_formando, contacto_formando, email, BI from Formando order by nome_formando, apelido_formando";
+        $sql = "select codigo_formando, nome_formando, apelido_formando, contacto_formando, email, BI
+                from Formando order by nome_formando, apelido_formando";
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
         $result = $stmt->get_result();
         $formandos = [];
         while ($rs = $result->fetch_assoc()) {
-            $formandos[] = new Formando($rs['codigo_formando'], $rs['nome_formando'], $rs['apelido_formando'], $rs['contacto_formando'], $rs['email'], $rs['BI']);
+            $formandos[] = $this->montarFormando($rs);
         }
         return $formandos;
     }
 
     public function getById($codigo) {
-        $sql = "select codigo_formando, nome_formando, apelido_formando, contacto_formando, email, BI from Formando where codigo_formando = ?";
+        $sql = "select codigo_formando, nome_formando, apelido_formando, contacto_formando, email, BI
+                from Formando where codigo_formando = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("i", $codigo);
         $stmt->execute();
         $rs = $stmt->get_result()->fetch_assoc();
+
         if ($rs === null) {
             return null;
         }
-        return new Formando($rs['codigo_formando'], $rs['nome_formando'], $rs['apelido_formando'], $rs['contacto_formando'], $rs['email'], $rs['BI']);
+        return $this->montarFormando($rs);
     }
 
     public function create(Formando $formando) {

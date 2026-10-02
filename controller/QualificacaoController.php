@@ -5,6 +5,7 @@ require_once __DIR__ . '/ClassificacaoController.php';
 require_once __DIR__ . '/Quali_NivelController.php';
 require_once __DIR__ . '/LicaoController.php';
 require_once __DIR__ . '/MatriculaController.php';
+require_once __DIR__ . '/../services/Validador.php';
 
 class QualificacaoController {
     private $dao;
@@ -14,7 +15,7 @@ class QualificacaoController {
     }
 
     public function cadastrarQualificacao($titulo, $coordenador, $campo, $nivel) {
-        if ($titulo != null && strlen($titulo) > 0 && preg_match('/^[a-zA-Z ]+$/', $titulo)
+        if (Validador::texto($titulo, 60)
             && $coordenador != null && $campo != null) {
 
             $qualificacao = new Qualificacao(null, $titulo, $coordenador);
@@ -42,11 +43,22 @@ class QualificacaoController {
         return $this->dao->getAll($titulo);
     }
 
-    public function atualizarQualificacao($codigo, $titulo) {
-        if ($codigo != 0 && $titulo != null && strlen($titulo) > 0 && preg_match('/^[a-zA-Z ]+$/', $titulo)) {
-            $qualificacao = new Qualificacao($codigo, $titulo, null);
-            $this->dao->update($qualificacao);
-            return true;
+    public function buscar($codigo) {
+        return $this->dao->getById($codigo);
+    }
+
+    // A atualizacao preserva o coordenador ja associado: sem o parametro
+    // opcional, o titulo e alterado sem perder a chave estrangeira.
+    public function atualizarQualificacao($codigo, $titulo, $coordenador = null) {
+        if ($codigo != 0 && Validador::texto($titulo, 60)) {
+            $atual = $this->dao->getById($codigo);
+            if ($atual === null) {
+                return false;
+            }
+            $codigoCoordenador = $coordenador !== null ? $coordenador : $atual->getCod_coordenador();
+
+            $qualificacao = new Qualificacao($codigo, $titulo, $codigoCoordenador);
+            return $this->dao->update($qualificacao);
         }
         return false;
     }

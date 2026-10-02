@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../Dao/SalaDao.php';
+require_once __DIR__ . '/../model/Sala.php';
 
 class SalaController {
     private $dao;

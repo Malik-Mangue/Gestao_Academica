@@ -76,7 +76,8 @@ class UsuarioDao {
         return $result;
     }
 
-    public function getAll($username) {
+    public function getAll($username = null) {
+    if ($username != null && strlen($username) > 0) {
         $sql = "select idUser, Usuario.nome, username, apelido, Perfil.nome as nome_perfil from Usuario
                 join Perfil on idPerfil = id
                 where username like ?";
@@ -85,15 +86,35 @@ class UsuarioDao {
         $stmt->bind_param("s", $busca);
         $stmt->execute();
         $result = $stmt->get_result();
-
-        $usuarios = [];
-        while ($rs = $result->fetch_assoc()) {
-            $perfil = new Perfil(null, $rs['nome_perfil']);
-            $usuario = new Usuario($rs['idUser'], $rs['nome'], $rs['username'], null, $rs['apelido'], $perfil);
-            $usuarios[] = $usuario;
-        }
-        return $usuarios;
+    } else {
+        $sql = "select idUser, Usuario.nome, username, apelido, Perfil.nome as nome_perfil from Usuario
+                join Perfil on idPerfil = id";
+        $result = mysqli_query($this->db, $sql);
     }
+
+    $usuarios = [];
+    while ($rs = $result->fetch_assoc()) {
+        $perfil = new Perfil(null, $rs['nome_perfil']);
+        $usuarios[] = new Usuario($rs['idUser'], $rs['nome'], $rs['username'], null, $rs['apelido'], $perfil);
+    }
+    return $usuarios;
+}
+
+
+        public function getPerfis() {
+    $sql = "select id, nome from Perfil order by nome";
+    $result = mysqli_query($this->db, $sql);
+
+    $perfis = [];
+    while ($rs = $result->fetch_assoc()) {
+        $perfis[] = new Perfil($rs['id'], $rs['nome']);
+    }
+    return $perfis;
+}
+
+        public function getById($codigo) {
+    return $this->obterUsuarioPorCodigo($codigo);
+}
 
     public function refinirSenha($novapassword, $codigo) {
         $sql = "update Usuario set password = ?, primeiroAcesso = 0 where idUser = ?";

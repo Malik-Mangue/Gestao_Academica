@@ -1,9 +1,8 @@
 <?php
-// if (!isset($_SESSION['user_id'])) {
-//     header('Location: /login');
-//     exit;
-// }
-require_once __DIR__ . '/../../controller/FormandoController.php'; 
+require_once __DIR__ . '/../../services/Sessao.php';
+Sessao::exigirLogin('../login/index.php');
+
+require_once __DIR__ . '/../../controller/FormandoController.php';
 $FormandoController = new FormandoController();
 
 $formandos = $FormandoController->listar();

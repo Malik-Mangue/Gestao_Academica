@@ -42,7 +42,7 @@ class ModuloDao{
     }
 
     public function getById($id_modulo = null){
-        $sql = "select * from Modulo where id_modulo"
+        $sql = "select * from Modulo where id_modulo";
     }
 }
 

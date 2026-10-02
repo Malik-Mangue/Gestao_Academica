@@ -2,15 +2,10 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-require_once __DIR__ . '/../../controller/CampoController.php';
+require_once __DIR__ . '/../../services/Sessao.php';
+Sessao::exigirLogin('../login/index.php');
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-if (!isset($_SESSION['user_id'])) {
-    header('Location: /login');
-    exit;
-}
+require_once __DIR__ . '/../../controller/CampoController.php';
 
 $controller = new CampoController();
 

@@ -3,6 +3,7 @@ require_once __DIR__ . '/Perfil.php';
 
 class Usuario {
     private $codigo;
+    private $idPerfil;
     private $nome;
     private $username;
     private $password;
@@ -10,19 +11,25 @@ class Usuario {
     private $perfil;
     private $primeiroAcesso;
 
-    public function __construct($codigo = null, $nome = null, $username = null, $password = null, $apelido = null, $perfil = null, $primeiroAcesso = false)
+    // Ordem canonica usada por todos os chamadores (Dao, Controller e Sessao):
+    // (codigo, idPerfil, nome, username, apelido, password, primeiroAcesso)
+    public function __construct($codigo = null, $idPerfil = null, $nome = null, $username = null, $apelido = null, $password = null, $primeiroAcesso = 0)
     {
         $this->codigo = $codigo;
+        $this->idPerfil = $idPerfil;
         $this->nome = $nome;
         $this->username = $username;
-        $this->password = $password;
         $this->apelido = $apelido;
-        $this->perfil = $perfil;
+        $this->password = $password;
         $this->primeiroAcesso = $primeiroAcesso;
     }
 
     public function isPrimeiroAcesso(){ return $this->primeiroAcesso; }
+    public function getPrimeiroAcesso(){ return $this->primeiroAcesso; }
     public function setPrimeiroAcesso($primeiroAcesso){ $this->primeiroAcesso = $primeiroAcesso; }
+
+    public function getIdPerfil(){ return $this->idPerfil; }
+    public function setIdPerfil($idPerfil){ $this->idPerfil = $idPerfil; }
 
     public function getCodigo(){ return $this->codigo; }
     public function setCodigo($codigo){ $this->codigo = $codigo; }

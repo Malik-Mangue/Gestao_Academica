@@ -8,7 +8,7 @@ $active = $active_menu ?? 'dashboard';
             <img src="../../assets/icons/user.svg" alt="User">
         </div>
         <div class="sidebar-user-greeting">Welcome!</div>
-        <div class="sidebar-user-name">admin</div>
+        <div class="sidebar-user-name"><?= htmlspecialchars($sessao_atual['nome'] ?? 'admin') ?></div>
     </div>
 
     <div class="sidebar-heading">Menu Principal</div>
@@ -119,6 +119,18 @@ $active = $active_menu ?? 'dashboard';
                     <img src="../../assets/icons/sala.svg" alt="Salas">
                 </span>
                 <span>Salas</span>
+            </a>
+        </li>
+    </ul>
+
+    <div class="sidebar-heading">Administração</div>
+    <ul class="sidebar-menu">
+        <li class="<?php echo $active === 'usuario' ? 'active' : ''; ?>">
+            <a href="../../view/usuario/index.php">
+                <span class="sidebar-icon">
+                    <img src="../../assets/icons/usuario.svg" alt="Utilizadores">
+                </span>
+                <span>Utilizadores</span>
             </a>
         </li>
     </ul>

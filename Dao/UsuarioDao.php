@@ -1,4 +1,7 @@
 <?php
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
 require_once __DIR__ . '/../config/conexao.php';
 require_once __DIR__ . '/../model/Usuario.php';
 
@@ -32,6 +35,29 @@ class UsuarioDAO {
             return null;
         }
         return new Usuario($rs['idUser'], $rs['idPerfil'], $rs['nome'], $rs['username'], $rs['apelido'], $rs['password'], $rs['primeiroAcesso']);
+    }
+
+    public function getByUsername($username) {
+        $sql = "select idUser, idPerfil, nome, username, apelido, password, primeiroAcesso from Usuario where username = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("s", $username);
+        $stmt->execute();
+        $rs = $stmt->get_result()->fetch_assoc();
+        if ($rs === null) {
+            return null;
+        }
+        return new Usuario($rs['idUser'], $rs['idPerfil'], $rs['nome'], $rs['username'], $rs['apelido'], $rs['password'], $rs['primeiroAcesso']);
+    }
+
+    public function atualizarPassword($codigo, $password, $primeiroAcesso) {
+        $sql = "update Usuario set password = ?, primeiroAcesso = ? where idUser = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("isi", $password, $primeiroAcesso, $codigo);
+        try {
+            return $stmt->execute();
+        } catch (mysqli_sql_exception $e) {
+            return false;
+        }
     }
 
     public function create(Usuario $usuario) {

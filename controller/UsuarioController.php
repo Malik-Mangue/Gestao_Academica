@@ -6,7 +6,7 @@ require_once __DIR__ . '/../Dao/UsuarioDao.php';
 require_once __DIR__ . '/../Dao/PerfilDao.php';
 
 class UsuarioController {
-    // Senha utilizada pelo "Reset senha" da gestão de utilizadores
+
     const SENHA_PADRAO = '1234';
 
     private $dao;
@@ -19,7 +19,6 @@ class UsuarioController {
         return $this->dao->getAll();
     }
 
-    // Perfis existentes rastreados na base de dados atraves da classe Perfil
     public function listarPerfis() {
         $perfilDao = new PerfilDao();
         return $perfilDao->getAll();
@@ -54,7 +53,6 @@ class UsuarioController {
         return $this->dao->delete($codigo);
     }
 
-    // Autenticação por username + password (password_verify)
     public function autenticar($username, $password) {
         $username = trim($username);
         if ($username === '' || $password === '') {
@@ -70,7 +68,6 @@ class UsuarioController {
         return $usuario;
     }
 
-    // Redefinição da própria senha: valida a senha antiga e grava a nova
     public function redefinirSenha($username, $senhaAntiga, $senhaNova) {
         $usuario = $this->dao->getByUsername(trim($username));
         if ($usuario === null) {
@@ -83,7 +80,6 @@ class UsuarioController {
         return $this->dao->atualizarPassword($usuario->getCodigo(), $hash, 0);
     }
 
-    // Reset administrativo: volta à senha padrão e obriga ao primeiro acesso
     public function resetSenha($codigo) {
         $usuario = $this->dao->getById($codigo);
         if ($usuario === null) {

@@ -80,44 +80,43 @@ class UsuarioDao {
     }
 
     public function getAll($username = null) {
-    if ($username != null && strlen($username) > 0) {
-        $sql = "select idUser, Usuario.nome, username, apelido, Perfil.nome as nome_perfil from Usuario
-                join Perfil on idPerfil = id
-                where username like ?";
-        $stmt = $this->db->prepare($sql);
-        $busca = "%" . $username . "%";
-        $stmt->bind_param("s", $busca);
-        $stmt->execute();
-        $result = $stmt->get_result();
-    } else {
-        $sql = "select idUser, Usuario.nome, username, apelido, Perfil.nome as nome_perfil from Usuario
-                join Perfil on idPerfil = id";
+        if ($username != null && strlen($username) > 0) {
+            $sql = "select idUser, Usuario.nome, username, apelido, Perfil.nome as nome_perfil from Usuario
+                    join Perfil on idPerfil = id
+                    where username like ?";
+            $stmt = $this->db->prepare($sql);
+            $busca = "%" . $username . "%";
+            $stmt->bind_param("s", $busca);
+            $stmt->execute();
+            $result = $stmt->get_result();
+        } else {
+            $sql = "select idUser, Usuario.nome, username, apelido, Perfil.nome as nome_perfil from Usuario
+                    join Perfil on idPerfil = id";
+            $result = mysqli_query($this->db, $sql);
+        }
+
+        $usuarios = [];
+        while ($rs = $result->fetch_assoc()) {
+            $perfil = new Perfil(null, $rs['nome_perfil']);
+            $usuarios[] = new Usuario($rs['idUser'], $rs['nome'], $rs['username'], null, $rs['apelido'], $perfil);
+        }
+        return $usuarios;
+    }
+
+    public function getPerfis() {
+        $sql = "select id, nome from Perfil order by nome";
         $result = mysqli_query($this->db, $sql);
+
+        $perfis = [];
+        while ($rs = $result->fetch_assoc()) {
+            $perfis[] = new Perfil($rs['id'], $rs['nome']);
+        }
+        return $perfis;
     }
 
-    $usuarios = [];
-    while ($rs = $result->fetch_assoc()) {
-        $perfil = new Perfil(null, $rs['nome_perfil']);
-        $usuarios[] = new Usuario($rs['idUser'], $rs['nome'], $rs['username'], null, $rs['apelido'], $perfil);
+    public function getById($codigo) {
+        return $this->obterUsuarioPorCodigo($codigo);
     }
-    return $usuarios;
-}
-
-
-        public function getPerfis() {
-    $sql = "select id, nome from Perfil order by nome";
-    $result = mysqli_query($this->db, $sql);
-
-    $perfis = [];
-    while ($rs = $result->fetch_assoc()) {
-        $perfis[] = new Perfil($rs['id'], $rs['nome']);
-    }
-    return $perfis;
-}
-
-        public function getById($codigo) {
-    return $this->obterUsuarioPorCodigo($codigo);
-}
 
     public function refinirSenha($novapassword, $codigo) {
         $sql = "update Usuario set password = ?, primeiroAcesso = 0 where idUser = ?";
@@ -161,74 +160,65 @@ class UsuarioDao {
     }
 
     public function obterTodosUsuarios() {
-        $sql = "select idUser, nome_completo, username, email, Perfil.nome as nome_perfil from Usuario
-                join Perfil on idPerfil = id";
-        $result = mysqli_query($this->db, $sql);
-
-        $usuarios = [];
-        while ($rs = $result->fetch_assoc()) {
-            $perfil = new Perfil(null, $rs['nome_perfil']);
-            $usuario = new Usuario($rs['idUser'], $rs['nome_completo'] ?? null, $rs['username'], null, null, $perfil);
-            $usuarios[] = $usuario;
-        }
-        return $usuarios;
+        return $this->getAll();
     }
 
     public function obterUsuarioPorCodigo($codigo) {
-        $sql = "select * from Usuario where codigo = ?";
+        $sql = "select idUser, idPerfil, nome, username, apelido, password, primeiroAcesso from Usuario where idUser = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("i", $codigo);
         $stmt->execute();
-        $result = $stmt->get_result();
+        $rs = $stmt->get_result()->fetch_assoc();
 
-<<<<<<< HEAD
+        if ($rs === null) {
+            return null;
+        }
+
+        $perfil = new Perfil($rs['idPerfil'], null);
+        return new Usuario(
+            $rs['idUser'],
+            $rs['nome'],
+            $rs['username'],
+            $rs['password'],
+            $rs['apelido'],
+            $perfil,
+            (bool) $rs['primeiroAcesso']
+        );
+    }
+
     public function getByUsername($username) {
         $sql = "select idUser, idPerfil, nome, username, apelido, password, primeiroAcesso from Usuario where username = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("s", $username);
         $stmt->execute();
         $rs = $stmt->get_result()->fetch_assoc();
+
         if ($rs === null) {
             return null;
         }
-        return new Usuario($rs['idUser'], $rs['idPerfil'], $rs['nome'], $rs['username'], $rs['apelido'], $rs['password'], $rs['primeiroAcesso']);
+
+        $perfil = new Perfil($rs['idPerfil'], null);
+        return new Usuario(
+            $rs['idUser'],
+            $rs['nome'],
+            $rs['username'],
+            $rs['password'],
+            $rs['apelido'],
+            $perfil,
+            (bool) $rs['primeiroAcesso']
+        );
     }
 
     public function atualizarPassword($codigo, $password, $primeiroAcesso) {
         $sql = "update Usuario set password = ?, primeiroAcesso = ? where idUser = ?";
         $stmt = $this->db->prepare($sql);
-        $stmt->bind_param("isi", $password, $primeiroAcesso, $codigo);
+        $primeiroAcesso = (int) $primeiroAcesso;
+        $stmt->bind_param("sii", $password, $primeiroAcesso, $codigo);
         try {
             return $stmt->execute();
         } catch (mysqli_sql_exception $e) {
             return false;
         }
-    }
-
-    public function create(Usuario $usuario) {
-        $sql = "insert into Usuario (idPerfil, nome, username, apelido, password, primeiroAcesso) values (?, ?, ?, ?, ?, ?)";
-        $stmt = $this->db->prepare($sql);
-        $idPerfil = $usuario->getIdPerfil();
-        $nome = $usuario->getNome();
-        $username = $usuario->getUsername();
-        $apelido = $usuario->getApelido();
-        $password = $usuario->getPassword();
-        $primeiroAcesso = $usuario->getPrimeiroAcesso();
-        $stmt->bind_param("issssi", $idPerfil, $nome, $username, $apelido, $password, $primeiroAcesso);
-        try {
-            return $stmt->execute();
-        } catch (mysqli_sql_exception $e) {
-            return false;
-=======
-        $usuario = null;
-        while ($rs = $result->fetch_assoc()) {
-            $usuario = new Usuario();
-            $usuario->setCodigo($rs['codigo']);
-            $usuario->setUsername($rs['username']);
-            $usuario->setPassword($rs['password']);
->>>>>>> 2ed65f898edccae944510e12afacebb775090b01
-        }
-        return $usuario;
     }
 
     public function update(Usuario $usuario) {

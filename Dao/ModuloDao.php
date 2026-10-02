@@ -42,6 +42,48 @@ class ModuloDao {
         return $result;
     }
 
+    public function update(Modulo $modulo) {
+        $sql = "update Modulo set nome_modulo = ?, carga_horaria = ?, id_Quali_Nivel = ? where codigo = ?";
+        $stmt = $this->db->prepare($sql);
+
+        $nome = $modulo->getNome();
+        $cargaHoraria = $modulo->getCargaHoraria();
+        $codigoQualiNivel = $modulo->getQualiNivel()->getCodigo();
+        $codigo = $modulo->getCodigo();
+
+        $stmt->bind_param("siii", $nome, $cargaHoraria, $codigoQualiNivel, $codigo);
+        $result = $stmt->execute();
+
+        if ($result) {
+            $usuario = Sessao::obterUtilizador();
+            if ($usuario != null) {
+                $log = new Logs(null, "UPDATE", "Módulo " . $nome . " (ID: " . $codigo . ") foi atualizado", $usuario);
+                $log->setData(date('Y-m-d H:i:s'));
+                (new LogDao())->salvar($log);
+            }
+        }
+
+        return $result;
+    }
+
+    public function delete($codigo) {
+        $sql = "delete from Modulo where codigo = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $codigo);
+        $result = $stmt->execute();
+
+        if ($result) {
+            $usuario = Sessao::obterUtilizador();
+            if ($usuario != null) {
+                $log = new Logs(null, "DELETE", "Módulo (ID: " . $codigo . ") foi removido", $usuario);
+                $log->setData(date('Y-m-d H:i:s'));
+                (new LogDao())->salvar($log);
+            }
+        }
+
+        return $result;
+    }
+
     public function getAll($nome) {
         $sql = "select Modulo.codigo, Modulo.nome_modulo as nome, Modulo.carga_horaria,
                        Qualificacao.titulo, Nivel.nome as nivel, Quali_modulo.semestre as semestre
@@ -76,58 +118,20 @@ class ModuloDao {
         return $modulos;
     }
 
-<<<<<<< HEAD
-    public function getById($id_modulo = null){
-        $sql = "select * from Modulo where id_modulo";
-=======
-    public function update(Modulo $modulo) {
-        $sql = "update Modulo set nome_modulo = ?, carga_horaria = ?, id_Quali_Nivel = ? where codigo = ?";
-        $stmt = $this->db->prepare($sql);
-
-        $nome = $modulo->getNome();
-        $cargaHoraria = $modulo->getCargaHoraria();
-        $codigoQualiNivel = $modulo->getQualiNivel()->getCodigo();
-        $codigo = $modulo->getCodigo();
-
-        $stmt->bind_param("siii", $nome, $cargaHoraria, $codigoQualiNivel, $codigo);
-        $result = $stmt->execute();
-
-        if ($result) {
-            $usuario = Sessao::obterUtilizador();
-            if ($usuario != null) {
-                $log = new Logs(null, "UPDATE", "Módulo " . $nome . " (ID: " . $codigo . ") foi atualizado", $usuario);
-                $log->setData(date('Y-m-d H:i:s'));
-                (new LogDao())->salvar($log);
-            }
-        }
-
-        return $result;
-    }
-
-    public function delete($codigo) {
-        $sqlBuscar = "select nome_modulo from Modulo where codigo = ?";
-        $stmtBuscar = $this->db->prepare($sqlBuscar);
-        $stmtBuscar->bind_param("i", $codigo);
-        $stmtBuscar->execute();
-        $rs = $stmtBuscar->get_result()->fetch_assoc();
-        $nomeModulo = $rs != null ? $rs['nome_modulo'] : "";
-
-        $sql = "delete from Modulo where codigo = ?";
+    public function getById($codigo) {
+        $sql = "select codigo, nome_modulo as nome, carga_horaria, id_Quali_Nivel from Modulo where codigo = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("i", $codigo);
-        $result = $stmt->execute();
+        $stmt->execute();
+        $rs = $stmt->get_result()->fetch_assoc();
 
-        if ($result) {
-            $usuario = Sessao::obterUtilizador();
-            if ($usuario != null) {
-                $log = new Logs(null, "DELETE", "Módulo " . $nomeModulo . " (ID: " . $codigo . ") foi removido", $usuario);
-                $log->setData(date('Y-m-d H:i:s'));
-                (new LogDao())->salvar($log);
-            }
+        if ($rs === null) {
+            return null;
         }
 
-        return $result;
->>>>>>> 2ed65f898edccae944510e12afacebb775090b01
+        $modulo = new Modulo($rs['codigo'], $rs['nome'], $rs['carga_horaria']);
+        $modulo->setQualiNivel(new Quali_Nivel($rs['id_Quali_Nivel'], null, null));
+        return $modulo;
     }
 }
 ?>

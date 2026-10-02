@@ -74,13 +74,12 @@ class TurmaDao {
         $turmas = [];
         while ($rs = $result->fetch_assoc()) {
             $formador = new Formador(null, $rs['diretor_turma'], null, null, null, null, null, null, null, null);
-            $diretorTurma = new Diretor_turma(null, $formador);
+            $diretorTurma = new Diretor_turma( $formador);
 
             $qualificacao = new Qualificacao(null, $rs['titulo'], null);
             $nivel = new Nivel(null, $rs['nivel']);
 
-            $turma = new Turma($rs['codigo'], $rs['nome'], $rs['ano_lectivo'], $rs['turno'], $diretorTurma, $qualificacao, null);
-            $turma->setNivel($nivel);
+            $turma = new Turma($rs['codigo'], $rs['nome'], $rs['ano_lectivo'], $rs['turno'], $diretorTurma, $qualificacao);
 
             $turmas[] = $turma;
         }

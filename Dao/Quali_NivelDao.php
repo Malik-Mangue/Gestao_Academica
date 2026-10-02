@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/conexao.php';
 require_once __DIR__ . '/../model/Quali_Nivel.php';
+require_once __DIR__ . '/../model/Nivel.php';
 
 class Quali_NivelDAO {
     private $db;
@@ -41,7 +42,11 @@ class Quali_NivelDAO {
         $cod_nivel = $qualiNivel->getCod_nivel();
         $stmt->bind_param("ii", $cod_quali, $cod_nivel);
         try {
-            return $stmt->execute();
+            $result = $stmt->execute();
+            if ($result) {
+                $qualiNivel->setCodigo($this->db->insert_id);
+            }
+            return $result;
         } catch (mysqli_sql_exception $e) {
             return false;
         }
@@ -89,6 +94,35 @@ class Quali_NivelDAO {
 
     public function getNiveis() {
         return $this->listaOpcoes("select codigo, nome as descricao from Nivel order by nome");
+    }
+
+    public function buscarCodigo($qualificacao, $nivel) {
+        $sql = "select codigo_Quali_Nivel from Quali_Nivel where cod_Quali = ? and cod_Nivel = ?";
+        $stmt = $this->db->prepare($sql);
+        $codQuali = $qualificacao->getCodigo();
+        $codNivel = $nivel->getCodigo();
+        $stmt->bind_param("ii", $codQuali, $codNivel);
+        $stmt->execute();
+        $rs = $stmt->get_result()->fetch_assoc();
+        return $rs != null ? $rs['codigo_Quali_Nivel'] : 0;
+    }
+
+    public function getQualificacao_Nivel($qualificacao) {
+        $sql = "select Nivel.codigo, Nivel.nome from Quali_Nivel
+                join Qualificacao on Quali_Nivel.cod_Quali = Qualificacao.cod_Quali
+                join Nivel on Nivel.codigo = Quali_Nivel.cod_Nivel
+                where Qualificacao.cod_Quali = ?";
+        $stmt = $this->db->prepare($sql);
+        $codQuali = $qualificacao->getCodigo();
+        $stmt->bind_param("i", $codQuali);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $niveis = [];
+        while ($rs = $result->fetch_assoc()) {
+            $niveis[] = new Nivel($rs['codigo'], $rs['nome']);
+        }
+        return $niveis;
     }
 }
 ?>

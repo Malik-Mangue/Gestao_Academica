@@ -1,8 +1,15 @@
 <?php
 require_once __DIR__ . '/../config/conexao.php';
+require_once __DIR__ . '/../config/sessao.php';
 require_once __DIR__ . '/../model/Turma.php';
+require_once __DIR__ . '/../model/Diretor_turma.php';
+require_once __DIR__ . '/../model/Formador.php';
+require_once __DIR__ . '/../model/Qualificacao.php';
+require_once __DIR__ . '/../model/Nivel.php';
+require_once __DIR__ . '/../model/Logs.php';
+require_once __DIR__ . '/LogDao.php';
 
-class TurmaDAO {
+class TurmaDao {
     private $db;
 
     public function __construct() {
@@ -10,91 +17,90 @@ class TurmaDAO {
         $this->db = $database->getConnection();
     }
 
-    public function getAll() {
-        $sql = "select codigo, nome, ano_lectivo, turno, id_Diretor_Turma, id_Quali_Nivel from Turma order by codigo";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $turmas = [];
-        while ($rs = $result->fetch_assoc()) {
-            $turmas[] = new Turma($rs['codigo'], $rs['nome'], $rs['ano_lectivo'], $rs['turno'], $rs['id_Diretor_Turma'], $rs['id_Quali_Nivel']);
-        }
-        return $turmas;
-    }
-
-    public function getById($codigo) {
-        $sql = "select codigo, nome, ano_lectivo, turno, id_Diretor_Turma, id_Quali_Nivel from Turma where codigo = ?";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bind_param("i", $codigo);
-        $stmt->execute();
-        $rs = $stmt->get_result()->fetch_assoc();
-        if ($rs === null) {
-            return null;
-        }
-        return new Turma($rs['codigo'], $rs['nome'], $rs['ano_lectivo'], $rs['turno'], $rs['id_Diretor_Turma'], $rs['id_Quali_Nivel']);
-    }
-
     public function create(Turma $turma) {
         $sql = "insert into Turma (nome, ano_lectivo, turno, id_Diretor_Turma, id_Quali_Nivel) values (?, ?, ?, ?, ?)";
         $stmt = $this->db->prepare($sql);
+
         $nome = $turma->getNome();
-        $ano_lectivo = $turma->getAno_lectivo();
+        $anoIngresso = $turma->getAnoIngresso();
         $turno = $turma->getTurno();
-        $id_diretor_turma = $turma->getId_diretor_turma();
-        $id_quali_nivel = $turma->getId_quali_nivel();
-        $stmt->bind_param("sisii", $nome, $ano_lectivo, $turno, $id_diretor_turma, $id_quali_nivel);
-        try {
-            return $stmt->execute();
-        } catch (mysqli_sql_exception $e) {
-            return false;
+        $codigoFormador = $turma->getDiretorTurma()->getFormador()->getCodigo();
+        $codigoQualiNivel = $turma->getQualiNivel()->getCodigo();
+
+        $stmt->bind_param("sissi", $nome, $anoIngresso, $turno, $codigoFormador, $codigoQualiNivel);
+        $result = $stmt->execute();
+
+        if ($result) {
+            $usuario = Sessao::obterUtilizador();
+            if ($usuario != null) {
+                $log = new Logs(null, "INSERT", "Turma " . $nome . " foi cadastrada", $usuario);
+                $log->setData(date('Y-m-d H:i:s'));
+                (new LogDao())->salvar($log);
+            }
         }
+
+        return $result;
     }
 
     public function update(Turma $turma) {
         $sql = "update Turma set nome = ?, ano_lectivo = ?, turno = ?, id_Diretor_Turma = ?, id_Quali_Nivel = ? where codigo = ?";
         $stmt = $this->db->prepare($sql);
+
         $nome = $turma->getNome();
-        $ano_lectivo = $turma->getAno_lectivo();
+        $anoIngresso = $turma->getAnoIngresso();
         $turno = $turma->getTurno();
-        $id_diretor_turma = $turma->getId_diretor_turma();
-        $id_quali_nivel = $turma->getId_quali_nivel();
+        $codigoFormador = $turma->getDiretorTurma()->getFormador()->getCodigo();
+        $codigoQualiNivel = $turma->getQualiNivel()->getCodigo();
         $codigo = $turma->getCodigo();
-        $stmt->bind_param("sisiii", $nome, $ano_lectivo, $turno, $id_diretor_turma, $id_quali_nivel, $codigo);
-        try {
-            return $stmt->execute();
-        } catch (mysqli_sql_exception $e) {
-            return false;
+
+        $stmt->bind_param("sissii", $nome, $anoIngresso, $turno, $codigoFormador, $codigoQualiNivel, $codigo);
+        return $stmt->execute();
+    }
+
+    public function getAll($nome) {
+        $sql = "select Turma.codigo, Turma.nome, ano_lectivo, turno, Formador.nome as diretor_turma, Qualificacao.titulo as titulo, Nivel.nome as nivel from Turma
+                join Diretor_Turma on cod_Formador = id_Diretor_Turma
+                join Formador on Formador.codigo = cod_Formador
+                join Quali_Nivel on id_Quali_Nivel = codigo_Quali_Nivel
+                join Nivel on cod_Nivel = Nivel.codigo
+                join Qualificacao on Qualificacao.cod_Quali = Quali_Nivel.cod_Quali
+                where Turma.nome like ?";
+        $stmt = $this->db->prepare($sql);
+        $busca = "%" . $nome . "%";
+        $stmt->bind_param("s", $busca);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $turmas = [];
+        while ($rs = $result->fetch_assoc()) {
+            $formador = new Formador(null, $rs['diretor_turma'], null, null, null, null, null, null, null, null);
+            $diretorTurma = new Diretor_turma(null, $formador);
+
+            $qualificacao = new Qualificacao(null, $rs['titulo'], null);
+            $nivel = new Nivel(null, $rs['nivel']);
+
+            $turma = new Turma($rs['codigo'], $rs['nome'], $rs['ano_lectivo'], $rs['turno'], $diretorTurma, $qualificacao, null);
+            $turma->setNivel($nivel);
+
+            $turmas[] = $turma;
         }
+        return $turmas;
     }
 
     public function delete($codigo) {
         $sql = "delete from Turma where codigo = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("i", $codigo);
-        try {
-            return $stmt->execute();
-        } catch (mysqli_sql_exception $e) {
-            return false;
-        }
+        return $stmt->execute();
     }
 
-    private function listaOpcoes($sql) {
+    public function existeTurmaComDiretor($codigoFormador) {
+        $sql = "select count(*) as total from Turma where id_Diretor_Turma = ?";
         $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $codigoFormador);
         $stmt->execute();
-        $result = $stmt->get_result();
-        $opcoes = [];
-        while ($rs = $result->fetch_assoc()) {
-            $opcoes[] = ['codigo' => $rs['codigo'], 'descricao' => $rs['descricao']];
-        }
-        return $opcoes;
-    }
-
-    public function getDiretores() {
-        return $this->listaOpcoes("select d.cod_Formador as codigo, concat(f.nome, ' ', f.apelido) as descricao from Diretor_Turma d inner join Formador f on f.codigo = d.cod_Formador order by f.nome");
-    }
-
-    public function getQualiNiveis() {
-        return $this->listaOpcoes("select qn.codigo_Quali_Nivel as codigo, concat(q.titulo, ' - ', n.nome) as descricao from Quali_Nivel qn inner join Qualificacao q on q.cod_Quali = qn.cod_Quali inner join Nivel n on n.codigo = qn.cod_Nivel order by q.titulo, n.nome");
+        $rs = $stmt->get_result()->fetch_assoc();
+        return $rs['total'] > 0;
     }
 }
 ?>

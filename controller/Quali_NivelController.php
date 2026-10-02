@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../Dao/Quali_NivelDao.php';
+require_once __DIR__ . '/../model/Quali_Nivel.php';
 
 class Quali_NivelController {
     private $dao;
@@ -36,6 +37,23 @@ class Quali_NivelController {
 
     public function delete($codigo) {
         return $this->dao->delete($codigo);
+    }
+
+    public function cadastrarQuali_Nivel($nivel, $qualificacao) {
+        if ($nivel != null && $qualificacao != null) {
+            $qualiNivel = new Quali_Nivel(null, $qualificacao->getCodigo(), $nivel->getCodigo());
+            $this->dao->create($qualiNivel);
+            return $qualiNivel;
+        }
+        return null;
+    }
+
+    public function getQualificacao_Nivel($qualificacao) {
+        return $this->dao->getQualificacao_Nivel($qualificacao);
+    }
+
+    public function buscarCodigo($qualificacao, $nivel) {
+        return $this->dao->buscarCodigo($qualificacao, $nivel);
     }
 }
 ?>

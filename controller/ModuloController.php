@@ -24,7 +24,8 @@ class ModuloController {
                 $codigoQualiNivel = $qualiNivelController->buscarCodigo($qualificacao, $nivel);
 
                 if ($codigoQualiNivel > 0) {
-                    $modulo->setQualiNivelCodigo($codigoQualiNivel);
+                    $qualiNivel = new Quali_Nivel($codigoQualiNivel, null, null);
+                    $modulo->setQualiNivel($qualiNivel);
                     $this->dao->create($modulo);
 
                     if ($modulo->getCodigo() > 0) {
@@ -56,7 +57,8 @@ class ModuloController {
                 $codigoQualiNivel = $qualiNivelController->buscarCodigo($qualificacao, $nivel);
 
                 if ($codigoQualiNivel > 0) {
-                    $modulo->setQualiNivelCodigo($codigoQualiNivel);
+                    $qualiNivel = new Quali_Nivel($codigoQualiNivel, null, null);
+                    $modulo->setQualiNivel($qualiNivel);
                     $this->dao->update($modulo);
 
                     $qualiModuloController = new Quali_moduloController();

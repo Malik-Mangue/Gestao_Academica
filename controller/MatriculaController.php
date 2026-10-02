@@ -6,7 +6,7 @@ class MatriculaController {
     private $dao;
 
     public function __construct() {
-        $this->dao = new ModuloDao();
+        $this->dao = new MatriculaDao();
     }
 
     public function cadastrarMatricula($formando, $qualificacao, $nivel, $data_matricula) {

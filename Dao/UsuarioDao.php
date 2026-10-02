@@ -1,8 +1,12 @@
 <?php
 require_once __DIR__ . '/../config/conexao.php';
+require_once __DIR__ . '/../config/sessao.php';
 require_once __DIR__ . '/../model/Usuario.php';
+require_once __DIR__ . '/../model/Perfil.php';
+require_once __DIR__ . '/../model/Logs.php';
+require_once __DIR__ . '/LogDao.php';
 
-class UsuarioDAO {
+class UsuarioDao {
     private $db;
 
     public function __construct() {
@@ -10,89 +14,211 @@ class UsuarioDAO {
         $this->db = $database->getConnection();
     }
 
-    public function getAll() {
-        $sql = "select idUser, idPerfil, nome, username, apelido, password, primeiroAcesso from Usuario order by idUser";
+    public function login($username, $password) {
+        $sql = "select * from Usuario
+                join Perfil on idPerfil = id
+                where username = ? and password = ?";
         $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("ss", $username, $password);
         $stmt->execute();
         $result = $stmt->get_result();
+
+        $usuario = null;
+        while ($rs = $result->fetch_assoc()) {
+            $perfil = new Perfil($rs['id'], $rs['nome']);
+            $usuario = new Usuario(
+                $rs['idUser'],
+                null,
+                $rs['username'],
+                $rs['password'],
+                $rs['apelido'],
+                $perfil,
+                (bool) $rs['primeiroAcesso']
+            );
+        }
+
+        if ($usuario != null) {
+            $log = new Logs(null, "LOGIN", "Utilizador " . $usuario->getUsername() . " iniciou sessão", $usuario);
+            $log->setData(date('Y-m-d H:i:s'));
+            (new LogDao())->salvar($log);
+        }
+
+        return $usuario;
+    }
+
+    public function create(Usuario $usuario) {
+        $sql = "insert into Usuario (nome, username, password, apelido, idPerfil, primeiroAcesso) values (?, ?, ?, ?, ?, 1)";
+        $stmt = $this->db->prepare($sql);
+
+        $nome = $usuario->getNome();
+        $username = $usuario->getUsername();
+        $password = $usuario->getPassword();
+        $apelido = $usuario->getApelido();
+        $idPerfil = $usuario->getPerfil()->getId();
+
+        $stmt->bind_param("ssssi", $nome, $username, $password, $apelido, $idPerfil);
+
+        try {
+            $result = $stmt->execute();
+        } catch (mysqli_sql_exception $e) {
+            throw new Exception("Esse nome de utilizador já existe. Escolha outro username.");
+        }
+
+        if ($result) {
+            $usuarioLogado = Sessao::obterUtilizador();
+            if ($usuarioLogado != null) {
+                $log = new Logs(null, "INSERT", $usuario->getPerfil()->getNome() . " " . $nome . " foi cadastrado", $usuarioLogado);
+                $log->setData(date('Y-m-d H:i:s'));
+                (new LogDao())->salvar($log);
+            }
+        }
+
+        return $result;
+    }
+
+    public function getAll($username) {
+        $sql = "select idUser, Usuario.nome, username, apelido, Perfil.nome as nome_perfil from Usuario
+                join Perfil on idPerfil = id
+                where username like ?";
+        $stmt = $this->db->prepare($sql);
+        $busca = "%" . $username . "%";
+        $stmt->bind_param("s", $busca);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
         $usuarios = [];
         while ($rs = $result->fetch_assoc()) {
-            $usuarios[] = new Usuario($rs['idUser'], $rs['idPerfil'], $rs['nome'], $rs['username'], $rs['apelido'], $rs['password'], $rs['primeiroAcesso']);
+            $perfil = new Perfil(null, $rs['nome_perfil']);
+            $usuario = new Usuario($rs['idUser'], $rs['nome'], $rs['username'], null, $rs['apelido'], $perfil);
+            $usuarios[] = $usuario;
         }
         return $usuarios;
     }
 
-    public function getById($codigo) {
-        $sql = "select idUser, idPerfil, nome, username, apelido, password, primeiroAcesso from Usuario where idUser = ?";
+    public function refinirSenha($novapassword, $codigo) {
+        $sql = "update Usuario set password = ?, primeiroAcesso = 0 where idUser = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("si", $novapassword, $codigo);
+        return $stmt->execute();
+    }
+
+    public function autenticar($password) {
+        $sql = "select idUser, password from Usuario where password = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("s", $password);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $usuario = null;
+        while ($rs = $result->fetch_assoc()) {
+            $usuario = new Usuario();
+            $usuario->setPassword($rs['password']);
+            $usuario->setCodigo($rs['idUser']);
+        }
+        return $usuario;
+    }
+
+    public function resetarSenha($senhaResetada, $codigo) {
+        $sql = "update Usuario set password = ?, primeiroAcesso = 1 where idUser = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("si", $senhaResetada, $codigo);
+        $result = $stmt->execute();
+
+        if ($result) {
+            $logUser = Sessao::obterUtilizador();
+            if ($logUser != null) {
+                $log = new Logs(null, "UPDATE", "Senha do utilizador (ID: " . $codigo . ") foi resetada", $logUser);
+                $log->setData(date('Y-m-d H:i:s'));
+                (new LogDao())->salvar($log);
+            }
+        }
+
+        return $result;
+    }
+
+    public function obterTodosUsuarios() {
+        $sql = "select idUser, nome_completo, username, email, Perfil.nome as nome_perfil from Usuario
+                join Perfil on idPerfil = id";
+        $result = mysqli_query($this->db, $sql);
+
+        $usuarios = [];
+        while ($rs = $result->fetch_assoc()) {
+            $perfil = new Perfil(null, $rs['nome_perfil']);
+            $usuario = new Usuario($rs['idUser'], $rs['nome_completo'] ?? null, $rs['username'], null, null, $perfil);
+            $usuarios[] = $usuario;
+        }
+        return $usuarios;
+    }
+
+    public function obterUsuarioPorCodigo($codigo) {
+        $sql = "select * from Usuario where codigo = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("i", $codigo);
         $stmt->execute();
-        $rs = $stmt->get_result()->fetch_assoc();
-        if ($rs === null) {
-            return null;
-        }
-        return new Usuario($rs['idUser'], $rs['idPerfil'], $rs['nome'], $rs['username'], $rs['apelido'], $rs['password'], $rs['primeiroAcesso']);
-    }
+        $result = $stmt->get_result();
 
-    public function create(Usuario $usuario) {
-        $sql = "insert into Usuario (idPerfil, nome, username, apelido, password, primeiroAcesso) values (?, ?, ?, ?, ?, ?)";
-        $stmt = $this->db->prepare($sql);
-        $idPerfil = $usuario->getIdPerfil();
-        $nome = $usuario->getNome();
-        $username = $usuario->getUsername();
-        $apelido = $usuario->getApelido();
-        $password = $usuario->getPassword();
-        $primeiroAcesso = $usuario->getPrimeiroAcesso();
-        $stmt->bind_param("issssi", $idPerfil, $nome, $username, $apelido, $password, $primeiroAcesso);
-        try {
-            return $stmt->execute();
-        } catch (mysqli_sql_exception $e) {
-            return false;
+        $usuario = null;
+        while ($rs = $result->fetch_assoc()) {
+            $usuario = new Usuario();
+            $usuario->setCodigo($rs['codigo']);
+            $usuario->setUsername($rs['username']);
+            $usuario->setPassword($rs['password']);
         }
+        return $usuario;
     }
 
     public function update(Usuario $usuario) {
-        $sql = "update Usuario set idPerfil = ?, nome = ?, username = ?, apelido = ?, password = ?, primeiroAcesso = ? where idUser = ?";
-        $stmt = $this->db->prepare($sql);
-        $idPerfil = $usuario->getIdPerfil();
-        $nome = $usuario->getNome();
-        $username = $usuario->getUsername();
-        $apelido = $usuario->getApelido();
-        $password = $usuario->getPassword();
-        $primeiroAcesso = $usuario->getPrimeiroAcesso();
-        $codigo = $usuario->getCodigo();
-        $stmt->bind_param("issssii", $idPerfil, $nome, $username, $apelido, $password, $primeiroAcesso, $codigo);
-        try {
-            return $stmt->execute();
-        } catch (mysqli_sql_exception $e) {
-            return false;
+        $sql = "update Usuario set idPerfil = ? where idUser = ?";
+
+        $usernameAtual = "";
+        $existente = $this->obterUsuarioPorCodigo($usuario->getCodigo());
+        if ($existente != null) {
+            $usernameAtual = $existente->getUsername();
         }
+
+        $stmt = $this->db->prepare($sql);
+        $idPerfil = $usuario->getPerfil()->getId();
+        $codigo = $usuario->getCodigo();
+        $stmt->bind_param("ii", $idPerfil, $codigo);
+        $result = $stmt->execute();
+
+        if ($result) {
+            $logUser = Sessao::obterUtilizador();
+            if ($logUser != null) {
+                $log = new Logs(null, "UPDATE", "Utilizador " . $usernameAtual . " (ID: " . $codigo . ") teve o perfil atualizado para " . $usuario->getPerfil()->getNome(), $logUser);
+                $log->setData(date('Y-m-d H:i:s'));
+                (new LogDao())->salvar($log);
+            }
+        }
+
+        return $result;
     }
 
-    public function delete($codigo) {
+    public function delete(Usuario $usuario) {
         $sql = "delete from Usuario where idUser = ?";
         $stmt = $this->db->prepare($sql);
+        $codigo = $usuario->getCodigo();
         $stmt->bind_param("i", $codigo);
-        try {
-            return $stmt->execute();
-        } catch (mysqli_sql_exception $e) {
-            return false;
+        $result = $stmt->execute();
+
+        if ($result) {
+            $logUser = Sessao::obterUtilizador();
+            if ($logUser != null) {
+                $log = new Logs(null, "DELETE", "Utilizador (ID: " . $codigo . ") foi removido", $logUser);
+                $log->setData(date('Y-m-d H:i:s'));
+                (new LogDao())->salvar($log);
+            }
         }
+
+        return $result;
     }
 
-    private function listaOpcoes($sql) {
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $opcoes = [];
-        while ($rs = $result->fetch_assoc()) {
-            $opcoes[] = ['codigo' => $rs['codigo'], 'descricao' => $rs['descricao']];
+    public function registarLogout(Usuario $usuario) {
+        if ($usuario != null) {
+            $log = new Logs(null, "LOGOUT", "Utilizador " . $usuario->getUsername() . " terminou sessão", $usuario);
+            $log->setData(date('Y-m-d H:i:s'));
+            (new LogDao())->salvar($log);
         }
-        return $opcoes;
-    }
-
-    public function getPerfis() {
-        return $this->listaOpcoes("select id as codigo, nome as descricao from Perfil order by id");
     }
 }
 ?>

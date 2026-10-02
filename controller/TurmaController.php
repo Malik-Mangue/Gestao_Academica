@@ -1,5 +1,9 @@
 <?php
 require_once __DIR__ . '/../Dao/TurmaDao.php';
+require_once __DIR__ . '/../model/Turma.php';
+require_once __DIR__ . '/Quali_NivelController.php';
+require_once __DIR__ . '/Diretor_TurmaController.php';
+require_once __DIR__ . '/LicaoController.php';
 
 class TurmaController {
     private $dao;
@@ -8,36 +12,63 @@ class TurmaController {
         $this->dao = new TurmaDao();
     }
 
-    public function listar() {
-        return $this->dao->getAll();
+    public function cadastrarTurma($nome, $ano_ingresso, $turno, $diretorTurma, $qualificacao, $nivel) {
+        if ($nome != null && strlen($nome) > 0 && $ano_ingresso > 0 && $turno != null && strlen($turno) > 0 && $diretorTurma != null) {
+
+            if ($qualificacao != null && $nivel != null) {
+                $qualiNivelController = new Quali_NivelController();
+                $codigo = $qualiNivelController->buscarCodigo($qualificacao, $nivel);
+
+                if ($codigo > 0) {
+                    $qualiNivel = new Quali_Nivel($codigo, null, null);
+
+                    $turma = new Turma(null, $nome, $ano_ingresso, $turno, $diretorTurma, $qualificacao, $qualiNivel);
+                    $this->dao->create($turma);
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
-    public function listarDiretores() {
-        return $this->dao->getDiretores();
+    public function listarTurma($nome) {
+        return $this->dao->getAll($nome);
     }
 
-    public function listarQualiNiveis() {
-        return $this->dao->getQualiNiveis();
+    public function atualizarTurma($codigo, $nome, $ano_ingresso, $turno, $diretorTurma, $qualificacao, $nivel) {
+        if ($nome != null && strlen($nome) > 0 && $codigo != 0 && $ano_ingresso > 0 && $turno != null && strlen($turno) > 0) {
+
+            if ($qualificacao != null && $nivel != null) {
+                $qualiNivelController = new Quali_NivelController();
+                $codigoQualiNivel = $qualiNivelController->buscarCodigo($qualificacao, $nivel);
+
+                if ($codigoQualiNivel > 0) {
+                    $qualiNivel = new Quali_Nivel($codigoQualiNivel, null, null);
+
+                    $turma = new Turma($codigo, $nome, $ano_ingresso, $turno, $diretorTurma, $qualificacao, $qualiNivel);
+                    $this->dao->update($turma);
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
-    public function buscar($codigo) {
-        return $this->dao->getById($codigo);
+    public function apagarTurma($codigo) {
+        if ($codigo != 0) {
+            $licaoController = new LicaoController();
+            if ($licaoController->existeLicaoPorTurma($codigo)) {
+                throw new Exception("Não é possível eliminar esta turma pois está sendo usada em uma ou mais lições.");
+            }
+
+            $this->dao->delete($codigo);
+            return true;
+        }
+        return false;
     }
 
-    public function store() {
-        $id_quali_nivel = !empty($_POST['id_quali_nivel']) ? (int) $_POST['id_quali_nivel'] : null;
-        $turma = new Turma(null, trim($_POST['nome']), (int) $_POST['ano_lectivo'], trim($_POST['turno']), (int) $_POST['id_diretor_turma'], $id_quali_nivel);
-        return $this->dao->create($turma);
-    }
-
-    public function update($codigo) {
-        $id_quali_nivel = !empty($_POST['id_quali_nivel']) ? (int) $_POST['id_quali_nivel'] : null;
-        $turma = new Turma($codigo, trim($_POST['nome']), (int) $_POST['ano_lectivo'], trim($_POST['turno']), (int) $_POST['id_diretor_turma'], $id_quali_nivel);
-        return $this->dao->update($turma);
-    }
-
-    public function delete($codigo) {
-        return $this->dao->delete($codigo);
+    public function existeTurmaComDiretor($codigoFormador) {
+        return $this->dao->existeTurmaComDiretor($codigoFormador);
     }
 }
 ?>

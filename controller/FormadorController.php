@@ -5,6 +5,7 @@ require_once __DIR__ . '/Diretor_turmaController.php';
 require_once __DIR__ . '/CoordenadorController.php';
 require_once __DIR__ . '/LicaoController.php';
 require_once __DIR__ . '/TurmaController.php';
+require_once __DIR__ . '/../services/Validador.php';
 
 class FormadorController {
     private $dao;
@@ -14,10 +15,11 @@ class FormadorController {
     }
 
     public function cadastrarFormador($nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valor_horas, $horas_mes, $salario, $isDiretor, $isCoordenador) {
-        if ($nome != null && strlen($nome) > 0 && preg_match('/^[a-zA-Z]+$/', $nome)
-            && $apelido != null && preg_match('/^[a-zA-Z]+$/', $apelido) && strlen($apelido) > 0
-            && $email != null && strlen($email) > 0
-            && $contacto > 0 && $valor_horas > 0 && $horas_mes > 0) {
+        if (Validador::texto($nome, 40) && Validador::texto($apelido, 40)
+            && Validador::emailObrigatorio($email)
+            && Validador::inteiroPositivo($contacto)
+            && Validador::inteiroPositivo($valor_horas)
+            && Validador::inteiroPositivo($horas_mes)) {
 
             $formador = new Formador(null, $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valor_horas, $horas_mes, $salario);
             $this->dao->create($formador);
@@ -40,10 +42,11 @@ class FormadorController {
     }
 
     public function atualizarFormador($codigo, $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valor_horas, $horas_mes, $salario, $isDiretor, $isCoordenador) {
-        if ($codigo > 0 && $nome != null && strlen($nome) > 0 && preg_match('/^[a-zA-Z]+$/', $nome)
-            && $apelido != null && preg_match('/^[a-zA-Z]+$/', $apelido) && strlen($apelido) > 0
-            && $email != null && strlen($email) > 0
-            && $contacto > 0 && $valor_horas > 0 && $horas_mes > 0) {
+        if ($codigo > 0 && Validador::texto($nome, 40) && Validador::texto($apelido, 40)
+            && Validador::emailObrigatorio($email)
+            && Validador::inteiroPositivo($contacto)
+            && Validador::inteiroPositivo($valor_horas)
+            && Validador::inteiroPositivo($horas_mes)) {
 
             $formador = new Formador($codigo, $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valor_horas, $horas_mes, $salario);
             $this->dao->update($formador);

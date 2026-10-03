@@ -6,6 +6,7 @@ require_once __DIR__ . '/../model/Diretor_turma.php';
 require_once __DIR__ . '/../model/Formador.php';
 require_once __DIR__ . '/../model/Qualificacao.php';
 require_once __DIR__ . '/../model/Nivel.php';
+require_once __DIR__ . '/../model/Quali_Nivel.php';
 require_once __DIR__ . '/../model/Logs.php';
 require_once __DIR__ . '/LogDao.php';
 
@@ -79,11 +80,94 @@ class TurmaDao {
             $qualificacao = new Qualificacao(null, $rs['titulo'], null);
             $nivel = new Nivel(null, $rs['nivel']);
 
-            $turma = new Turma($rs['codigo'], $rs['nome'], $rs['ano_lectivo'], $rs['turno'], $diretorTurma, $qualificacao);
+            // O nivel vive em Quali_Nivel: e preciso ligar os tres para a
+            // listagem conseguir mostrar a qualificacao e o nivel.
+            $qualiNivel = new Quali_Nivel(null, null, null);
+            $qualiNivel->setQualificacao($qualificacao);
+            $qualiNivel->setNivel($nivel);
+
+            $turma = new Turma($rs['codigo'], $rs['nome'], $rs['ano_lectivo'], $rs['turno'], $diretorTurma, $qualificacao, $qualiNivel);
 
             $turmas[] = $turma;
         }
         return $turmas;
+    }
+
+    // Listas de opcoes para os <select> do formulario de turma.
+    public function listarOpcoes($sql) {
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $opcoes = [];
+        while ($rs = $result->fetch_assoc()) {
+            $opcoes[] = ['codigo' => $rs['codigo'], 'descricao' => $rs['descricao']];
+        }
+        return $opcoes;
+    }
+
+    // Diretores de turma disponíveis (formadores registados como Diretor_Turma).
+    public function getDiretores() {
+        return $this->listarOpcoes(
+            "select f.codigo as codigo, concat(f.nome, ' ', f.apelido) as descricao
+             from Diretor_Turma dt
+             join Formador f on f.codigo = dt.cod_Formador
+             order by f.nome"
+        );
+    }
+
+    public function getQualificacoes() {
+        return $this->listarOpcoes("select cod_Quali as codigo, titulo as descricao from Qualificacao order by titulo");
+    }
+
+    public function getNiveis() {
+        return $this->listarOpcoes("select codigo, nome as descricao from Nivel order by nome");
+    }
+
+    // Pares (Qualificacao, Nivel) ja definidos em Quali_Nivel.
+    public function getParesQualiNivel() {
+        return $this->listarOpcoes(
+            "select qn.codigo_Quali_Nivel as codigo,
+                    concat(q.titulo, ' — ', n.nome) as descricao
+             from Quali_Nivel qn
+             join Qualificacao q on q.cod_Quali = qn.cod_Quali
+             join Nivel n on n.codigo = qn.cod_Nivel
+             order by q.titulo, n.nome"
+        );
+    }
+
+    public function getById($codigo) {
+        $sql = "select Turma.codigo, Turma.nome, ano_lectivo, turno,
+                       Turma.id_Diretor_Turma, Turma.id_Quali_Nivel,
+                       Formador.nome as diretor_turma, Qualificacao.titulo as titulo, Nivel.nome as nivel
+                from Turma
+                join Diretor_Turma on cod_Formador = id_Diretor_Turma
+                join Formador on Formador.codigo = cod_Formador
+                join Quali_Nivel on id_Quali_Nivel = codigo_Quali_Nivel
+                join Nivel on cod_Nivel = Nivel.codigo
+                join Qualificacao on Qualificacao.cod_Quali = Quali_Nivel.cod_Quali
+                where Turma.codigo = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $codigo);
+        $stmt->execute();
+        $rs = $stmt->get_result()->fetch_assoc();
+
+        if ($rs === null) {
+            return null;
+        }
+
+        $formador = new Formador($rs['id_Diretor_Turma'], $rs['diretor_turma'], null, null, null, null, null, null, null, null);
+        $turma = new Turma(
+            $rs['codigo'],
+            $rs['nome'],
+            $rs['ano_lectivo'],
+            $rs['turno'],
+            new Diretor_turma($formador),
+            new Qualificacao(null, $rs['titulo'], null),
+            new Quali_Nivel($rs['id_Quali_Nivel'], null, null)
+        );
+
+        return $turma;
     }
 
     public function delete($codigo) {

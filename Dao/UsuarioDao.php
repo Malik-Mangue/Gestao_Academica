@@ -1,7 +1,4 @@
 <?php
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
 require_once __DIR__ . '/../config/conexao.php';
 require_once __DIR__ . '/../services/Sessao.php';
 require_once __DIR__ . '/../model/Usuario.php';
@@ -17,36 +14,32 @@ class UsuarioDao {
         $this->db = $database->getConnection();
     }
 
-    public function login($username, $password) {
-        $sql = "select * from Usuario
-                join Perfil on idPerfil = id
-                where username = ? and password = ?";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bind_param("ss", $username, $password);
-        $stmt->execute();
-        $result = $stmt->get_result();
-
-        $usuario = null;
-        while ($rs = $result->fetch_assoc()) {
-            $perfil = new Perfil($rs['id'], $rs['nome']);
-            $usuario = new Usuario(
-                $rs['idUser'],
-                null,
-                $rs['username'],
-                $rs['password'],
-                $rs['apelido'],
-                $perfil,
-                (bool) $rs['primeiroAcesso']
-            );
-        }
-
-        if ($usuario != null) {
-            $log = new Logs(null, "LOGIN", "Utilizador " . $usuario->getUsername() . " iniciou sessão", $usuario);
-            $log->setData(date('Y-m-d H:i:s'));
-            (new LogDao())->salvar($log);
-        }
+    // Ordem canonica do construtor Usuario:
+    // (codigo, idPerfil, nome, username, apelido, password, primeiroAcesso)
+    private function montarUsuario($rs) {
+        $usuario = new Usuario(
+            $rs['idUser'],
+            $rs['idPerfil'],
+            $rs['nome'],
+            $rs['username'],
+            $rs['apelido'],
+            $rs['password'],
+            (int) $rs['primeiroAcesso'] === 1
+        );
+        $usuario->setPerfil(new Perfil($rs['idPerfil'], $rs['nome_perfil'] ?? null));
 
         return $usuario;
+    }
+
+    // Regista uma acao de auditoria em nome do utilizador autenticado.
+    public function registarLog($acao, $descricao) {
+        $usuarioLogado = Sessao::obterUtilizador();
+        if ($usuarioLogado === null) {
+            return;
+        }
+        $log = new Logs(null, $acao, $descricao, $usuarioLogado);
+        $log->setData(date('Y-m-d H:i:s'));
+        (new LogDao())->salvar($log);
     }
 
     public function create(Usuario $usuario) {
@@ -68,44 +61,43 @@ class UsuarioDao {
         }
 
         if ($result) {
-            $usuarioLogado = Sessao::obterUtilizador();
-            if ($usuarioLogado != null) {
-                $log = new Logs(null, "INSERT", $usuario->getPerfil()->getNome() . " " . $nome . " foi cadastrado", $usuarioLogado);
-                $log->setData(date('Y-m-d H:i:s'));
-                (new LogDao())->salvar($log);
-            }
+            $this->registarLog("INSERT", $apelido . " " . $nome . " foi cadastrado");
         }
 
         return $result;
     }
 
     public function getAll($username = null) {
-        if ($username != null && strlen($username) > 0) {
-            $sql = "select idUser, Usuario.nome, username, apelido, Perfil.nome as nome_perfil from Usuario
-                    join Perfil on idPerfil = id
-                    where username like ?";
+        $sql = "select Usuario.idUser, Usuario.idPerfil, Usuario.nome, Usuario.username,
+                       Usuario.apelido, Usuario.primeiroAcesso, Perfil.nome as nome_perfil
+                from Usuario
+                join Perfil on Usuario.idPerfil = Perfil.id";
+
+        if ($username !== null && strlen($username) > 0) {
+            $sql .= " where Usuario.username like ? order by Usuario.nome";
             $stmt = $this->db->prepare($sql);
             $busca = "%" . $username . "%";
             $stmt->bind_param("s", $busca);
-            $stmt->execute();
-            $result = $stmt->get_result();
         } else {
-            $sql = "select idUser, Usuario.nome, username, apelido, Perfil.nome as nome_perfil from Usuario
-                    join Perfil on idPerfil = id";
-            $result = mysqli_query($this->db, $sql);
+            $sql .= " order by Usuario.nome";
+            $stmt = $this->db->prepare($sql);
         }
+
+        $stmt->execute();
+        $result = $stmt->get_result();
 
         $usuarios = [];
         while ($rs = $result->fetch_assoc()) {
-            $perfil = new Perfil(null, $rs['nome_perfil']);
-            $usuarios[] = new Usuario($rs['idUser'], $rs['nome'], $rs['username'], null, $rs['apelido'], $perfil);
+            $usuarios[] = $this->montarUsuario($rs);
         }
         return $usuarios;
     }
 
     public function getPerfis() {
         $sql = "select id, nome from Perfil order by nome";
-        $result = mysqli_query($this->db, $sql);
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        $result = $stmt->get_result();
 
         $perfis = [];
         while ($rs = $result->fetch_assoc()) {
@@ -118,53 +110,17 @@ class UsuarioDao {
         return $this->obterUsuarioPorCodigo($codigo);
     }
 
-    public function refinirSenha($novapassword, $codigo) {
-        $sql = "update Usuario set password = ?, primeiroAcesso = 0 where idUser = ?";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bind_param("si", $novapassword, $codigo);
-        return $stmt->execute();
-    }
-
-    public function autenticar($password) {
-        $sql = "select idUser, password from Usuario where password = ?";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bind_param("s", $password);
-        $stmt->execute();
-        $result = $stmt->get_result();
-
-        $usuario = null;
-        while ($rs = $result->fetch_assoc()) {
-            $usuario = new Usuario();
-            $usuario->setPassword($rs['password']);
-            $usuario->setCodigo($rs['idUser']);
-        }
-        return $usuario;
-    }
-
-    public function resetarSenha($senhaResetada, $codigo) {
-        $sql = "update Usuario set password = ?, primeiroAcesso = 1 where idUser = ?";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bind_param("si", $senhaResetada, $codigo);
-        $result = $stmt->execute();
-
-        if ($result) {
-            $logUser = Sessao::obterUtilizador();
-            if ($logUser != null) {
-                $log = new Logs(null, "UPDATE", "Senha do utilizador (ID: " . $codigo . ") foi resetada", $logUser);
-                $log->setData(date('Y-m-d H:i:s'));
-                (new LogDao())->salvar($log);
-            }
-        }
-
-        return $result;
-    }
-
     public function obterTodosUsuarios() {
         return $this->getAll();
     }
 
     public function obterUsuarioPorCodigo($codigo) {
-        $sql = "select idUser, idPerfil, nome, username, apelido, password, primeiroAcesso from Usuario where idUser = ?";
+        $sql = "select Usuario.idUser, Usuario.idPerfil, Usuario.nome, Usuario.username,
+                       Usuario.apelido, Usuario.password, Usuario.primeiroAcesso,
+                       Perfil.nome as nome_perfil
+                from Usuario
+                join Perfil on Usuario.idPerfil = Perfil.id
+                where Usuario.idUser = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("i", $codigo);
         $stmt->execute();
@@ -174,20 +130,16 @@ class UsuarioDao {
             return null;
         }
 
-        $perfil = new Perfil($rs['idPerfil'], null);
-        return new Usuario(
-            $rs['idUser'],
-            $rs['nome'],
-            $rs['username'],
-            $rs['password'],
-            $rs['apelido'],
-            $perfil,
-            (bool) $rs['primeiroAcesso']
-        );
+        return $this->montarUsuario($rs);
     }
 
     public function getByUsername($username) {
-        $sql = "select idUser, idPerfil, nome, username, apelido, password, primeiroAcesso from Usuario where username = ?";
+        $sql = "select Usuario.idUser, Usuario.idPerfil, Usuario.nome, Usuario.username,
+                       Usuario.apelido, Usuario.password, Usuario.primeiroAcesso,
+                       Perfil.nome as nome_perfil
+                from Usuario
+                join Perfil on Usuario.idPerfil = Perfil.id
+                where Usuario.username = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("s", $username);
         $stmt->execute();
@@ -223,49 +175,66 @@ class UsuarioDao {
     }
 
     public function update(Usuario $usuario) {
-        $sql = "update Usuario set idPerfil = ? where idUser = ?";
+        $sql = "update Usuario set nome = ?, username = ?, apelido = ?, idPerfil = ?,
+                       password = ?, primeiroAcesso = ?
+                where idUser = ?";
 
-        $usernameAtual = "";
         $existente = $this->obterUsuarioPorCodigo($usuario->getCodigo());
-        if ($existente != null) {
-            $usernameAtual = $existente->getUsername();
+        if ($existente === null) {
+            return false;
         }
 
+        // A password so e reescrita quando chega preenchida (ja com hash).
+        $password = ($usuario->getPassword() !== null && $usuario->getPassword() !== '')
+            ? $usuario->getPassword()
+            : $existente->getPassword();
+
         $stmt = $this->db->prepare($sql);
-        $idPerfil = $usuario->getPerfil()->getId();
+        $nome = $usuario->getNome();
+        $username = $usuario->getUsername();
+        $apelido = $usuario->getApelido();
+        $idPerfil = $usuario->getIdPerfil();
+        $primeiroAcesso = (int) $usuario->getPrimeiroAcesso();
         $codigo = $usuario->getCodigo();
-        $stmt->bind_param("ii", $idPerfil, $codigo);
-        $result = $stmt->execute();
+
+        $stmt->bind_param("sssssii", $nome, $username, $apelido, $idPerfil, $password, $primeiroAcesso, $codigo);
+
+        try {
+            $result = $stmt->execute();
+        } catch (mysqli_sql_exception $e) {
+            throw new Exception("Esse nome de utilizador já existe. Escolha outro username.");
+        }
 
         if ($result) {
-            $logUser = Sessao::obterUtilizador();
-            if ($logUser != null) {
-                $log = new Logs(null, "UPDATE", "Utilizador " . $usernameAtual . " (ID: " . $codigo . ") teve o perfil atualizado para " . $usuario->getPerfil()->getNome(), $logUser);
-                $log->setData(date('Y-m-d H:i:s'));
-                (new LogDao())->salvar($log);
-            }
+            $this->registarLog("UPDATE", "Utilizador " . $username . " (ID: " . $codigo . ") foi atualizado");
         }
 
         return $result;
     }
 
-    public function delete(Usuario $usuario) {
+    public function delete($codigo) {
         $sql = "delete from Usuario where idUser = ?";
         $stmt = $this->db->prepare($sql);
-        $codigo = $usuario->getCodigo();
         $stmt->bind_param("i", $codigo);
-        $result = $stmt->execute();
+
+        try {
+            $result = $stmt->execute();
+        } catch (mysqli_sql_exception $e) {
+            return false;
+        }
 
         if ($result) {
-            $logUser = Sessao::obterUtilizador();
-            if ($logUser != null) {
-                $log = new Logs(null, "DELETE", "Utilizador (ID: " . $codigo . ") foi removido", $logUser);
-                $log->setData(date('Y-m-d H:i:s'));
-                (new LogDao())->salvar($log);
-            }
+            $this->registarLog("DELETE", "Utilizador (ID: " . $codigo . ") foi removido");
         }
 
         return $result;
+    }
+
+    // Regista o login apos autenticacao bem sucedida.
+    public function registarLogin(Usuario $usuario) {
+        $log = new Logs(null, "LOGIN", "Utilizador " . $usuario->getUsername() . " iniciou sessão", $usuario);
+        $log->setData(date('Y-m-d H:i:s'));
+        (new LogDao())->salvar($log);
     }
 
     public function registarLogout(Usuario $usuario) {

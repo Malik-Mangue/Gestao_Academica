@@ -25,23 +25,28 @@ class LogDao {
         return $stmt->execute();
     }
 
+    private function montarLogs($rs) {
+        $usuario = new Usuario(null, null, null, $rs['username'], null, null, 0);
+        $usuario->setPerfil(new Perfil(null, $rs['nome']));
+
+        $log = new Logs(null, $rs['acao'], $rs['descricao'], $usuario);
+        $log->setData($rs['data']);
+
+        return $log;
+    }
+
     public function listarLogs() {
         $sql = "select Usuario.username, Perfil.nome, acao, descricao, data from Log
                 join Usuario on id_Usuario = idUser
                 join Perfil on idPerfil = id
                 order by data desc";
-        $result = mysqli_query($this->db, $sql);
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        $result = $stmt->get_result();
 
         $logs = [];
         while ($rs = $result->fetch_assoc()) {
-            $usuario = new Usuario(null, $rs['username'], null);
-            $perfil = new Perfil(null, $rs['nome']);
-            $usuario->setPerfil($perfil);
-
-            $log = new Logs(null, $rs['acao'], $rs['descricao'], $usuario);
-            $log->setData($rs['data']);
-
-            $logs[] = $log;
+            $logs[] = $this->montarLogs($rs);
         }
         return $logs;
     }
@@ -64,14 +69,7 @@ class LogDao {
 
         $logs = [];
         while ($rs = $result->fetch_assoc()) {
-            $usuario = new Usuario(null, $rs['username'], null);
-            $perfil = new Perfil(null, $rs['nome']);
-            $usuario->setPerfil($perfil);
-
-            $log = new Logs(null, $rs['acao'], $rs['descricao'], $usuario);
-            $log->setData($rs['data']);
-
-            $logs[] = $log;
+            $logs[] = $this->montarLogs($rs);
         }
         return $logs;
     }

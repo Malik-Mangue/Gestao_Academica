@@ -10,6 +10,8 @@ $tipos_sala = ['Teórica', 'Laboratório', 'Oficina', 'Manutenção'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['gravar'])) {
+        Sessao::exigirAcao(Sessao::ACAO_CRIAR, 'index.php');
+
         $designacao = trim($_POST['designacao'] ?? '');
         $tipo_sala = trim($_POST['tipo_sala'] ?? '');
         if (empty($designacao) || empty($tipo_sala)) {
@@ -38,6 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (isset($_POST['editar'])) {
+        Sessao::exigirAcao(Sessao::ACAO_EDITAR, 'index.php');
+
         $codigo = filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT);
         $designacao = trim($_POST['designacao'] ?? '');
         $tipo_sala = trim($_POST['tipo_sala'] ?? '');
@@ -67,6 +71,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (isset($_POST['deletar'])) {
+        Sessao::exigirAcao(Sessao::ACAO_REMOVER, 'index.php');
+
         $codigo = filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT);
         if (!$codigo) {
             $_SESSION['flash'] = [
@@ -92,6 +98,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $salas = $controller->listar();
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
+
+$pode_criar   = Sessao::pode(Sessao::ACAO_CRIAR);
+$pode_editar  = Sessao::pode(Sessao::ACAO_EDITAR);
+$pode_remover = Sessao::pode(Sessao::ACAO_REMOVER);
 
 $page_title = 'Gestão de Salas';
 $active_menu = 'sala';
@@ -146,12 +156,13 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     <td><?= htmlspecialchars($sala->getTipo_sala()) ?></td>
                                     <td class="col-opcoes">
                                         <div class="table-actions table-actions-end">
-                                            <a href="#modal-editar-<?= $sala->getCodigo() ?>" class="btn btn-sm btn-edit">Editar</a>
-                                            <a href="#modal-deletar-<?= $sala->getCodigo() ?>" class="btn btn-sm btn-delete">Remover</a>
+                                            <?php if ($pode_editar): ?><a href="#modal-editar-<?= $sala->getCodigo() ?>" class="btn btn-sm btn-edit">Editar</a><?php endif; ?>
+                                            <?php if ($pode_remover): ?><a href="#modal-deletar-<?= $sala->getCodigo() ?>" class="btn btn-sm btn-delete">Remover</a><?php endif; ?>
                                         </div>
                                     </td>
                                 </tr>
 
+                                <?php if ($pode_editar): ?>
                                 <div id="modal-editar-<?= $sala->getCodigo() ?>" class="modal-overlay">
                                     <div class="modal-box">
                                         <div class="modal-header">
@@ -160,6 +171,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                 <img src="../../assets/icons/close.svg" alt="Fechar">
                                             </a>
                                         </div>
+                                <?php endif; ?>
                                         <form method="post" action="index.php">
                                             <div class="modal-body">
                                                 <input type="hidden" name="codigo" value="<?= htmlspecialchars($sala->getCodigo()) ?>">
@@ -187,6 +199,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     </div>
                                 </div>
 
+                                <?php if ($pode_remover): ?>
                                 <div id="modal-deletar-<?= $sala->getCodigo() ?>" class="modal-overlay">
                                     <div class="modal-box">
                                         <div class="modal-header modal-header-danger">
@@ -195,6 +208,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                 <img src="../../assets/icons/close.svg" alt="Fechar">
                                             </a>
                                         </div>
+                                <?php endif; ?>
                                         <form method="post" action="index.php">
                                             <div class="modal-body">
                                                 <input type="hidden" name="codigo" value="<?= htmlspecialchars($sala->getCodigo()) ?>">

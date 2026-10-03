@@ -1,7 +1,5 @@
 <?php
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
+require_once __DIR__ . '/../config/conexao.php';
 require_once __DIR__ . '/../Dao/PerfilDao.php';
 require_once __DIR__ . '/../model/Usuario.php';
 
@@ -17,6 +15,12 @@ final class Sessao
     const SUPER    = 'SuperOperador';
     const OPERADOR = 'Operador';
     const AUDITOR  = 'Auditor';
+
+    // Acoes usadas pela politica de permissoes (ESPECIFICACAO_AUTENTICACAO)
+    const ACAO_CRIAR   = 'C';
+    const ACAO_LEITURA = 'R';
+    const ACAO_EDITAR  = 'U';
+    const ACAO_REMOVER = 'D';
 
     // Tempo de vida da sessao: 2 horas (7200 segundos)
     private static $duracao = 7200;
@@ -53,12 +57,28 @@ final class Sessao
             'perfil'   => $_SESSION['perfil'] ?? '',
         ];
     }
-        public static function obterUtilizador()
+
+    // Reconstroi um objeto Usuario a partir da sessao. Usado pela camada de
+    // auditoria (Log), que precisa do codigo do utilizador e nao de um array.
+    public static function obterUtilizador()
     {
         if (!Sessao::esta_logado()) {
             return null;
         }
-        return new Usuario($_SESSION['user_id'], $_SESSION['username'] ?? '', null);
+        $perfil = new Perfil($_SESSION['idPerfil'] ?? null, $_SESSION['perfil'] ?? null);
+
+        $usuario = new Usuario(
+            $_SESSION['user_id'],
+            $_SESSION['idPerfil'] ?? null,
+            $_SESSION['nome'] ?? '',
+            $_SESSION['username'] ?? '',
+            $_SESSION['apelido'] ?? '',
+            null,
+            empty($_SESSION['primeiro_acesso']) ? 0 : 1
+        );
+        $usuario->setPerfil($perfil);
+
+        return $usuario;
     }
 
     public static function login(Usuario $usuario)
@@ -69,6 +89,7 @@ final class Sessao
         $_SESSION['user_id']  = $usuario->getCodigo();
         $_SESSION['username'] = $usuario->getUsername();
         $_SESSION['nome']     = $usuario->getNome();
+        $_SESSION['apelido']  = $usuario->getApelido();
         $_SESSION['idPerfil'] = $usuario->getIdPerfil();
         $_SESSION['perfil']   = Sessao::nomePerfil($usuario->getIdPerfil());
         // Primeiro acesso: flag interno do sistema, nunca escolha do utilizador
@@ -107,6 +128,24 @@ final class Sessao
         }
     }
 
+    // Matriz de permissoes por perfil (ver tabela da especificacao).
+    // 'Criar + Reset senha', 'CRUD', 'CR' e 'R' sao as operacoes permitidas
+    // sobre os recursos academicos; 'Utilizadores' e 'Log' sao exclusivos.
+    private static $permissoes = [
+        self::ADMIN    => [
+            'CRUD', 'Utilizadores', 'Logs',
+        ],
+        self::SUPER    => [
+            'CRUD',
+        ],
+        self::OPERADOR => [
+            'CR',
+        ],
+        self::AUDITOR  => [
+            'R', 'Logs',
+        ],
+    ];
+
     public static function perfil()
     {
         return $_SESSION['perfil'] ?? '';
@@ -115,6 +154,55 @@ final class Sessao
     public static function temPerfil(array $perfis)
     {
         return in_array(Sessao::perfil(), $perfis, true);
+    }
+
+    // TRUE quando o perfil actual tem a capacidade indicada ('C', 'R', 'U' ou 'D').
+    public static function pode($acao)
+    {
+        $capacidades = Sessao::$permissoes[Sessao::perfil()] ?? [];
+        if (in_array('CRUD', $capacidades, true)) {
+            return true;
+        }
+        if (in_array('CR', $capacidades, true)) {
+            return in_array($acao, [Sessao::ACAO_CRIAR, Sessao::ACAO_LEITURA], true);
+        }
+        return in_array($acao, [Sessao::ACAO_LEITURA], true);
+    }
+
+    public static function ehAdministrador()
+    {
+        return Sessao::perfil() === Sessao::ADMIN;
+    }
+
+    // Gestao de utilizadores: exclusiva do Administrador.
+    public static function gestaoUtilizadores()
+    {
+        return Sessao::ehAdministrador();
+    }
+
+    // Auditoria de logs: exclusiva do Auditor.
+    public static function auditoriaLogs()
+    {
+        return Sessao::perfil() === Sessao::AUDITOR;
+    }
+
+    // Revalida o perfil antes de qualquer mutacao (C, U ou D).
+    public static function exigirAcao($acao, $destino)
+    {
+        Sessao::iniciar();
+        if (!Sessao::esta_logado()) {
+            header('Location: ' . $destino);
+            exit;
+        }
+        if (!Sessao::pode($acao)) {
+            $_SESSION['flash'] = [
+                'type' => 'danger',
+                'msg'  => 'Não tem permissão para executar esta operação.',
+            ];
+            header('Location: ' . $destino);
+            exit;
+        }
+        Sessao::bloquearPrimeiroAcesso();
     }
 
     public static function exigirPerfil(array $perfis, $destino)

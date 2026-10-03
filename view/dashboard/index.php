@@ -1,11 +1,13 @@
 <?php
 require_once __DIR__ . '/../../services/Sessao.php';
-// Sessao::exigirLogin('../login/index.php');
+Sessao::exigirLogin('../login/index.php');
 
-require_once __DIR__ . '/../../controller/FormandoController.php';
-$FormandoController = new FormandoController();
+require_once __DIR__ . '/../../controller/DashboardController.php';
 
-$formandos = $FormandoController->listar();
+$dashboard = new DashboardController();
+
+// Todos os numeros sao contados na base de dados (nunca fixos no codigo).
+$resumo = $dashboard->resumo();
 
 $page_title = 'Dashboard Geral';
 $active_menu = 'dashboard';
@@ -28,12 +30,11 @@ require_once __DIR__ . '/../partials/sidebar.php';
         <div class="stat-card card-cyan">
             <div class="stat-card-inner">
                 <div>
-                    
-                    <div class="stat-number">24</div>
-                    <div class="stat-label">Professores Cadastrados</div>
+                    <div class="stat-number"><?= (int) $resumo['formadores'] ?></div>
+                    <div class="stat-label">Formadores Cadastrados</div>
                 </div>
                 <div class="stat-icon">
-                    <img src="../../assets/icons/professor.svg" alt="Professores">
+                    <img src="../../assets/icons/professor.svg" alt="Formadores">
                 </div>
             </div>
             <div class="stat-card-footer">
@@ -45,13 +46,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
         <div class="stat-card card-green">
             <div class="stat-card-inner">
                 <div>
-                    <?php if(!empty($formandos)): ?>
-                    
-                    <div class="stat-number"><?= count($formandos) ?></div>
-
-
-                    <?php endif; ?>
-
+                    <div class="stat-number"><?= (int) $resumo['formandos'] ?></div>
                     <div class="stat-label">Formandos Ativos</div>
                 </div>
                 <div class="stat-icon">
@@ -67,7 +62,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
         <div class="stat-card card-orange">
             <div class="stat-card-inner">
                 <div>
-                    <div class="stat-number">18</div>
+                    <div class="stat-number"><?= (int) $resumo['turmas'] ?></div>
                     <div class="stat-label">Turmas em Andamento</div>
                 </div>
                 <div class="stat-icon">
@@ -83,7 +78,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
         <div class="stat-card card-red">
             <div class="stat-card-inner">
                 <div>
-                    <div class="stat-number">42</div>
+                    <div class="stat-number"><?= (int) $resumo['modulos'] ?></div>
                     <div class="stat-label">Módulos Curriculares</div>
                 </div>
                 <div class="stat-icon">
@@ -96,45 +91,140 @@ require_once __DIR__ . '/../partials/sidebar.php';
             </div>
         </div>
     </div>
+<div class="stat-grid">
+        <div class="stat-card card-cyan">
+            <div class="stat-card-inner">
+                <div>
+                    <div class="stat-number"><?= (int) $resumo['licoes'] ?></div>
+                    <div class="stat-label">Lições / Horários</div>
+                </div>
+                <div class="stat-icon">
+                    <img src="../../assets/icons/licao.svg" alt="Lições">
+                </div>
+            </div>
+            <div class="stat-card-footer">
+                <span>Gerir Horários</span>
+                <span>&rarr;</span>
+            </div>
+        </div>
+
+        <div class="stat-card card-green">
+            <div class="stat-card-inner">
+                <div>
+                    <div class="stat-number"><?= (int) $resumo['matriculas'] ?></div>
+                    <div class="stat-label">Matrículas Registadas</div>
+                </div>
+                <div class="stat-icon">
+                    <img src="../../assets/icons/matricula.svg" alt="Matrículas">
+                </div>
+            </div>
+            <div class="stat-card-footer">
+                <span>Gerir Matrículas</span>
+                <span>&rarr;</span>
+            </div>
+        </div>
+
+        <div class="stat-card card-orange">
+            <div class="stat-card-inner">
+                <div>
+                    <div class="stat-number"><?= (int) $resumo['inscricoes'] ?></div>
+                    <div class="stat-label">Inscrições em Módulos</div>
+                </div>
+                <div class="stat-icon">
+                    <img src="../../assets/icons/inscricao.svg" alt="Inscrições">
+                </div>
+            </div>
+            <div class="stat-card-footer">
+                <span>Gerir Inscrições</span>
+                <span>&rarr;</span>
+            </div>
+        </div>
+
+        <div class="stat-card card-red">
+            <div class="stat-card-inner">
+                <div>
+                    <div class="stat-number"><?= (int) $resumo['qualificacoes'] ?></div>
+                    <div class="stat-label">Qualificações</div>
+                </div>
+                <div class="stat-icon">
+                    <img src="../../assets/icons/qualificacao.svg" alt="Qualificações">
+                </div>
+            </div>
+            <div class="stat-card-footer">
+                <span>Estrutura Curricular</span>
+                <span>&rarr;</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="stat-grid">
+        <div class="stat-card card-cyan">
+            <div class="stat-card-inner">
+                <div>
+                    <div class="stat-number"><?= (int) $resumo['niveis'] ?></div>
+                    <div class="stat-label">Níveis de Formação</div>
+                </div>
+                <div class="stat-icon">
+                    <img src="../../assets/icons/nivel.svg" alt="Níveis">
+                </div>
+            </div>
+            <div class="stat-card-footer">
+                <span>Gerir Níveis</span>
+                <span>&rarr;</span>
+            </div>
+        </div>
+
+        <div class="stat-card card-green">
+            <div class="stat-card-inner">
+                <div>
+                    <div class="stat-number"><?= (int) $resumo['campos'] ?></div>
+                    <div class="stat-label">Campos de Formação</div>
+                </div>
+                <div class="stat-icon">
+                    <img src="../../assets/icons/campo.svg" alt="Campos">
+                </div>
+            </div>
+            <div class="stat-card-footer">
+                <span>Gerir Campos</span>
+                <span>&rarr;</span>
+            </div>
+        </div>
+
+        <div class="stat-card card-orange">
+            <div class="stat-card-inner">
+                <div>
+                    <div class="stat-number"><?= (int) $resumo['salas'] ?></div>
+                    <div class="stat-label">Salas</div>
+                </div>
+                <div class="stat-icon">
+                    <img src="../../assets/icons/sala.svg" alt="Salas">
+                </div>
+            </div>
+            <div class="stat-card-footer">
+                <span>Gerir Salas</span>
+                <span>&rarr;</span>
+            </div>
+        </div>
+
+        <div class="stat-card card-red">
+            <div class="stat-card-inner">
+                <div>
+                    <div class="stat-number"><?= (int) $resumo['utilizadores'] ?></div>
+                    <div class="stat-label">Utilizadores</div>
+                </div>
+                <div class="stat-icon">
+                    <img src="../../assets/icons/usuario.svg" alt="Utilizadores">
+                </div>
+            </div>
+            <div class="stat-card-footer">
+                <span>Contas do Sistema</span>
+                <span>&rarr;</span>
+            </div>
+        </div>
+    </div>
 
    
 
-    <div id="modal-info" class="modal-overlay">
-        <div class="modal-box">
-            <div class="modal-header">
-                <h3>Sobre o Sistema de Gestão Acadêmica</h3>
-                <a href="#" class="modal-close">
-                    <img src="../../assets/icons/close.svg" alt="Fechar">
-                </a>
-            </div>
-            <div class="modal-body">
-                <p><strong>Arquitetura:</strong> MVC Puro em PHP 8.</p>
-                <p><strong>Estilização:</strong> CSS3 Puro em estilo global e modular.</p>
-                <p><strong>Navegação:</strong> Menu lateral direto sem rotas amigáveis.</p>
-                <p><strong>Persistência:</strong> MySQLi com Prepared Statements.</p>
-            </div>
-            <div class="modal-footer">
-                <a href="#" class="btn btn-secondary">Fechar</a>
-            </div>
-        </div>
-    </div>
-
-    <div id="modal-novo-exemplo" class="modal-overlay">
-        <div class="modal-box">
-            <div class="modal-header">
-                <h3>Demonstração de Modal Pop-up</h3>
-                <a href="#" class="modal-close">
-                    <img src="../../assets/icons/close.svg" alt="Fechar">
-                </a>
-            </div>
-            <div class="modal-body">
-                <p>Este pop-up opera nativamente via CSS puro através do seletor target.</p>
-            </div>
-            <div class="modal-footer">
-                <a href="#" class="btn btn-primary">Entendido</a>
-            </div>
-        </div>
-    </div>
-</main>
+    </main>
 
 <?php require_once __DIR__ . '/../partials/footer.php'?>

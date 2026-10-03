@@ -3,6 +3,9 @@ require_once __DIR__ . '/../../services/Sessao.php';
 Sessao::iniciar();
 
 $sessao_atual = Sessao::utilizador();
+
+$utilizador_logado = $sessao_atual['nome'] ?? 'Utilizador';
+$perfil_logado     = $sessao_atual['perfil'] ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="pt">
@@ -33,7 +36,10 @@ $sessao_atual = Sessao::utilizador();
             <div class="user-avatar-mini">
                 <img src="../../assets/icons/user.svg" alt="Utilizador">
             </div>
-            <span><?= htmlspecialchars($sessao_atual['nome'] ?? 'admin') ?></span>
+            <span><?= htmlspecialchars($utilizador_logado) ?></span>
+            <?php if ($perfil_logado !== ''): ?>
+                <span class="brand-badge"><?= htmlspecialchars($perfil_logado) ?></span>
+            <?php endif; ?>
         </div>
         <a href="../../view/login/logout.php" class="user-info" title="Terminar sessão">
             <span>Sair</span>

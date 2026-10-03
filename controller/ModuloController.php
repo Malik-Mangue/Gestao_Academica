@@ -5,6 +5,7 @@ require_once __DIR__ . '/Quali_NivelController.php';
 require_once __DIR__ . '/Quali_moduloController.php';
 require_once __DIR__ . '/LicaoController.php';
 require_once __DIR__ . '/InscricaoController.php';
+require_once __DIR__ . '/../services/Validador.php';
 
 class ModuloController {
     private $dao;
@@ -14,8 +15,8 @@ class ModuloController {
     }
 
     public function cadastrarModulo($nome, $carga_horaria, $semestre, $qualificacao, $nivel) {
-        if ($nome != null && strlen($nome) > 0 && preg_match('/^[a-zA-Z0-9 ]+$/', $nome)
-            && $carga_horaria > 0 && $qualificacao != null && $nivel != null) {
+        if (Validador::texto($nome, 100)
+            && Validador::inteiroPositivo($carga_horaria) && $qualificacao != null && $nivel != null) {
 
             $modulo = new Modulo(null, $nome, $carga_horaria);
 
@@ -41,14 +42,23 @@ class ModuloController {
         return false;
     }
 
-    public function listarModulo($nome) {
-        return $this->dao->getAll($nome);
+    public function listarModulo($nome = '') {
+        return $this->dao->getAll($nome ?? '');
+    }
+
+    // Opcoes simples (codigo/descricao) para preencher <select>.
+    public function listarModulos() {
+        return $this->dao->getModulos();
+    }
+
+    public function buscarModulo($codigo) {
+        return $codigo ? $this->dao->getById($codigo) : null;
     }
 
     public function atualizarModulo($nome, $carga_horaria, $codigo, $qualificacao, $nivel, $semestre) {
         if ($semestre != null && strlen($semestre) > 0 && $qualificacao != null && $nivel != null
-            && $nome != null && strlen($nome) > 0 && preg_match('/^[a-zA-Z0-9 ]+$/', $nome)
-            && $codigo != 0 && $carga_horaria > 0) {
+            && Validador::texto($nome, 100)
+            && $codigo != 0 && Validador::inteiroPositivo($carga_horaria)) {
 
             $modulo = new Modulo($codigo, $nome, $carga_horaria);
 

@@ -1,13 +1,12 @@
 <?php
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
 require_once __DIR__ . '/../../services/Sessao.php';
-require_once __DIR__ . '/../../controller/UsuarioController.php';
 
-// Rota privada e exclusiva do Administrador
-// Sessao::exigirLogin('../login/index.php');
-// Sessao::exigirPerfil([Sessao::ADMIN], '../dashboard/index.php');
+// Rota privada e exclusiva do Administrador: exige login e revalida o perfil
+// (a view esconde o link da sidebar, o guard e que protege mesmo o acesso direto).
+Sessao::exigirPerfil([Sessao::ADMIN], '../dashboard/index.php');
+
+require_once __DIR__ . '/../../services/Validador.php';
+require_once __DIR__ . '/../../controller/UsuarioController.php';
 
 $controller = new UsuarioController();
 
@@ -21,14 +20,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($nome === '' || $username === '' || $apelido === '' || $password === '' || !$idPerfil) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Todos os campos são obrigatórios.'];
-        } elseif (strlen($nome) > 100 || strlen($username) > 60 || strlen($apelido) > 60) {
+        } elseif (mb_strlen($nome) > 100 || mb_strlen($username) > 60 || mb_strlen($apelido) > 60) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Não foi possível gravar o registo. Verifique os tamanhos dos campos.'];
         } elseif (strlen($password) < 6) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'A password deve ter pelo menos 6 caracteres.'];
-        } elseif ($controller->store()) {
-            $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Utilizador cadastrado com sucesso!'];
         } else {
-            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Não foi possível gravar o registo. O username poderá já existir.'];
+            try {
+                $usuario = new Usuario(
+                    null,
+                    $idPerfil,
+                    $nome,
+                    $username,
+                    $apelido,
+                    $password,
+                    1
+                );
+                $usuario->setPerfil(new Perfil($idPerfil,null));
+                $sucesso = $controller->store($usuario);
+                $_SESSION['flash'] = $sucesso
+                    ? ['type' => 'success', 'msg' => 'Utilizador cadastrado com sucesso!']
+                    : ['type' => 'danger', 'msg' => 'Não foi possível gravar o registo. O username poderá já existir.'];
+            } catch (Exception $e) {
+                $_SESSION['flash'] = ['type' => 'danger', 'msg' => $e->getMessage()];
+            }
+        }
+        header('Location: index.php');
+        exit;
+    }
+
+    if (isset($_POST['editar'])) {
+        $codigo = filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT);
+        if (!$codigo) {
+            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Código inválido para atualização.'];
+        } else {
+            try {
+                $sucesso = $controller->update($codigo);
+                $_SESSION['flash'] = $sucesso
+                    ? ['type' => 'success', 'msg' => 'Utilizador atualizado com sucesso!']
+                    : ['type' => 'danger', 'msg' => 'Não foi possível atualizar o registo.'];
+            } catch (Exception $e) {
+                $_SESSION['flash'] = ['type' => 'danger', 'msg' => $e->getMessage()];
+            }
         }
         header('Location: index.php');
         exit;
@@ -39,7 +71,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$codigo) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Código inválido para redefinição de senha.'];
         } elseif ($controller->resetSenha($codigo)) {
-            $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Senha redefinida para "0000". O utilizador deverá trocá-la no próximo acesso.'];
+            $_SESSION['flash'] = [
+                'type' => 'success',
+                'msg'  => 'Senha redefinida para "' . UsuarioController::SENHA_PADRAO . '". '
+                         . 'O utilizador deverá trocá-la no próximo acesso.'
+            ];
         } else {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Não foi possível redefinir a senha.'];
         }
@@ -113,6 +149,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     <td><?= htmlspecialchars($nomesPerfil[(int) $usuario->getIdPerfil()] ?? '—') ?></td>
                                     <td class="col-opcoes">
                                         <div class="table-actions table-actions-end">
+                                            <a href="#modal-editar-<?= (int) $usuario->getCodigo() ?>" class="btn btn-sm btn-edit">Editar</a>
                                             <a href="#modal-reset-<?= (int) $usuario->getCodigo() ?>" class="btn btn-reset">Reset senha</a>
                                         </div>
                                     </td>
@@ -145,13 +182,71 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                 <p><strong>Perfil:</strong> <?= htmlspecialchars($nomesPerfil[(int) $usuario->getIdPerfil()] ?? '—') ?></p>
                             </div>
                             <p class="confirm-warning">
-                                A senha passará a ser "0000" e ficará com primeiro acesso obrigatório.
+                                A senha passará a ser "<?= htmlspecialchars(UsuarioController::SENHA_PADRAO) ?>" e ficará com primeiro acesso obrigatório.
                             </p>
                             <input type="hidden" name="codigo" value="<?= (int) $usuario->getCodigo() ?>">
                         </div>
                         <div class="modal-footer">
                             <a href="#" class="btn btn-secondary">Cancelar</a>
                             <button type="submit" name="resetar" class="btn btn-reset">Sim, Resetar Senha</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        <?php endforeach; ?>
+        <?php foreach ($usuarios as $usuario): ?>
+            <div id="modal-editar-<?= (int) $usuario->getCodigo() ?>" class="modal-overlay">
+                <div class="modal-box">
+                    <div class="modal-header">
+                        <h3>Editar Utilizador #<?= (int) $usuario->getCodigo() ?></h3>
+                        <a href="#" class="modal-close">
+                            <img src="../../assets/icons/close.svg" alt="Fechar">
+                        </a>
+                    </div>
+                    <form method="post" action="index.php">
+                        <div class="modal-body">
+                            <input type="hidden" name="codigo" value="<?= (int) $usuario->getCodigo() ?>">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="edit-nome-<?= (int) $usuario->getCodigo() ?>">Nome <span class="required">*</span></label>
+                                    <input type="text" id="edit-nome-<?= (int) $usuario->getCodigo() ?>" name="nome" class="form-control"
+                                           maxlength="100" value="<?= htmlspecialchars($usuario->getNome()) ?>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-apelido-<?= (int) $usuario->getCodigo() ?>">Apelido <span class="required">*</span></label>
+                                    <input type="text" id="edit-apelido-<?= (int) $usuario->getCodigo() ?>" name="apelido" class="form-control"
+                                           maxlength="60" value="<?= htmlspecialchars($usuario->getApelido()) ?>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-username-<?= (int) $usuario->getCodigo() ?>">Username <span class="required">*</span></label>
+                                    <input type="text" id="edit-username-<?= (int) $usuario->getCodigo() ?>" name="username" class="form-control"
+                                           maxlength="60" autocomplete="username" value="<?= htmlspecialchars($usuario->getUsername()) ?>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-password-<?= (int) $usuario->getCodigo() ?>">Nova password</label>
+                                    <input type="password" id="edit-password-<?= (int) $usuario->getCodigo() ?>" name="password" class="form-control"
+                                           maxlength="60" autocomplete="new-password" placeholder="Deixar vazio mantém a atual">
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-perfil-<?= (int) $usuario->getCodigo() ?>">Perfil <span class="required">*</span></label>
+                                    <select id="edit-perfil-<?= (int) $usuario->getCodigo() ?>" name="idPerfil" class="form-control" required>
+                                        <?php foreach ($perfis as $perfil): ?>
+                                            <option value="<?= (int) $perfil->getId() ?>"
+                                                <?= ((int) $usuario->getIdPerfil() === (int) $perfil->getId()) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($perfil->getNome()) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <p class="confirm-warning">
+                                Preencher a password repõe o primeiro acesso obrigatório: o utilizador
+                                terá de a trocar no próximo login.
+                            </p>
+                        </div>
+                        <div class="modal-footer">
+                            <a href="#" class="btn btn-secondary">Cancelar</a>
+                            <button type="submit" name="editar" class="btn btn-success">Salvar Alterações</button>
                         </div>
                     </form>
                 </div>
@@ -202,9 +297,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                         </div>
                     </div>
                     <p class="confirm-warning">
-                        A senha inicial é definida por si, mas o primeiro acesso é tratado
-                        automaticamente pelo sistema: o utilizador será obrigado a trocar
-                        a senha no login, sem qualquer opção de o evitar.
+                        So admin cria
                     </p>
                 </div>
                 <div class="modal-footer">

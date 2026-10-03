@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../Dao/NivelDao.php';
+require_once __DIR__ . '/../model/Nivel.php';
 
 class NivelController {
     private $dao;

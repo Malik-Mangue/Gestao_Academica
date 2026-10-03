@@ -118,6 +118,85 @@ class ModuloDao {
         return $modulos;
     }
 
+    // Listas de opcoes para os <select> dos formularios.
+    public function listarOpcoes($sql) {
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $opcoes = [];
+        while ($rs = $result->fetch_assoc()) {
+            $opcoes[] = ['codigo' => $rs['codigo'], 'descricao' => $rs['descricao']];
+        }
+        return $opcoes;
+    }
+
+    public function getModulos() {
+        return $this->listarOpcoes("select codigo, nome_modulo as descricao from Modulo order by nome_modulo");
+    }
+
+    public function existeModuloEmInscricao($codigoModulo) {
+        $sql = "select count(*) as total from Inscricao where codigo_modulo = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $codigoModulo);
+        $stmt->execute();
+        $rs = $stmt->get_result()->fetch_assoc();
+
+        return (int) $rs['total'] > 0;
+    }
+
+    public function existeModuloEmLicao($codigoModulo) {
+        $sql = "select count(*) as total from Licao where cod_Modulo = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $codigoModulo);
+        $stmt->execute();
+        $rs = $stmt->get_result()->fetch_assoc();
+
+        return (int) $rs['total'] > 0;
+    }
+
+    public function existeModuloEmQualiModulo($codigoModulo) {
+        $sql = "select count(*) as total from Quali_modulo where cod_modulo = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $codigoModulo);
+        $stmt->execute();
+        $rs = $stmt->get_result()->fetch_assoc();
+
+        return (int) $rs['total'] > 0;
+    }
+
+    public function existeModuloEmQualiNivel($codigoModulo) {
+        $sql = "select count(*) as total from Modulo where id_Quali_Nivel = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $codigoModulo);
+        $stmt->execute();
+        $rs = $stmt->get_result()->fetch_assoc();
+
+        return (int) $rs['total'] > 0;
+    }
+
+    public function existeNivelEmQualificacao($codigoNivel) {
+        $sql = "select count(*) as total from Quali_Nivel where cod_Nivel = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $codigoNivel);
+        $stmt->execute();
+        $rs = $stmt->get_result()->fetch_assoc();
+
+        return (int) $rs['total'] > 0;
+    }
+
+    public function existeNivelEmTurma($codigoNivel) {
+        $sql = "select count(*) as total from Turma
+                join Quali_Nivel on Turma.id_Quali_Nivel = Quali_Nivel.codigo_Quali_Nivel
+                where Quali_Nivel.cod_Nivel = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $codigoNivel);
+        $stmt->execute();
+        $rs = $stmt->get_result()->fetch_assoc();
+
+        return (int) $rs['total'] > 0;
+    }
+
     public function getById($codigo) {
         $sql = "select codigo, nome_modulo as nome, carga_horaria, id_Quali_Nivel from Modulo where codigo = ?";
         $stmt = $this->db->prepare($sql);

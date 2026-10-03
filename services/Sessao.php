@@ -53,6 +53,13 @@ final class Sessao
             'perfil'   => $_SESSION['perfil'] ?? '',
         ];
     }
+        public static function obterUtilizador()
+    {
+        if (!Sessao::esta_logado()) {
+            return null;
+        }
+        return new Usuario($_SESSION['user_id'], $_SESSION['username'] ?? '', null);
+    }
 
     public static function login(Usuario $usuario)
     {

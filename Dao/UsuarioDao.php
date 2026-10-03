@@ -3,7 +3,7 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
 require_once __DIR__ . '/../config/conexao.php';
-require_once __DIR__ . '/../config/sessao.php';
+require_once __DIR__ . '/../services/Sessao.php';
 require_once __DIR__ . '/../model/Usuario.php';
 require_once __DIR__ . '/../model/Perfil.php';
 require_once __DIR__ . '/../model/Logs.php';
@@ -197,16 +197,17 @@ class UsuarioDao {
             return null;
         }
 
-        $perfil = new Perfil($rs['idPerfil'], null);
-        return new Usuario(
+            $usuario = new Usuario(
             $rs['idUser'],
+            $rs['idPerfil'],
             $rs['nome'],
             $rs['username'],
-            $rs['password'],
             $rs['apelido'],
-            $perfil,
-            (bool) $rs['primeiroAcesso']
+            $rs['password'],
+            (int) $rs['primeiroAcesso']
         );
+        $usuario->setPerfil(new Perfil($rs['idPerfil'], null));
+        return $usuario;
     }
 
     public function atualizarPassword($codigo, $password, $primeiroAcesso) {

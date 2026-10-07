@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../config/conexao.php';
 require_once __DIR__ . '/../model/Qualificacao.php';
 
-class QualificacaoDAO {
+class QualificacaoDao {
     private $db;
 
     public function __construct() {
@@ -85,7 +85,7 @@ class QualificacaoDAO {
         }
     }
 
-    private function listaOpcoes($sql) {
+    public function listarOpcoes($sql) {
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -97,7 +97,7 @@ class QualificacaoDAO {
     }
 
     public function getCoordenadores() {
-        return $this->listaOpcoes("select c.cod_Formador as codigo, concat(f.nome, ' ', f.apelido) as descricao from Coordenador c inner join Formador f on f.codigo = c.cod_Formador order by f.nome");
+        return $this->listarOpcoes("select f.codigo as codigo, concat(f.nome, ' ', f.apelido) as descricao from Coordenador c inner join Formador f on f.codigo = c.cod_Formador order by f.nome");
     }
 
     public function existeQualificacaoEmClassificacao($codigoQualificacao) {

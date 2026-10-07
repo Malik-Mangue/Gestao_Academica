@@ -57,6 +57,7 @@ class FormadorController {
             if ($isDiretor && !$isDiretorNow) {
                 $diretorTurmaController->cadastrarDiretor_Turma($formador);
             } elseif (!$isDiretor && $isDiretorNow) {
+                
                 $diretorTurmaController->apagarDiretor($codigo);
             }
 

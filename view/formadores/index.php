@@ -231,6 +231,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     </div>
                                 <?php endif; ?>
 
+
                                 <?php if ($pode_remover): ?>
                                     <div id="modal-deletar-<?= $formador->getCodigo() ?>" class="modal-overlay">
                                         <div class="modal-box">
@@ -273,22 +274,23 @@ require_once __DIR__ . '/../partials/sidebar.php';
     </div>
 
     <?php if ($pode_criar): ?>
-        <div id="modal-novo" class="modal-overlay">
-            <div class="modal-box">
-                <div class="modal-header">
-                    <h3>Cadastrar Novo Formador</h3>
-                    <a href="#" class="modal-close">
-                        <img src="../../assets/icons/close.svg" alt="Fechar">
-                    </a>
+    <div id="modal-novo" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Cadastrar Novo Formador</h3>
+                <a href="#" class="modal-close">
+                    <img src="../../assets/icons/close.svg" alt="Fechar">
+                </a>
+            </div>
+            <form method="post" action="index.php">
+                <div class="modal-body">
+                    <?php
+                    $formador = null;
+                    $sufixo = 'novo';
+                    $acao   = 'Salvar Formador';
+                    require __DIR__ . '/_campos.php';
+                    ?>
                 </div>
-                <form method="post" action="index.php">
-                    <div class="modal-body">
-                        <?php
-                        $sufixo = 'novo';
-                        $acao   = 'Salvar Formador';
-                        require __DIR__ . '/_campos.php';
-                        ?>
-                    </div>
                     <div class="modal-footer">
                         <a href="#" class="btn btn-secondary">Cancelar</a>
                         <button type="reset" class="btn btn-reset">Limpar</button>

@@ -96,6 +96,46 @@ class Quali_NivelDAO {
         return $this->listaOpcoes("select codigo, nome as descricao from Nivel order by nome");
     }
 
+    // Niveis de uma qualificacao (tabela associativa Quali_Nivel): opcoes do
+    // <select> de nivel que depende da qualificacao escolhida no formulario.
+    public function getNiveisDaQualificacao($codQualificacao) {
+        $sql = "select Nivel.codigo, Nivel.nome from Quali_Nivel
+                join Nivel on Nivel.codigo = Quali_Nivel.cod_Nivel
+                where Quali_Nivel.cod_Quali = ? order by Nivel.nome";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $codQualificacao);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $opcoes = [];
+        while ($rs = $result->fetch_assoc()) {
+            $opcoes[] = ['codigo' => $rs['codigo'], 'descricao' => $rs['nome']];
+        }
+        return $opcoes;
+    }
+
+    // Todos os pares (qualificacao -> niveis) numa so consulta: alimenta o
+    // mapa JavaScript que filtra os niveis conforme a qualificacao escolhida.
+    public function getNiveisPorQualificacao() {
+        $sql = "select Quali_Nivel.cod_Quali, Quali_Nivel.cod_Nivel, Nivel.nome
+                from Quali_Nivel
+                join Nivel on Nivel.codigo = Quali_Nivel.cod_Nivel
+                order by Quali_Nivel.cod_Quali, Nivel.nome";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $lista = [];
+        while ($rs = $result->fetch_assoc()) {
+            $lista[] = [
+                'cod_quali' => (int) $rs['cod_Quali'],
+                'cod_nivel' => (int) $rs['cod_Nivel'],
+                'nome'      => $rs['nome'],
+            ];
+        }
+        return $lista;
+    }
+
     public function buscarCodigo($qualificacao, $nivel) {
         $sql = "select codigo_Quali_Nivel from Quali_Nivel where cod_Quali = ? and cod_Nivel = ?";
         $stmt = $this->db->prepare($sql);

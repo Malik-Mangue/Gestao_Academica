@@ -26,7 +26,11 @@ class ModuloDao {
         $codigoQualiNivel = $modulo->getQualiNivel()->getCodigo();
 
         $stmt->bind_param("sii", $nome, $cargaHoraria, $codigoQualiNivel);
-        $result = $stmt->execute();
+        try {
+            $result = $stmt->execute();
+        } catch (mysqli_sql_exception $e) {
+            return false;
+        }
 
         if ($result) {
             $modulo->setCodigo($this->db->insert_id);
@@ -52,7 +56,11 @@ class ModuloDao {
         $codigo = $modulo->getCodigo();
 
         $stmt->bind_param("siii", $nome, $cargaHoraria, $codigoQualiNivel, $codigo);
-        $result = $stmt->execute();
+        try {
+            $result = $stmt->execute();
+        } catch (mysqli_sql_exception $e) {
+            return false;
+        }
 
         if ($result) {
             $usuario = Sessao::obterUtilizador();
@@ -70,7 +78,11 @@ class ModuloDao {
         $sql = "delete from Modulo where codigo = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("i", $codigo);
-        $result = $stmt->execute();
+        try {
+            $result = $stmt->execute();
+        } catch (mysqli_sql_exception $e) {
+            return false;
+        }
 
         if ($result) {
             $usuario = Sessao::obterUtilizador();
@@ -86,6 +98,7 @@ class ModuloDao {
 
     public function getAll($nome) {
         $sql = "select Modulo.codigo, Modulo.nome_modulo as nome, Modulo.carga_horaria,
+                       Quali_Nivel.codigo_Quali_Nivel, Quali_Nivel.cod_Quali, Quali_Nivel.cod_Nivel,
                        Qualificacao.titulo, Nivel.nome as nivel, Quali_modulo.semestre as semestre
                 from Modulo
                 join Quali_Nivel on Quali_Nivel.codigo_Quali_Nivel = Modulo.id_Quali_Nivel
@@ -103,9 +116,9 @@ class ModuloDao {
         while ($rs = $result->fetch_assoc()) {
             $modulo = new Modulo($rs['codigo'], $rs['nome'], $rs['carga_horaria']);
 
-            $qualificacao = new Qualificacao(null, $rs['titulo'], null);
-            $nivel = new Nivel(null, $rs['nivel']);
-            $qualiNivel = new Quali_Nivel(null, null, null);
+            $qualificacao = new Qualificacao($rs['cod_Quali'], $rs['titulo'], null);
+            $nivel = new Nivel($rs['cod_Nivel'], $rs['nivel']);
+            $qualiNivel = new Quali_Nivel($rs['codigo_Quali_Nivel'], $rs['cod_Quali'], $rs['cod_Nivel']);
             $qualiNivel->setQualificacao($qualificacao);
             $qualiNivel->setNivel($nivel);
             $modulo->setQualiNivel($qualiNivel);
@@ -198,7 +211,15 @@ class ModuloDao {
     }
 
     public function getById($codigo) {
-        $sql = "select codigo, nome_modulo as nome, carga_horaria, id_Quali_Nivel from Modulo where codigo = ?";
+        $sql = "select Modulo.codigo, Modulo.nome_modulo as nome, Modulo.carga_horaria,
+                       Quali_Nivel.codigo_Quali_Nivel, Quali_Nivel.cod_Quali, Quali_Nivel.cod_Nivel,
+                       Qualificacao.titulo, Nivel.nome as nivel, Quali_modulo.semestre as semestre
+                from Modulo
+                join Quali_Nivel on Quali_Nivel.codigo_Quali_Nivel = Modulo.id_Quali_Nivel
+                join Qualificacao on Qualificacao.cod_Quali = Quali_Nivel.cod_Quali
+                join Nivel on Nivel.codigo = Quali_Nivel.cod_Nivel
+                left join Quali_modulo on Quali_modulo.cod_modulo = Modulo.codigo
+                where Modulo.codigo = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("i", $codigo);
         $stmt->execute();
@@ -209,7 +230,13 @@ class ModuloDao {
         }
 
         $modulo = new Modulo($rs['codigo'], $rs['nome'], $rs['carga_horaria']);
-        $modulo->setQualiNivel(new Quali_Nivel($rs['id_Quali_Nivel'], null, null));
+
+        $qualiNivel = new Quali_Nivel($rs['codigo_Quali_Nivel'], $rs['cod_Quali'], $rs['cod_Nivel']);
+        $qualiNivel->setQualificacao(new Qualificacao($rs['cod_Quali'], $rs['titulo'], null));
+        $qualiNivel->setNivel(new Nivel($rs['cod_Nivel'], $rs['nivel']));
+        $modulo->setQualiNivel($qualiNivel);
+
+        $modulo->setQualiModulo(new Quali_modulo(null, $rs['semestre'], null, null));
         return $modulo;
     }
 }

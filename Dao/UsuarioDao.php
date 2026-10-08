@@ -23,7 +23,6 @@ class UsuarioDao {
             $rs['nome'],
             $rs['username'],
             $rs['apelido'],
-            $rs['password'],
             (int) $rs['primeiroAcesso'] === 1
         );
         $usuario->setPerfil(new Perfil($rs['idPerfil'], $rs['nome_perfil'] ?? null));

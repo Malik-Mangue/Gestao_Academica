@@ -5,10 +5,12 @@ require_once __DIR__ . '/../../services/Validador.php';
 require_once __DIR__ . '/../../controller/InscricaoController.php';
 require_once __DIR__ . '/../../controller/FormandoController.php';
 require_once __DIR__ . '/../../controller/ModuloController.php';
+require_once __DIR__ . '/../../controller/QualificacaoController.php';
 
 $controller   = new InscricaoController();
 $formandoCtrl = new FormandoController();
 $moduloCtrl   = new ModuloController();
+$qualiCtrl    = new QualificacaoController();
 
 $semestres = ['1º Semestre', '2º Semestre'];
 
@@ -67,6 +69,7 @@ $pesquisa  = trim($_GET['pesquisa'] ?? '');
 $inscricoes = $controller->listarInscricao($pesquisa);
 $formandos  = $formandoCtrl->listar();
 $modulos    = $moduloCtrl->listarModulos();
+$qualificacoes = $qualiCtrl->comboQualificacao();
 
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
@@ -258,3 +261,59 @@ require_once __DIR__ . '/../partials/sidebar.php';
             </div>
         </div>
     </div>
+    <?php if ($pode_criar): ?>
+        <div id="modal-novo" class="modal-overlay">
+            <div class="modal-box">
+                <div class="modal-header">
+                    <h3>Registar Nova Inscricao</h3>
+                    <a href="#" class="modal-close">
+                        <img src="../../assets/icons/close.svg" alt="Fechar">
+                    </a>
+                </div>
+                <form method="post" action="index.php">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="n-f">Formando <span class="required">*</span></label>
+                            <select id="n-f" name="codFormando" class="form-control" required>
+                                <?php foreach ($formandos as $f): ?>
+                                    <option value="<?= (int) $f->getCodigo() ?>">
+                                        <?= htmlspecialchars($f->getNome() . ' ' . $f->getApelido()) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="n-q">Qualificação <span class="required">*</span></label>
+                            <select id="n-q" name="codQuali" class="form-control" required>
+                                <?php foreach ($qualificacoes as $q): ?>
+                                    <option value="<?= (int) $q->getCodigo() ?>">
+                                        <?= htmlspecialchars($q->getTitulo()) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="n-q">Modulo <span class="required">*</span></label>
+                            <select id="n-q" name="codModulo" class="form-control" required>
+                                <?php foreach ($modulos as $m): ?>
+                                    <option value="<?= (int) $m['codigo'] ?>">
+                                        <?= htmlspecialchars($m['descricao']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="n-d">Data <span class="required">*</span></label>
+                            <input type="date" id="n-d" name="data" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="#" class="btn btn-secondary">Cancelar</a>
+                        <button type="reset" class="btn btn-reset">Limpar</button>
+                        <button type="submit" name="gravar" class="btn btn-success">Salvar Matrícula</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    <?php endif; ?>
+</main>

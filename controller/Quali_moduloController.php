@@ -25,16 +25,14 @@ class Quali_moduloController {
     public function atualizarQuali_modulo($codigo, $semestre, $modulo, $qualificacao) {
         if ($semestre != null && strlen($semestre) > 0 && $codigo != 0 && $qualificacao != null) {
             $qualiModulo = new Quali_modulo($codigo, $semestre, $modulo, $qualificacao);
-            $this->dao->update($qualiModulo);
-            return true;
+            return $this->dao->updateByModulo($qualiModulo);
         }
         return false;
     }
 
     public function apagarQuali_modulo($codigo) {
         if ($codigo != 0) {
-            $this->dao->delete($codigo);
-            return true;
+            return $this->dao->deleteByModulo($codigo);
         }
         return false;
     }

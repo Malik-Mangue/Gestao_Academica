@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../services/Validador.php';
 require_once __DIR__ . '/../../controller/MatriculaController.php';
 require_once __DIR__ . '/../../controller/FormandoController.php';
 require_once __DIR__ . '/../../controller/QualificacaoController.php';
+require_once __DIR__ . '/../../controller/Quali_NivelController.php'; // NOVO
 
 $controller     = new MatriculaController();
 $formandoCtrl   = new FormandoController();
@@ -32,18 +33,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $codigo      = $acao === 'editar' ? filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT) : null;
         $codFormando = filter_input(INPUT_POST, 'codFormando', FILTER_VALIDATE_INT);
         $codQuali    = filter_input(INPUT_POST, 'codQuali', FILTER_VALIDATE_INT);
+        $codNivel    = filter_input(INPUT_POST, 'codNivel', FILTER_VALIDATE_INT); // NOVO
         $data        = trim($_POST['data'] ?? '');
 
-        if (Dao/TurmaDao.phpcodFormando) {
-            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione o formando.'];
-        } elseif (Dao/TurmaDao.phpcodQuali) {
-            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione a qualificação.'];
-        } elseif (!Validador::data($data)) {
+        if (!$codFormando) {
+    $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione o formando.'];
+    } elseif (!$codQuali) {
+    $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione a qualificação.'];
+    } elseif (!$codNivel) { // NOVO
+    $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione o nível.'];
+      } elseif (!Validador::data($data)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Indique uma data de matrícula válida.'];
         } else {
             $formando     = new Formando($codFormando, null, null, null, null, null);
             $qualificacao = new Qualificacao($codQuali, null, null);
-            $nivel        = new Nivel(null, null);
+            $nivel        = new Nivel($codNivel, null); // ALTERADO: antes era new Nivel(null, null)
 
             $sucesso = $acao === 'gravar'
                 ? $controller->cadastrarMatricula($formando, $qualificacao, $nivel, $data)
@@ -62,6 +66,7 @@ $pesquisa       = trim($_GET['pesquisa'] ?? '');
 $matriculas     = $controller->listarMatricula($pesquisa);
 $formandos      = $formandoCtrl->listar();
 $qualificacoes  = (new QualificacaoController())->comboQualificacao();
+$niveis         = (new Quali_NivelController())->listarNiveis(); // NOVO
 
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
@@ -187,6 +192,18 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                             <?php endforeach; ?>
                                                         </select>
                                                     </div>
+                                                    <!-- NOVO: dropdown de Nível -->
+                                                    <div class="form-group">
+                                                        <label for="e-n-<?= $matricula->getCodigo() ?>">Nível <span class="required">*</span></label>
+                                                        <select id="e-n-<?= $matricula->getCodigo() ?>" name="codNivel" class="form-control" required>
+                                                            <?php foreach ($niveis as $n): ?>
+                                                                <option value="<?= (int) $n['codigo'] ?>"
+                                                                    <?= ($matricula->getNivel() && (int) $matricula->getNivel()->getCodigo() === (int) $n['codigo']) ? 'selected' : '' ?>>
+                                                                    <?= htmlspecialchars($n['descricao']) ?>
+                                                                </option>
+                                                            <?php endforeach; ?>
+                                                        </select>
+                                                    </div>
                                                     <div class="form-group">
                                                         <label for="e-d-<?= $matricula->getCodigo() ?>">Data <span class="required">*</span></label>
                                                         <input type="date" id="e-d-<?= $matricula->getCodigo() ?>" name="data" class="form-control"
@@ -269,6 +286,17 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                 <?php foreach ($qualificacoes as $q): ?>
                                     <option value="<?= (int) $q->getCodigo() ?>">
                                         <?= htmlspecialchars($q->getTitulo()) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="n-n">Nível <span class="required">*</span></label>
+                            <select id="n-n" name="codNivel" class="form-control" required>
+                                <?php foreach ($niveis as $n): ?>
+                                    <option value="<?= (int) $n['codigo'] ?>">
+                                        <?= htmlspecialchars($n['descricao']) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>

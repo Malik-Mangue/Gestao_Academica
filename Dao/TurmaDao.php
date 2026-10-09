@@ -28,7 +28,7 @@ class TurmaDao {
         $codigoFormador = $turma->getDiretorTurma()->getFormador()->getCodigo();
         $codigoQualiNivel = $turma->getQualiNivel()->getCodigo();
 
-        $stmt->bind_param("sissi", $nome, $anoIngresso, $turno, $codigoFormador, $codigoQualiNivel);
+        $stmt->bind_param("sisii", $nome, $anoIngresso, $turno, $codigoFormador, $codigoQualiNivel);
         $result = $stmt->execute();
 
         if ($result) {
@@ -54,12 +54,14 @@ class TurmaDao {
         $codigoQualiNivel = $turma->getQualiNivel()->getCodigo();
         $codigo = $turma->getCodigo();
 
-        $stmt->bind_param("sissii", $nome, $anoIngresso, $turno, $codigoFormador, $codigoQualiNivel, $codigo);
+        $stmt->bind_param("sisiii", $nome, $anoIngresso, $turno, $codigoFormador, $codigoQualiNivel, $codigo);
         return $stmt->execute();
     }
 
     public function getAll($nome) {
-        $sql = "select Turma.codigo, Turma.nome, ano_lectivo, turno, Formador.nome as diretor_turma, Qualificacao.titulo as titulo, Nivel.nome as nivel from Turma
+        $sql = "select Turma.codigo, Turma.nome, ano_lectivo, turno, Turma.id_Diretor_Turma, Turma.id_Quali_Nivel,
+                       Quali_Nivel.cod_Quali as cod_quali, Quali_Nivel.cod_Nivel as cod_nivel,
+                       Formador.nome as diretor_turma, Qualificacao.titulo as titulo, Nivel.nome as nivel from Turma
                 join Diretor_Turma on cod_Formador = id_Diretor_Turma
                 join Formador on Formador.codigo = cod_Formador
                 join Quali_Nivel on id_Quali_Nivel = codigo_Quali_Nivel
@@ -74,26 +76,23 @@ class TurmaDao {
 
         $turmas = [];
         while ($rs = $result->fetch_assoc()) {
-            $formador = new Formador(null, $rs['diretor_turma'], null, null, null, null, null, null, null, null);
-            $diretorTurma = new Diretor_turma( $formador);
+            $formador = new Formador($rs['id_Diretor_Turma'], $rs['diretor_turma'], null, null, null, null, null, null, null, null);
+            $diretorTurma = new Diretor_turma($formador);
 
-            $qualificacao = new Qualificacao(null, $rs['titulo'], null);
-            $nivel = new Nivel(null, $rs['nivel']);
+            $qualificacao = new Qualificacao($rs['cod_quali'], $rs['titulo'], null);
+            $nivel = new Nivel($rs['cod_nivel'], $rs['nivel']);
 
-            // O nivel vive em Quali_Nivel: e preciso ligar os tres para a
-            // listagem conseguir mostrar a qualificacao e o nivel.
-            $qualiNivel = new Quali_Nivel(null, null, null);
+            // A turma liga-se a qualificacao e ao nivel atraves de Quali_Nivel.
+            $qualiNivel = new Quali_Nivel($rs['id_Quali_Nivel'], $rs['cod_quali'], $rs['cod_nivel']);
             $qualiNivel->setQualificacao($qualificacao);
             $qualiNivel->setNivel($nivel);
 
-            $turma = new Turma($rs['codigo'], $rs['nome'], $rs['ano_lectivo'], $rs['turno'], $diretorTurma, $qualificacao, $qualiNivel);
-
-            $turmas[] = $turma;
+            $turmas[] = new Turma($rs['codigo'], $rs['nome'], $rs['ano_lectivo'], $rs['turno'], $diretorTurma, $qualificacao, $qualiNivel);
         }
         return $turmas;
     }
 
-    // Listas de opcoes para os <select> do formulario de turma.
+
     public function listarOpcoes($sql) {
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
@@ -106,7 +105,6 @@ class TurmaDao {
         return $opcoes;
     }
 
-    // Diretores de turma disponíveis (formadores registados como Diretor_Turma).
     public function getDiretores() {
         return $this->listarOpcoes(
             "select f.codigo as codigo, concat(f.nome, ' ', f.apelido) as descricao
@@ -124,7 +122,7 @@ class TurmaDao {
         return $this->listarOpcoes("select codigo, nome as descricao from Nivel order by nome");
     }
 
-    // Pares (Qualificacao, Nivel) ja definidos em Quali_Nivel.
+
     public function getParesQualiNivel() {
         return $this->listarOpcoes(
             "select qn.codigo_Quali_Nivel as codigo,
@@ -139,6 +137,7 @@ class TurmaDao {
     public function getById($codigo) {
         $sql = "select Turma.codigo, Turma.nome, ano_lectivo, turno,
                        Turma.id_Diretor_Turma, Turma.id_Quali_Nivel,
+                       Quali_Nivel.cod_Quali as cod_quali, Quali_Nivel.cod_Nivel as cod_nivel,
                        Formador.nome as diretor_turma, Qualificacao.titulo as titulo, Nivel.nome as nivel
                 from Turma
                 join Diretor_Turma on cod_Formador = id_Diretor_Turma
@@ -157,17 +156,22 @@ class TurmaDao {
         }
 
         $formador = new Formador($rs['id_Diretor_Turma'], $rs['diretor_turma'], null, null, null, null, null, null, null, null);
-        $turma = new Turma(
+        $qualificacao = new Qualificacao($rs['cod_quali'], $rs['titulo'], null);
+        $nivel = new Nivel($rs['cod_nivel'], $rs['nivel']);
+
+        $qualiNivel = new Quali_Nivel($rs['id_Quali_Nivel'], $rs['cod_quali'], $rs['cod_nivel']);
+        $qualiNivel->setQualificacao($qualificacao);
+        $qualiNivel->setNivel($nivel);
+
+        return new Turma(
             $rs['codigo'],
             $rs['nome'],
             $rs['ano_lectivo'],
             $rs['turno'],
             new Diretor_turma($formador),
-            new Qualificacao(null, $rs['titulo'], null),
-            new Quali_Nivel($rs['id_Quali_Nivel'], null, null)
+            $qualificacao,
+            $qualiNivel
         );
-
-        return $turma;
     }
 
     public function delete($codigo) {

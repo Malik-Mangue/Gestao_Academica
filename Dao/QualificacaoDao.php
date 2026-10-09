@@ -11,22 +11,35 @@ class QualificacaoDao {
     }
 
     public function getAll($titulo = null) {
+        $sql = "select q.cod_Quali, q.titulo, q.cod_Coordenador,
+                       (select group_concat(c.nome order by c.nome separator ', ')
+                          from Classificacao cl
+                          join Campo c on c.codigo = cl.cod_Campo
+                         where cl.cod_Qualificacao = q.cod_Quali) as campo,
+                       (select group_concat(n.nome order by n.nome separator ', ')
+                          from Quali_Nivel qn
+                          join Nivel n on n.codigo = qn.cod_Nivel
+                         where qn.cod_Quali = q.cod_Quali) as niveis
+                from Qualificacao q";
+
         if ($titulo != null && strlen($titulo) > 0) {
-            $sql = "select cod_Quali, titulo, cod_Coordenador from Qualificacao where titulo like ? order by cod_Quali";
+            $sql .= " where q.titulo like ? order by q.cod_Quali";
             $stmt = $this->db->prepare($sql);
             $busca = "%" . $titulo . "%";
             $stmt->bind_param("s", $busca);
-            $stmt->execute();
-            $result = $stmt->get_result();
         } else {
-            $sql = "select cod_Quali, titulo, cod_Coordenador from Qualificacao order by cod_Quali";
+            $sql .= " order by q.cod_Quali";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute();
-            $result = $stmt->get_result();
         }
+        $stmt->execute();
+        $result = $stmt->get_result();
+
         $qualificacaos = [];
         while ($rs = $result->fetch_assoc()) {
-            $qualificacaos[] = new Qualificacao($rs['cod_Quali'], $rs['titulo'], $rs['cod_Coordenador']);
+            $qualificacao = new Qualificacao($rs['cod_Quali'], $rs['titulo'], $rs['cod_Coordenador']);
+            $qualificacao->setCampo($rs['campo']);       // NOVO
+            $qualificacao->setNiveis($rs['niveis']);    // NOVO
+            $qualificacaos[] = $qualificacao;
         }
         return $qualificacaos;
     }
@@ -85,6 +98,31 @@ class QualificacaoDao {
         }
     }
 
+    // Apaga a qualificacao e as suas ligacoes (Classificacao e Quali_Nivel)
+    // numa transacao: ou sai tudo, ou nao sai nada.
+    public function deleteCompleto($codigo) {
+        $this->db->begin_transaction();
+        try {
+            $sqls = [
+                "delete from Classificacao where cod_Qualificacao = ?",
+                "delete from Quali_Nivel where cod_Quali = ?",
+                "delete from Qualificacao where cod_Quali = ?"
+            ];
+            foreach ($sqls as $sql) {
+                $stmt = $this->db->prepare($sql);
+                $stmt->bind_param("i", $codigo);
+                if (!$stmt->execute()) {
+                    throw new mysqli_sql_exception("Falha ao executar: " . $sql);
+                }
+            }
+            $this->db->commit();
+            return true;
+        } catch (mysqli_sql_exception $e) {
+            $this->db->rollback();
+            return false;
+        }
+    }
+
     public function listarOpcoes($sql) {
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
@@ -120,6 +158,28 @@ class QualificacaoDao {
 
     public function existeQualificacaoEmQualiModulo($codigoQualificacao) {
         $sql = "select count(*) as total from Quali_modulo where cod_Quali = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $codigoQualificacao);
+        $stmt->execute();
+        $rs = $stmt->get_result()->fetch_assoc();
+        return $rs['total'] > 0;
+    }
+
+    public function existeQualificacaoEmModulo($codigoQualificacao) {
+        $sql = "select count(*) as total from Modulo m
+                join Quali_Nivel qn on qn.codigo_Quali_Nivel = m.id_Quali_Nivel
+                where qn.cod_Quali = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $codigoQualificacao);
+        $stmt->execute();
+        $rs = $stmt->get_result()->fetch_assoc();
+        return $rs['total'] > 0;
+    }
+
+    public function existeQualificacaoEmTurma($codigoQualificacao) {
+        $sql = "select count(*) as total from Turma t
+                join Quali_Nivel qn on qn.codigo_Quali_Nivel = t.id_Quali_Nivel
+                where qn.cod_Quali = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("i", $codigoQualificacao);
         $stmt->execute();

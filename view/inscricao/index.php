@@ -40,10 +40,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $semestre    = trim($_POST['semestre'] ?? '');
         $data        = trim($_POST['data_inscricao'] ?? '');
 
-        if (view/matricula/index.phpcodFormando) {
-            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione o formando.'];
-        } elseif (view/matricula/index.phpcodModulo) {
-            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione o módulo.'];
+        if (!$codFormando) {
+              $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione o formando.'];
+        } elseif (!$codModulo) {
+              $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione o módulo.'];
         } elseif (!in_array($semestre, $semestres, true)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione um semestre válido.'];
         } elseif (!Validador::data($data)) {
@@ -125,6 +125,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             <th class="col-codigo">Código</th>
                             <th>Formando</th>
                             <th>Módulo</th>
+                            <th>Qualificação</th>   <!-- NOVO -->
                             <th>Semestre</th>
                             <th>Data de Inscrição</th>
                             <?php if ($pode_editar || $pode_remover): ?>
@@ -135,7 +136,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                     <tbody>
                         <?php if (empty($inscricoes)): ?>
                             <tr>
-                                <td colspan="<?= $pode_editar || $pode_remover ? 6 : 5 ?>" class="table-empty">
+                                <td colspan="<?= $pode_editar || $pode_remover ? 7 : 6 ?>" class="table-empty"> <!-- ALTERADO: colspan +1 -->
                                     Nenhuma inscrição registada no momento.
                                 </td>
                             </tr>
@@ -145,6 +146,12 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     <td><strong>#<?= htmlspecialchars($inscricao->getCodigo()) ?></strong></td>
                                     <td><?= htmlspecialchars($inscricao->getFormando()->getNome() . ' ' . $inscricao->getFormando()->getApelido()) ?></td>
                                     <td><?= htmlspecialchars($inscricao->getModulo()->getNome()) ?></td>
+                                    <!-- NOVO: coluna Qualificação -->
+                                    <td><?= htmlspecialchars(
+                                            $inscricao->getModulo()->getQualiNivel() && $inscricao->getModulo()->getQualiNivel()->getQualificacao()
+                                                ? $inscricao->getModulo()->getQualiNivel()->getQualificacao()->getTitulo()
+                                                : '-'
+                                        ) ?></td>
                                     <td><?= htmlspecialchars($inscricao->getSemestre()) ?></td>
                                     <td><?= htmlspecialchars($inscricao->getDataInscricao() ?: '-') ?></td>
                                     <?php if ($pode_editar || $pode_remover): ?>
@@ -293,8 +300,8 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="n-q">Modulo <span class="required">*</span></label>
-                            <select id="n-q" name="codModulo" class="form-control" required>
+                            <label for="n-m">Modulo <span class="required">*</span></label>
+                            <select id="n-m" name="codModulo" class="form-control" required>
                                 <?php foreach ($modulos as $m): ?>
                                     <option value="<?= (int) $m['codigo'] ?>">
                                         <?= htmlspecialchars($m['descricao']) ?>
@@ -303,14 +310,23 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             </select>
                         </div>
                         <div class="form-group">
+                            <label for="n-s">Semestre <span class="required">*</span></label>
+                            <select id="n-s" name="semestre" class="form-control" required>
+                                <option value="">Selecione o semestre...</option>
+                                <?php foreach ($semestres as $s): ?>
+                                    <option value="<?= htmlspecialchars($s) ?>"><?= htmlspecialchars($s) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
                             <label for="n-d">Data <span class="required">*</span></label>
-                            <input type="date" id="n-d" name="data" class="form-control" required>
+                            <input type="date" id="n-d" name="data_inscricao" class="form-control" required>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <a href="#" class="btn btn-secondary">Cancelar</a>
                         <button type="reset" class="btn btn-reset">Limpar</button>
-                        <button type="submit" name="gravar" class="btn btn-success">Salvar Matrícula</button>
+                        <button type="submit" name="gravar" class="btn btn-success">Salvar Inscrição</button>
                     </div>
                 </form>
             </div>

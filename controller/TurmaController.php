@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/../Dao/TurmaDao.php';
 require_once __DIR__ . '/../model/Turma.php';
+require_once __DIR__ . '/../model/Quali_Nivel.php';
+require_once __DIR__ . '/../services/Validador.php';
 require_once __DIR__ . '/Quali_NivelController.php';
 require_once __DIR__ . '/Diretor_turmaController.php';
 require_once __DIR__ . '/LicaoController.php';
@@ -70,11 +72,11 @@ class TurmaController {
             if ($qualificacao === null || $nivel === null) {
                 return false;
             }
-            $qualiNivel = new Quali_Nivel(
-                (new Quali_NivelController())->buscarCodigo($qualificacao, $nivel),
-                null,
-                null
-            );
+            $codigoQualiNivel = (new Quali_NivelController())->buscarCodigo($qualificacao, $nivel);
+            if (!$codigoQualiNivel) {
+                return false;
+            }
+            $qualiNivel = new Quali_Nivel($codigoQualiNivel, null, null);
         }
 
         $turma = new Turma($codigo, $nome, (int) $ano_ingresso, $turno, $diretorTurma, $qualificacao, $qualiNivel);

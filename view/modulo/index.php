@@ -14,23 +14,6 @@ $qualificacaoController = new QualificacaoController();
 $qualiNivelController   = new Quali_NivelController();
 $semestres              = ['1º Semestre', '2º Semestre'];
 
-// ---------------------------------------------------------------------
-// Select de Nível dependente: quando o utilizador escolhe uma qualificação
-// no primeiro select, esta rota consulta a base de dados (tabela
-// Quali_Nivel) e devolve em JSON apenas os níveis daquela qualificação.
-// Responde e termina antes de qualquer HTML (spec §6.4).
-// ---------------------------------------------------------------------
-if (isset($_GET['ajax']) && $_GET['ajax'] === 'niveis') {
-    header('Content-Type: application/json; charset=utf-8');
-    $codQuali = filter_input(INPUT_GET, 'codQuali', FILTER_VALIDATE_INT);
-    $opcoes   = $codQuali ? $qualiNivelController->listarNiveisDaQualificacao($codQuali) : [];
-    echo json_encode($opcoes);
-    exit;
-}
-
-// ---------------------------------------------------------------------
-// Processamento dos POSTs antes de qualquer saída HTML (spec §6.4).
-// ---------------------------------------------------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $acao = isset($_POST['gravar']) ? 'gravar'
           : (isset($_POST['editar']) ? 'editar'
@@ -78,14 +61,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $qualificacao = new Qualificacao($codQuali, null, null);
             $nivel        = new Nivel($codNivel, null);
 
-            $sucesso = $acao === 'gravar'
-                ? $controller->cadastrarModulo($nome, $carga, $semestre, $qualificacao, $nivel)
-                : $controller->atualizarModulo($nome, $carga, $codigo, $qualificacao, $nivel, $semestre);
+            // O nível escolhido tem de estar associado à qualificação (tabela Quali_Nivel).
+            if (!$qualiNivelController->buscarCodigo($qualificacao, $nivel)) {
+                $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'A qualificação selecionada não tem o nível escolhido.'];
+            } else {
+                $sucesso = $acao === 'gravar'
+                    ? $controller->cadastrarModulo($nome, $carga, $semestre, $qualificacao, $nivel)
+                    : $controller->atualizarModulo($nome, $carga, $codigo, $qualificacao, $nivel, $semestre);
 
-            $_SESSION['flash'] = $sucesso
-                ? ['type' => 'success', 'msg' => $acao === 'gravar'
-                    ? 'Módulo cadastrado com sucesso!' : 'Módulo atualizado com sucesso!']
-                : ['type' => 'danger', 'msg' => 'Não foi possível gravar o módulo. Verifique a qualificação e o nível selecionados.'];
+                $_SESSION['flash'] = $sucesso
+                    ? ['type' => 'success', 'msg' => $acao === 'gravar'
+                        ? 'Módulo cadastrado com sucesso!' : 'Módulo atualizado com sucesso!']
+                    : ['type' => 'danger', 'msg' => 'Não foi possível gravar o módulo. Verifique os dados.'];
+            }
         }
         header('Location: index.php');
         exit;
@@ -94,6 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $pesquisa      = trim($_GET['pesquisa'] ?? '');
 $qualificacoes = $qualificacaoController->comboQualificacao();
+$niveis        = $qualiNivelController->listarNiveis();
 $modulos       = $controller->listarModulo($pesquisa);
 
 $flash = $_SESSION['flash'] ?? null;
@@ -199,14 +188,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                             <form method="post" action="index.php">
                                                 <div class="modal-body">
                                                     <input type="hidden" name="codigo" value="<?= htmlspecialchars((string) $modulo->getCodigo()) ?>">
-                                                    <?php
-                                                    // Opções iniciais do select de nível: consulta real à BD para
-                                                    // a qualificação atual do módulo (tabela Quali_Nivel).
-                                                    $niveisAtuais = $qualiNivelController->listarNiveisDaQualificacao(
-                                                        (int) $modulo->getQualiNivel()->getCod_quali()
-                                                    );
-                                                    $sufixo = 'editar-' . $modulo->getCodigo();
-                                                    ?>
+                                                    <?php $sufixo = 'editar-' . $modulo->getCodigo(); ?>
                                                     <div class="form-grid">
                                                         <div class="form-group">
                                                             <label for="nome-<?= $sufixo ?>">Nome do Módulo <span class="required">*</span></label>
@@ -222,8 +204,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                         </div>
                                                         <div class="form-group">
                                                             <label for="quali-<?= $sufixo ?>">Qualificação <span class="required">*</span></label>
-                                                            <select id="quali-<?= $sufixo ?>" name="codQuali" class="form-control select-quali"
-                                                                    data-nivel="nivel-<?= $sufixo ?>" required>
+                                                            <select id="quali-<?= $sufixo ?>" name="codQuali" class="form-control" required>
                                                                 <option value="">Selecione a qualificação...</option>
                                                                 <?php foreach ($qualificacoes as $q): ?>
                                                                     <option value="<?= (int) $q->getCodigo() ?>"
@@ -237,7 +218,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                             <label for="nivel-<?= $sufixo ?>">Nível <span class="required">*</span></label>
                                                             <select id="nivel-<?= $sufixo ?>" name="codNivel" class="form-control" required>
                                                                 <option value="">Selecione o nível...</option>
-                                                                <?php foreach ($niveisAtuais as $n): ?>
+                                                                <?php foreach ($niveis as $n): ?>
                                                                     <option value="<?= (int) $n['codigo'] ?>"
                                                                         <?= (int) $modulo->getQualiNivel()->getCod_nivel() === (int) $n['codigo'] ? 'selected' : '' ?>>
                                                                         <?= htmlspecialchars($n['descricao']) ?>
@@ -333,8 +314,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             </div>
                             <div class="form-group">
                                 <label for="quali-novo">Qualificação <span class="required">*</span></label>
-                                <select id="quali-novo" name="codQuali" class="form-control select-quali"
-                                        data-nivel="nivel-novo" required>
+                                <select id="quali-novo" name="codQuali" class="form-control" required>
                                     <option value="">Selecione a qualificação...</option>
                                     <?php foreach ($qualificacoes as $q): ?>
                                         <option value="<?= (int) $q->getCodigo() ?>"><?= htmlspecialchars($q->getTitulo()) ?></option>
@@ -343,9 +323,11 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             </div>
                             <div class="form-group">
                                 <label for="nivel-novo">Nível <span class="required">*</span></label>
-                                <!-- Opções preenchidas por consulta à BD quando a qualificação é escolhida -->
                                 <select id="nivel-novo" name="codNivel" class="form-control" required>
                                     <option value="">Selecione o nível...</option>
+                                    <?php foreach ($niveis as $n): ?>
+                                        <option value="<?= (int) $n['codigo'] ?>"><?= htmlspecialchars($n['descricao']) ?></option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -370,11 +352,4 @@ require_once __DIR__ . '/../partials/sidebar.php';
     <?php endif; ?>
 </main>
 
-
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>
-
-
-
-
-
-

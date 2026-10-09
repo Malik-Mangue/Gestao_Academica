@@ -7,9 +7,6 @@ require_once __DIR__ . '/../../controller/QualificacaoController.php';
 
 $controller = new QualificacaoController();
 
-// ---------------------------------------------------------------------
-// Processamento dos POSTs antes de qualquer saída HTML (spec §6.4).
-// ---------------------------------------------------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $acao = isset($_POST['gravar']) ? 'gravar'
           : (isset($_POST['editar']) ? 'editar'
@@ -39,11 +36,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $codigo   = $acao === 'editar' ? filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT) : null;
         $titulo   = trim($_POST['titulo'] ?? '');
         $coordenador = filter_input(INPUT_POST, 'coordenador', FILTER_VALIDATE_INT);
+        $codCampo = filter_input(INPUT_POST, 'campo', FILTER_VALIDATE_INT);
+        $codNivel = filter_input(INPUT_POST, 'nivel', FILTER_VALIDATE_INT);
 
         if (!Validador::texto($titulo, 60)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'O título da qualificação é obrigatório (até 60 caracteres).'];
         } elseif (!$coordenador) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione o coordenador da qualificação.'];
+        } elseif ($acao === 'gravar' && !$codCampo) {
+            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione o campo a que a qualificação pertence.'];
+        } elseif ($acao === 'gravar' && !$codNivel) {
+            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione o nível da qualificação.'];
         } elseif ($acao === 'editar' && !$codigo) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Código inválido para atualização da qualificação.'];
         } else {
@@ -64,6 +67,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $pesquisa      = trim($_GET['pesquisa'] ?? '');
 $qualificacoes = $controller->listar($pesquisa);
 $coordenadores = $controller->listarCoordenadores();
+$campos        = $controller->listarCampos();
+$niveis        = $controller->listarNiveis();
 
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
@@ -119,6 +124,8 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             <th class="col-codigo">Código</th>
                             <th>Título</th>
                             <th>Coordenador</th>
+                            <th>Campo</th>   <!-- NOVO -->
+                            <th>Nível</th>   <!-- NOVO -->
                             <?php if ($pode_editar || $pode_remover): ?>
                                 <th class="col-opcoes">Opções</th>
                             <?php endif; ?>
@@ -126,7 +133,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                     </thead>
                     <tbody>                        <?php if (empty($qualificacoes)): ?>
                             <tr>
-                                <td colspan="<?= $pode_editar || $pode_remover ? 4 : 3 ?>" class="table-empty">
+                                <td colspan="<?= $pode_editar || $pode_remover ? 6 : 5 ?>" class="table-empty"> <!-- ALTERADO: colspan +2 -->
                                     Nenhuma qualificacao cadastrada no momento.
                                 </td>
                             </tr>
@@ -136,6 +143,8 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     <td class="col-codigo"><strong>#<?= htmlspecialchars((string) $qualificacao->getCodigo()) ?></strong></td>
                                     <td><?= htmlspecialchars($qualificacao->getTitulo()) ?></td>
                                     <td><?= htmlspecialchars((string) $qualificacao->getCod_coordenador()) ?></td>
+                                    <td><?= htmlspecialchars($qualificacao->getCampo() ?: '-') ?></td>   <!-- NOVO -->
+                                    <td><?= htmlspecialchars($qualificacao->getNiveis() ?: '-') ?></td>   <!-- NOVO -->
                                     <?php if ($pode_editar || $pode_remover): ?>
                                         <td class="col-opcoes">
                                             <div class="table-actions table-actions-end">
@@ -171,6 +180,24 @@ require_once __DIR__ . '/../partials/sidebar.php';
                     <div class="form-group">
                         <label for="titulo-novo">Titulo <span class="required">*</span></label>
                         <input type="text" id="titulo-novo" name="titulo" class="form-control" maxlength="60" placeholder="Ex: Licenciatura em Engenharia Informatica" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="campo-novo">Campo / Área <span class="required">*</span></label>
+                        <select id="campo-novo" name="campo" class="form-control" required>
+                            <option value="">Selecione o campo...</option>
+                            <?php foreach ($campos as $c): ?>
+                                <option value="<?= (int) $c->getCodigo() ?>"><?= htmlspecialchars($c->getNome()) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="nivel-novo">Nível <span class="required">*</span></label>
+                        <select id="nivel-novo" name="nivel" class="form-control" required>
+                            <option value="">Selecione o nível...</option>
+                            <?php foreach ($niveis as $n): ?>
+                                <option value="<?= (int) $n->getCodigo() ?>"><?= htmlspecialchars($n->getNome()) ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label for="coordenador-novo">Coordenador <span class="required">*</span></label>

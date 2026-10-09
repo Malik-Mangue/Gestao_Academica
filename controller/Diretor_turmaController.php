@@ -19,7 +19,7 @@ class Diretor_TurmaController {
 
     public function cadastrarDiretor_Turma($formador) {
         if ($formador != null) {
-            $diretorTurma = new Diretor_turma(null, $formador);
+            $diretorTurma = new Diretor_turma( $formador);
             $this->dao->create($diretorTurma);
             return true;
         }

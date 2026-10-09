@@ -26,6 +26,7 @@ class FormadorDao {
 
         $stmt->bind_param("sssssiiid", $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valorHoras, $horasMes, $salario);
         return $stmt->execute();
+
     }
 
     public function getAll() {
@@ -73,7 +74,7 @@ class FormadorDao {
         $salario = $formador->getSalario();
         $codigo = $formador->getCodigo();
 
-        $stmt->bind_param("sssssiidi", $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valorHoras, $horasMes, $salario, $codigo);
+        $stmt->bind_param("sssssiiidi", $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valorHoras, $horasMes, $salario, $codigo);
         return $stmt->execute();
     }
 

@@ -15,15 +15,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $nome = trim($_POST['nome'] ?? '');
         $username = trim($_POST['username'] ?? '');
         $apelido = trim($_POST['apelido'] ?? '');
-        $password = $_POST['password'] ?? '';
+        // $password = $_POST['password'] ?? '';
         $idPerfil = filter_input(INPUT_POST, 'idPerfil', FILTER_VALIDATE_INT);
 
-        if ($nome === '' || $username === '' || $apelido === '' || $password === '' || !$idPerfil) {
+        if ($nome === '' || $username === '' || $apelido === '' || !$idPerfil) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Todos os campos são obrigatórios.'];
         } elseif (mb_strlen($nome) > 100 || mb_strlen($username) > 60 || mb_strlen($apelido) > 60) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Não foi possível gravar o registo. Verifique os tamanhos dos campos.'];
-        } elseif (strlen($password) < 6) {
-            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'A password deve ter pelo menos 6 caracteres.'];
         } else {
             try {
                 $usuario = new Usuario(
@@ -32,10 +30,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $nome,
                     $username,
                     $apelido,
-                    $password,
+                    null,
                     1
                 );
-                $usuario->setPerfil(new Perfil($idPerfil,null));
+                $usuario->setPerfil(new Perfil($idPerfil, null));
                 $sucesso = $controller->store($usuario);
                 $_SESSION['flash'] = $sucesso
                     ? ['type' => 'success', 'msg' => 'Utilizador cadastrado com sucesso!']
@@ -74,10 +72,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['flash'] = [
                 'type' => 'success',
                 'msg'  => 'Senha redefinida para "' . UsuarioController::SENHA_PADRAO . '". '
-                         . 'O utilizador deverá trocá-la no próximo acesso.'
+                    . 'O utilizador deverá trocá-la no próximo acesso.'
             ];
         } else {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Não foi possível redefinir a senha.'];
+        }
+        header('Location: index.php');
+        exit;
+    }
+    if (isset($_POST['deletar'])) {
+
+        $codigo = filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT);
+        if (!$codigo) {
+            $_SESSION['flash'] = [
+                'type' => 'danger',
+                'msg' => 'Código inválido para remoção.'
+            ];
+        } elseif ($controller->delete($codigo)) {
+            $_SESSION['flash'] = [
+                'type' => 'success',
+                'msg' => 'Usuario removido com sucesso!'
+            ];
+        } else {
+            $_SESSION['flash'] = [
+                'type' => 'danger',
+                'msg' => 'Não foi possível eliminar o registo.'
+            ];
         }
         header('Location: index.php');
         exit;
@@ -131,6 +151,10 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             <th class="col-codigo">Código</th>
                             <th>Nome</th>
                             <th>Username</th>
+                            <th>Estado Civil</th>
+                            <th>Genero</th>
+                            <th>Telefone</th>
+                            <th>Email</th>
                             <th>Perfil</th>
                             <th class="col-opcoes">Opções</th>
                         </tr>
@@ -146,10 +170,15 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     <td class="col-codigo">#<?= htmlspecialchars($usuario->getCodigo()) ?></td>
                                     <td><?= htmlspecialchars($usuario->getNome() . ' ' . $usuario->getApelido()) ?></td>
                                     <td><?= htmlspecialchars($usuario->getUsername()) ?></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
                                     <td><?= htmlspecialchars($nomesPerfil[(int) $usuario->getIdPerfil()] ?? '—') ?></td>
                                     <td class="col-opcoes">
                                         <div class="table-actions table-actions-end">
                                             <a href="#modal-editar-<?= (int) $usuario->getCodigo() ?>" class="btn btn-sm btn-edit">Editar</a>
+                                            <a href="#modal-deletar-<?= (int) $usuario->getCodigo() ?>" class="btn btn-sm btn-delete">Remover</a>
                                             <a href="#modal-reset-<?= (int) $usuario->getCodigo() ?>" class="btn btn-reset">Reset senha</a>
                                         </div>
                                     </td>
@@ -210,22 +239,17 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                 <div class="form-group">
                                     <label for="edit-nome-<?= (int) $usuario->getCodigo() ?>">Nome <span class="required">*</span></label>
                                     <input type="text" id="edit-nome-<?= (int) $usuario->getCodigo() ?>" name="nome" class="form-control"
-                                           maxlength="100" value="<?= htmlspecialchars($usuario->getNome()) ?>" required>
+                                        maxlength="100" value="<?= htmlspecialchars($usuario->getNome()) ?>" required>
                                 </div>
                                 <div class="form-group">
                                     <label for="edit-apelido-<?= (int) $usuario->getCodigo() ?>">Apelido <span class="required">*</span></label>
                                     <input type="text" id="edit-apelido-<?= (int) $usuario->getCodigo() ?>" name="apelido" class="form-control"
-                                           maxlength="60" value="<?= htmlspecialchars($usuario->getApelido()) ?>" required>
+                                        maxlength="60" value="<?= htmlspecialchars($usuario->getApelido()) ?>" required>
                                 </div>
                                 <div class="form-group">
                                     <label for="edit-username-<?= (int) $usuario->getCodigo() ?>">Username <span class="required">*</span></label>
                                     <input type="text" id="edit-username-<?= (int) $usuario->getCodigo() ?>" name="username" class="form-control"
-                                           maxlength="60" autocomplete="username" value="<?= htmlspecialchars($usuario->getUsername()) ?>" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="edit-password-<?= (int) $usuario->getCodigo() ?>">Nova password</label>
-                                    <input type="password" id="edit-password-<?= (int) $usuario->getCodigo() ?>" name="password" class="form-control"
-                                           maxlength="60" autocomplete="new-password" placeholder="Deixar vazio mantém a atual">
+                                        maxlength="60" autocomplete="username" value="<?= htmlspecialchars($usuario->getUsername()) ?>" required>
                                 </div>
                                 <div class="form-group">
                                     <label for="edit-perfil-<?= (int) $usuario->getCodigo() ?>">Perfil <span class="required">*</span></label>
@@ -251,6 +275,45 @@ require_once __DIR__ . '/../partials/sidebar.php';
                     </form>
                 </div>
             </div>
+            <div id="modal-deletar-<?= $usuario->getCodigo() ?>" class="modal-overlay">
+                <div class="modal-box">
+                    <div class="modal-header modal-header-danger">
+                        <h3>Confirmar Exclusão de Registro</h3>
+                        <a href="#" class="modal-close">
+                            <img src="../../assets/icons/close.svg" alt="Fechar">
+                        </a>
+                    </div>
+                    <form method="post" action="index.php">
+                        <div class="modal-body">
+                            <input type="hidden" name="codigo" value="<?= htmlspecialchars($usuario->getCodigo()) ?>">
+                            <p class="confirm-question">
+                                Tem certeza que deseja eliminar permanentemente este registro?
+                            </p>
+                            <div class="confirm-detail-box">
+                                <p>
+                                    <strong>Código:</strong> #<?= htmlspecialchars($usuario->getCodigo()) ?>
+                                </p>
+                                <p>
+                                    <strong>Nome:</strong> <?= htmlspecialchars($usuario->getNome()) ?>
+                                </p>
+                                <p>
+                                    <strong>Username:</strong> <?= htmlspecialchars($usuario->getUsername()) ?>
+                                </p>
+                                <p>
+                                    <strong>Perfil:</strong> <?= htmlspecialchars($nomesPerfil[(int) $usuario->getIdPerfil()]) ?>
+                                </p>
+                            </div>
+                            <p class="confirm-warning">
+                                Atenção: Esta ação não poderá ser desfeita.
+                            </p>
+                        </div>
+                        <div class="modal-footer">
+                            <a href="#" class="btn btn-secondary">Cancelar</a>
+                            <button type="submit" name="deletar" class="btn btn-delete">Sim, Deletar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         <?php endforeach; ?>
     <?php endif; ?>
 
@@ -268,23 +331,23 @@ require_once __DIR__ . '/../partials/sidebar.php';
                         <div class="form-group">
                             <label for="novo-nome">Nome <span class="required">*</span></label>
                             <input type="text" id="novo-nome" name="nome" class="form-control"
-                                   maxlength="100" required>
+                                maxlength="100" required>
                         </div>
                         <div class="form-group">
                             <label for="novo-apelido">Apelido <span class="required">*</span></label>
                             <input type="text" id="novo-apelido" name="apelido" class="form-control"
-                                   maxlength="60" required>
+                                maxlength="60" required>
                         </div>
                         <div class="form-group">
                             <label for="novo-username">Username <span class="required">*</span></label>
                             <input type="text" id="novo-username" name="username" class="form-control"
-                                   maxlength="60" autocomplete="username" required>
+                                maxlength="60" autocomplete="username" required>
                         </div>
-                        <div class="form-group">
+                        <!-- <div class="form-group">
                             <label for="novo-password">Password <span class="required">*</span></label>
                             <input type="password" id="novo-password" name="password" class="form-control"
                                    maxlength="60" autocomplete="new-password" required>
-                        </div>
+                        </div> -->
                         <div class="form-group">
                             <label for="novo-perfil">Perfil <span class="required">*</span></label>
                             <select id="novo-perfil" name="idPerfil" class="form-control" required>

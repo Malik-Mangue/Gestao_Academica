@@ -19,7 +19,7 @@ class CoordenadorController {
 
     public function cadastrarCoordenador($formador) {
         if ($formador != null && $formador->getCodigo() != 0) {
-            $coordenador = new Coordenador(null, $formador);
+            $coordenador = new Coordenador($formador);
             $this->dao->create($coordenador);
             return true;
         }

@@ -52,6 +52,14 @@ class Quali_NivelController {
         return $this->dao->getQualificacao_Nivel($qualificacao);
     }
 
+    public function listarNiveisDaQualificacao($codQualificacao) {
+        return $this->dao->getNiveisDaQualificacao($codQualificacao);
+    }
+
+    public function listarNiveisPorQualificacao() {
+        return $this->dao->getNiveisPorQualificacao();
+    }
+
     public function buscarCodigo($qualificacao, $nivel) {
         return $this->dao->buscarCodigo($qualificacao, $nivel);
     }

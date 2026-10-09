@@ -3,6 +3,7 @@ require_once __DIR__ . '/../Dao/QualificacaoDao.php';
 require_once __DIR__ . '/../model/Qualificacao.php';
 require_once __DIR__ . '/ClassificacaoController.php';
 require_once __DIR__ . '/Quali_NivelController.php';
+require_once __DIR__ . '/Quali_moduloController.php';
 require_once __DIR__ . '/LicaoController.php';
 require_once __DIR__ . '/MatriculaController.php';
 require_once __DIR__ . '/../services/Validador.php';
@@ -14,75 +15,80 @@ class QualificacaoController {
         $this->dao = new QualificacaoDao();
     }
 
-    public function cadastrarQualificacao($titulo, $coordenador, $campo, $nivel) {
-        if (Validador::texto($titulo, 60)
-            && $coordenador != null && $campo != null) {
-
-            $qualificacao = new Qualificacao(null, $titulo, $coordenador);
-            $this->dao->create($qualificacao);
-
-            if ($qualificacao->getCodigo() > 0) {
-                $classificacaoController = new ClassificacaoController();
-                $sucesso = $classificacaoController->cadastrarClassificacao($campo, $qualificacao);
-
-                if ($sucesso) {
-                    $qualiNivelController = new Quali_NivelController();
-                    $qualiNivelController->cadastrarQuali_Nivel($nivel, $qualificacao);
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    public function comboQualificacao() {
-        return $this->dao->getAll();
-    }
-
-    public function listarQualificacao($titulo) {
-        return $this->dao->getAll($titulo);
+    public function listar($titulo = '') {
+        return $this->dao->getAll($titulo !== '' ? $titulo : null);
     }
 
     public function buscar($codigo) {
         return $this->dao->getById($codigo);
     }
 
-    // A atualizacao preserva o coordenador ja associado: sem o parametro
-    // opcional, o titulo e alterado sem perder a chave estrangeira.
-    public function atualizarQualificacao($codigo, $titulo, $coordenador = null) {
-        if ($codigo != 0 && Validador::texto($titulo, 60)) {
-            $atual = $this->dao->getById($codigo);
-            if ($atual === null) {
-                return false;
-            }
-            $codigoCoordenador = $coordenador !== null ? $coordenador : $atual->getCod_coordenador();
+    public function store() {
+        $titulo = trim($_POST['titulo'] ?? '');
+        $coordenador = filter_input(INPUT_POST, 'coordenador', FILTER_VALIDATE_INT);
 
-            $qualificacao = new Qualificacao($codigo, $titulo, $codigoCoordenador);
-            return $this->dao->update($qualificacao);
+        if (!Validador::texto($titulo, 60)) {
+            return false;
         }
-        return false;
+        if ($coordenador == null || $coordenador == false) {
+            return false;
+        }
+
+        $qualificacao = new Qualificacao(null, $titulo, (int) $coordenador);
+        return (bool) $this->dao->create($qualificacao);
     }
 
-    public function apagarQualificacao($codigo) {
-        if ($codigo != 0) {
-            $licaoController = new LicaoController();
-            if ($licaoController->existeLicaoPorQualificacao($codigo)) {
-                throw new Exception("Não é possível eliminar esta qualificação pois está sendo usada em uma ou mais lições.");
-            }
-
-            $matriculaController = new MatriculaController();
-            if ($matriculaController->existeMatriculaPorQualificacao($codigo)) {
-                throw new Exception("Não é possível eliminar esta qualificação pois está sendo usada em uma ou mais matrículas.");
-            }
-
-            if ($this->existeQualificacaoEmQualiModulo($codigo)) {
-                throw new Exception("Não é possível eliminar esta qualificação pois está associada a um ou mais módulos.");
-            }
-
-            $this->dao->delete($codigo);
-            return true;
+    public function update($codigo) {
+        if ($codigo == null || $codigo == false) {
+            return false;
         }
-        return false;
+        $codigo = (int) $codigo;
+
+        $titulo = trim($_POST['titulo'] ?? '');
+        $coordenador = filter_input(INPUT_POST, 'coordenador', FILTER_VALIDATE_INT);
+
+        if (!Validador::texto($titulo, 60)) {
+            return false;
+        }
+        if ($coordenador == null || $coordenador == false) {
+            return false;
+        }
+
+        $qualificacao = new Qualificacao($codigo, $titulo, (int) $coordenador);
+        return (bool) $this->dao->update($qualificacao);
+    }
+
+    public function delete($codigo) {
+        $codigo = (int) $codigo;
+        if ($codigo <= 0) {
+            return false;
+        }
+
+        // Verificar dependencias antes de eliminar
+        if ((new LicaoController())->existeLicaoPorQualificacao($codigo)) {
+            throw new Exception("Não é possível eliminar esta qualificação pois está sendo usada em uma ou mais lições.");
+        }
+
+        if ((new MatriculaController())->existeMatriculaPorQualificacao($codigo)) {
+            throw new Exception("Não é possível eliminar esta qualificação pois está sendo usada em uma ou mais matrículas.");
+        }
+
+        if ($this->dao->existeQualificacaoEmQualiModulo($codigo)) {
+            throw new Exception("Não é possível eliminar esta qualificação pois está associada a um ou mais módulos.");
+        }
+
+        return (bool) $this->dao->delete($codigo);
+    }
+
+    // Compatibilidade: as views de modulo/matricula/inscricao esperam
+    // objetos Qualificacao (getCodigo/getTitulo) para os selects.
+    public function comboQualificacao() {
+        return $this->listar();
+    }
+
+    // Helpers para listados de opcoes nos formularios
+    public function listarCoordenadores() {
+        return $this->dao->getCoordenadores();
     }
 
     public function existeQualificacaoEmClassificacao($codigoQualificacao) {

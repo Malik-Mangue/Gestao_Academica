@@ -160,7 +160,6 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                 <img src="../../assets/icons/close.svg" alt="Fechar">
                                             </a>
                                         </div>
-                                <?php endif; ?>
                                         <form method="post" action="index.php">
                                             <div class="modal-body">
                                                 <input type="hidden" name="codigo" value="<?= htmlspecialchars($campo->getCodigo()) ?>">
@@ -176,6 +175,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                         </form>
                                     </div>
                                 </div>
+                                <?php endif; ?>
 
                                 <?php if ($pode_remover): ?>
                                 <div id="modal-deletar-<?= $campo->getCodigo() ?>" class="modal-overlay">
@@ -186,7 +186,6 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                 <img src="../../assets/icons/close.svg" alt="Fechar">
                                             </a>
                                         </div>
-                                <?php endif; ?>
                                         <form method="post" action="index.php">
                                             <div class="modal-body">
                                                 <input type="hidden" name="codigo" value="<?= htmlspecialchars($campo->getCodigo()) ?>">
@@ -212,6 +211,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                         </form>
                                     </div>
                                 </div>
+                                <?php endif; ?>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </tbody>

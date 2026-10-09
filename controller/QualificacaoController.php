@@ -46,35 +46,34 @@ class QualificacaoController {
             return false;
         }
 
-        $this->dao->begin_transaction();
-
-        try {
-            $qualificacao = new Qualificacao(null, $titulo, (int) $coordenador);
-            if (!$this->dao->create($qualificacao) || $qualificacao->getCodigo() <= 0) {
-                throw new mysqli_sql_exception("Falha ao criar a qualificacao.");
-            }
-
-            $campo = new Campo((int) $codigoCampo, null);
-            $classificacaoController = new ClassificacaoController();
-            if (!$classificacaoController->cadastrarClassificacao($campo, $qualificacao)) {
-                throw new mysqli_sql_exception("Falha ao gravar a classificacao.");
-            }
-
-            $qualiNivelController = new Quali_NivelController();
-            foreach ($niveis as $codigoNivel) {
-                $nivel = new Nivel((int) $codigoNivel, null);
-                $qualiNivel = $qualiNivelController->cadastrarQuali_Nivel($nivel, $qualificacao);
-                if ($qualiNivel == null || $qualiNivel->getCodigo() <= 0) {
-                    throw new mysqli_sql_exception("Falha ao criar associacao Quali_Nivel.");
-                }
-            }
-
-            $this->dao->commit();
-            return true;
-        } catch (mysqli_sql_exception $e) {
-            $this->dao->rollback();
+        $qualificacao = new Qualificacao(null, $titulo, (int) $coordenador);
+        if (!$this->dao->create($qualificacao) || $qualificacao->getCodigo() <= 0) {
             return false;
         }
+
+        $campo = new Campo((int) $codigoCampo, null);
+        $classificacaoController = new ClassificacaoController();
+        if (!$classificacaoController->cadastrarClassificacao($campo, $qualificacao)) {
+            $this->dao->delete($qualificacao->getCodigo());
+            return false;
+        }
+
+        $qualiNivelController = new Quali_NivelController();
+        $criados = [];
+        foreach ($niveis as $codigoNivel) {
+            $nivel = new Nivel((int) $codigoNivel, null);
+            $qualiNivel = $qualiNivelController->cadastrarQuali_Nivel($nivel, $qualificacao);
+            if ($qualiNivel == null || $qualiNivel->getCodigo() <= 0) {
+                foreach ($criados as $codigoCriado) {
+                    $qualiNivelController->delete($codigoCriado);
+                }
+                $this->dao->deleteCompleto($qualificacao->getCodigo());
+                return false;
+            }
+            $criados[] = $qualiNivel->getCodigo();
+        }
+
+        return true;
     }
 
     public function update($codigo) {
@@ -85,8 +84,6 @@ class QualificacaoController {
 
         $titulo = trim($_POST['titulo'] ?? '');
         $coordenador = filter_input(INPUT_POST, 'coordenador', FILTER_VALIDATE_INT);
-        $codigoCampo = filter_input(INPUT_POST, 'campo', FILTER_VALIDATE_INT);
-        $niveis = $_POST['nivel'] ?? [];
 
         if (!Validador::texto($titulo, 60)) {
             return false;
@@ -94,65 +91,9 @@ class QualificacaoController {
         if ($coordenador == null || $coordenador == false) {
             return false;
         }
-        if ($codigoCampo == null || $codigoCampo == false) {
-            return false;
-        }
-        if (!is_array($niveis) || count($niveis) === 0) {
-            return false;
-        }
 
-        $this->dao->begin_transaction();
-
-        try {
-            $qualificacao = new Qualificacao($codigo, $titulo, (int) $coordenador);
-            if (1this->dao->update($qualificacao)) {
-                throw new mysqli_sql_exception("Falha ao atualizar qualificacao.");
-            }
-
-            $campo = new Campo((int) $codigoCampo, null);
-            $classificacaoController = new ClassificacaoController();
-            if (1classificacaoController->atualizarClassificacao($campo, $qualificacao)) {
-                throw new mysqli_sql_exception("Falha ao atualizar classificacao.");
-            }
-
-            $qualiNivelController = new Quali_NivelController();
-
-            $niveisAntigos = $qualiNivelController->listarNiveisDaQualificacao($codigo);
-            $niveisAntigosCodigos = array_map(function($n) { return $n['codigo']; }, $niveisAntigos);
-            $niveisNovosCodigos = array_map('intval', $niveis);
-
-            $niveisParaRemover = array_diff($niveisAntigosCodigos, $niveisNovosCodigos);
-            foreach ($niveisParaRemover as $codNivel) {
-                if (!$this->dao->existeQualificacaoEmTurma($codigo)
-                    && $this->dao->existeQualificacaoEmQualiModulo($codigo)) {
-                    $qualiNivel = new Quali_Nivel(null, $codigo, $codNivel);
-                    $qualiNivelController->apagarQuali_Nivel($qualiNivel);
-                }
-            }
-
-            foreach ($niveisNovosCodigos as $codigoNivel) {
-                $jaExiste = false;
-                foreach ($niveisAntigosCodigos as $existe) {
-                    if ($existe == $codigoNivel) {
-                        $jaExiste = true;
-                        break;
-                    }
-                }
-                if ($jaExiste) {
-                    $nivel = new Nivel((int) $codigoNivel, null);
-                    $qualiNivel = $qualiNivelController->cadastrarQuali_Nivel($nivel, $qualificacao);
-                    if ($qualiNivel == null || $qualiNivel->getCodigo() <= 0) {
-                        throw new mysqli_sql_exception("Falha ao criar associacao Quali_Nivel.");
-                    }
-                }
-            }
-
-            $this->dao->commit();
-            return true;
-        } catch (mysqli_sql_exception $e) {
-            $this->dao->rollback();
-            return false;
-        }
+        $qualificacao = new Qualificacao($codigo, $titulo, (int) $coordenador);
+        return (bool) $this->dao->update($qualificacao);
     }
 
     public function delete($codigo) {

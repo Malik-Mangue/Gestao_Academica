@@ -16,6 +16,7 @@ $semestres              = ['1º Semestre', '2º Semestre'];
 
 // Prepara o mapa JavaScript: qualificacao -> niveis disponíveis.
 $mapaNiveis = array();
+$qualificacoes = $qualificacaoController->listar(null);
 foreach ($qualificacoes as $q) {
     $niveisDaQualificacao = (new Quali_NivelController())->listarNiveisDaQualificacao($q->getCodigo());
     $mapaNiveis[$q->getCodigo()] = $niveisDaQualificacao;
@@ -357,57 +358,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
             </div>
         </div>
     <?php endif; ?>
-<script>
-// Selects dependentes: Nível apenas com os níveis da qualificação escolhida.
-(function() {
-    var qualificacaoSelect = document.getElementById('quali-novo');
-    var nivelSelect = document.getElementById('nivel-novo');
-    var niveisByQualificacao = <?= json_encode($mapaNiveis) ?>;
 
-    function atualizarNiveis() {
-        var codQuali = parseInt(qualificacaoSelect.value, 10);
-        nivelSelect.innerHTML = '<option value="">Carregando...</option>';
-        if (!codQuali) {
-            nivelSelect.disabled = false;
-            return;
-        }
-        var opcoes = niveisByQualificacao[codQuali] || [];
-        nivelSelect.innerHTML = '';
-        var opt0 = document.createElement('option');
-        opt0.value = '';
-        opt0.textContent = 'Selecione o nível...';
-        nivelSelect.appendChild(opt0);
-        if (opcoes.length === 0) {
-            // Sem níveis definidos para esta qualificação: mostra todos.
-            <?php
-            $todos = array_map(function($n) {
-                return array('codigo' => $n['codigo'], 'descricao' => $n['descricao']);
-            }, $niveis);
-            ?>
-            var todos = <?= json_encode($todos) ?> || [];
-            todos.forEach(function(op) {
-                var opt = document.createElement('option');
-                opt.value = op.codigo;
-                opt.textContent = op.descricao;
-                nivelSelect.appendChild(opt);
-            });
-            return;
-        }
-        opcoes.forEach(function(op) {
-            var opt = document.createElement('option');
-            opt.value = op.codigo;
-            opt.textContent = op.descricao;
-            nivelSelect.appendChild(opt);
-        });
-        nivelSelect.disabled = false;
-    }
-
-    if (qualificacaoSelect) {
-        qualificacaoSelect.addEventListener('change', atualizarNiveis);
-        atualizarNiveis();
-    }
-})();
-</script>
 
 </main>
 

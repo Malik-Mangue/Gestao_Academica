@@ -1,6 +1,9 @@
 <?php
 require_once __DIR__ . '/../config/conexao.php';
+require_once __DIR__ . '/../services/Sessao.php';
 require_once __DIR__ . '/../model/Qualificacao.php';
+require_once __DIR__ . '/../model/Logs.php';
+require_once __DIR__ . '/LogDao.php';
 
 class QualificacaoDao {
     private $db;
@@ -66,6 +69,7 @@ class QualificacaoDao {
             $result = $stmt->execute();
             if ($result) {
                 $qualificacao->setCodigo($this->db->insert_id);
+                $this->registarLog("INSERT", "Qualificação " . $titulo . " foi cadastrada");
             }
             return $result;
         } catch (mysqli_sql_exception $e) {
@@ -81,7 +85,11 @@ class QualificacaoDao {
         $codigo = $qualificacao->getCodigo();
         $stmt->bind_param("sii", $titulo, $cod_coordenador, $codigo);
         try {
-            return $stmt->execute();
+            $result = $stmt->execute();
+            if ($result) {
+                $this->registarLog("UPDATE", "Qualificação " . $titulo . " (ID: " . $codigo . ") foi atualizada");
+            }
+            return $result;
         } catch (mysqli_sql_exception $e) {
             return false;
         }
@@ -92,7 +100,11 @@ class QualificacaoDao {
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("i", $codigo);
         try {
-            return $stmt->execute();
+            $result = $stmt->execute();
+            if ($result) {
+                $this->registarLog("DELETE", "Qualificação (ID: " . $codigo . ") foi removida");
+            }
+            return $result;
         } catch (mysqli_sql_exception $e) {
             return false;
         }
@@ -116,10 +128,21 @@ class QualificacaoDao {
                 }
             }
             $this->db->commit();
+            $this->registarLog("DELETE", "Qualificação (ID: " . $codigo . ") e as suas associações foram removidas");
             return true;
         } catch (mysqli_sql_exception $e) {
             $this->db->rollback();
             return false;
+        }
+    }
+
+    // Regista uma acao de auditoria em nome do utilizador autenticado.
+    private function registarLog($acao, $descricao) {
+        $usuario = Sessao::obterUtilizador();
+        if ($usuario != null) {
+            $log = new Logs(null, $acao, $descricao, $usuario);
+            $log->setData(date('Y-m-d H:i:s'));
+            (new LogDao())->salvar($log);
         }
     }
 

@@ -10,18 +10,34 @@ require_once __DIR__ . '/../../controller/UsuarioController.php';
 
 $controller = new UsuarioController();
 
+$generos       = ['Masculino', 'Feminino', 'Outro'];
+$estados_civil = ['Solteiro(a)', 'Casado(a)', 'União estável', 'Divorciado(a)', 'Viúvo(a)'];
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['gravar'])) {
         $nome = trim($_POST['nome'] ?? '');
         $username = trim($_POST['username'] ?? '');
         $apelido = trim($_POST['apelido'] ?? '');
-        // $password = $_POST['password'] ?? '';
+        $estadoCivil = trim($_POST['estadoCivil'] ?? '');
+        $genero = trim($_POST['genero'] ?? '');
+        $telefone = trim($_POST['telefone'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $bi = trim($_POST['bi'] ?? '');
         $idPerfil = filter_input(INPUT_POST, 'idPerfil', FILTER_VALIDATE_INT);
 
-        if ($nome === '' || $username === '' || $apelido === '' || !$idPerfil) {
+        if ($nome === '' || $username === '' || $apelido === '' || $estadoCivil === ''
+            || $genero === '' || $telefone === '' || $email === '' || $bi === '' || !$idPerfil) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Todos os campos são obrigatórios.'];
-        } elseif (mb_strlen($nome) > 100 || mb_strlen($username) > 60 || mb_strlen($apelido) > 60) {
+        } elseif (!in_array($estadoCivil, $estados_civil, true) || !in_array($genero, $generos, true)) {
+            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Estado civil ou género inválidos.'];
+        } elseif (mb_strlen($nome) > 100 || mb_strlen($username) > 60 || mb_strlen($apelido) > 60
+            || mb_strlen($estadoCivil) > 40 || mb_strlen($genero) > 20 || mb_strlen($telefone) > 20
+            || mb_strlen($email) > 100 || mb_strlen($bi) > 20) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Não foi possível gravar o registo. Verifique os tamanhos dos campos.'];
+        } elseif (!Validador::email($email)) {
+            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'O e-mail indicado não é válido.'];
+        } elseif (!Validador::digitos($telefone, 20)) {
+            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'O telefone deve conter apenas dígitos.'];
         } else {
             try {
                 $usuario = new Usuario(
@@ -31,7 +47,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $username,
                     $apelido,
                     null,
-                    1
+                    1,
+                    $estadoCivil,
+                    $genero,
+                    $telefone,
+                    $email,
+                    $bi
                 );
                 $usuario->setPerfil(new Perfil($idPerfil, null));
                 $sucesso = $controller->store($usuario);
@@ -48,8 +69,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (isset($_POST['editar'])) {
         $codigo = filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT);
-        if (!$codigo) {
-            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Código inválido para atualização.'];
+        $nome = trim($_POST['nome'] ?? '');
+        $username = trim($_POST['username'] ?? '');
+        $apelido = trim($_POST['apelido'] ?? '');
+        $estadoCivil = trim($_POST['estadoCivil'] ?? '');
+        $genero = trim($_POST['genero'] ?? '');
+        $telefone = trim($_POST['telefone'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $bi = trim($_POST['bi'] ?? '');
+        $idPerfil = filter_input(INPUT_POST, 'idPerfil', FILTER_VALIDATE_INT);
+
+        if (!$codigo || $nome === '' || $username === '' || $apelido === '' || $estadoCivil === ''
+            || $genero === '' || $telefone === '' || $email === '' || $bi === '' || !$idPerfil) {
+            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Dados inválidos para atualização.'];
+        } elseif (!in_array($estadoCivil, $estados_civil, true) || !in_array($genero, $generos, true)) {
+            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Estado civil ou género inválidos.'];
+        } elseif (mb_strlen($nome) > 100 || mb_strlen($username) > 60 || mb_strlen($apelido) > 60
+            || mb_strlen($estadoCivil) > 40 || mb_strlen($genero) > 20 || mb_strlen($telefone) > 20
+            || mb_strlen($email) > 100 || mb_strlen($bi) > 20) {
+            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Não foi possível atualizar o registo. Verifique os tamanhos dos campos.'];
+        } elseif (!Validador::email($email)) {
+            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'O e-mail indicado não é válido.'];
+        } elseif (!Validador::digitos($telefone, 20)) {
+            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'O telefone deve conter apenas dígitos.'];
         } else {
             try {
                 $sucesso = $controller->update($codigo);
@@ -104,7 +146,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$usuarios = $controller->listar();
+$pesquisa = trim($_GET['pesquisa'] ?? '');
+$usuarios = $controller->listar($pesquisa !== '' ? $pesquisa : null);
 $perfis = $controller->listarPerfis();
 
 // Perfis existentes rastreados na base de dados através da classe Perfil
@@ -144,6 +187,16 @@ require_once __DIR__ . '/../partials/sidebar.php';
             <a href="#modal-novo" class="btn btn-primary">+ Novo Utilizador</a>
         </div>
         <div class="card-body">
+            <form method="get" action="index.php" class="form-actions">
+                <div class="form-group">
+                    <label for="pesquisa">Pesquisar</label>
+                    <input type="text" id="pesquisa" name="pesquisa" class="form-control"
+                           maxlength="100" placeholder="Nome, username, e-mail, telefone, BI ou perfil"
+                           value="<?= htmlspecialchars($pesquisa) ?>">
+                </div>
+                <button type="submit" class="btn btn-primary">Filtrar</button>
+                <a href="index.php" class="btn btn-secondary">Limpar</a>
+            </form>
             <div class="table-responsive">
                 <table class="table-custom">
                     <thead>
@@ -152,9 +205,9 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             <th>Nome</th>
                             <th>Username</th>
                             <th>Estado Civil</th>
-                            <th>Genero</th>
+                            <th>Género</th>
                             <th>Telefone</th>
-                            <th>Email</th>
+                            <th>E-mail</th>
                             <th>BI</th>
                             <th>Perfil</th>
                             <th class="col-opcoes">Opções</th>
@@ -163,7 +216,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                     <tbody>
                         <?php if (empty($usuarios)): ?>
                             <tr>
-                                <td colspan="5" class="table-empty">Nenhum utilizador registado.</td>
+                                <td colspan="10" class="table-empty">Nenhum utilizador encontrado.</td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($usuarios as $usuario): ?>
@@ -171,11 +224,11 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     <td class="col-codigo">#<?= htmlspecialchars($usuario->getCodigo()) ?></td>
                                     <td><?= htmlspecialchars($usuario->getNome() . ' ' . $usuario->getApelido()) ?></td>
                                     <td><?= htmlspecialchars($usuario->getUsername()) ?></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
+                                    <td><?= htmlspecialchars($usuario->getEstadoCivil() ?: '—') ?></td>
+                                    <td><?= htmlspecialchars($usuario->getGenero() ?: '—') ?></td>
+                                    <td><?= htmlspecialchars($usuario->getTelefone() ?: '—') ?></td>
+                                    <td><?= htmlspecialchars($usuario->getEmail() ?: '—') ?></td>
+                                    <td><?= htmlspecialchars($usuario->getBi() ?: '—') ?></td>
                                     <td><?= htmlspecialchars($nomesPerfil[(int) $usuario->getIdPerfil()] ?? '—') ?></td>
                                     <td class="col-opcoes">
                                         <div class="table-actions table-actions-end">
@@ -252,6 +305,43 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     <label for="edit-username-<?= (int) $usuario->getCodigo() ?>">Username <span class="required">*</span></label>
                                     <input type="text" id="edit-username-<?= (int) $usuario->getCodigo() ?>" name="username" class="form-control"
                                         maxlength="60" autocomplete="username" value="<?= htmlspecialchars($usuario->getUsername()) ?>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-estadoCivil-<?= (int) $usuario->getCodigo() ?>">Estado Civil <span class="required">*</span></label>
+                                    <select id="edit-estadoCivil-<?= (int) $usuario->getCodigo() ?>" name="estadoCivil" class="form-control" required>
+                                        <?php foreach ($estados_civil as $estado): ?>
+                                            <option value="<?= htmlspecialchars($estado) ?>"
+                                                <?= ($usuario->getEstadoCivil() === $estado) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($estado) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-genero-<?= (int) $usuario->getCodigo() ?>">Género <span class="required">*</span></label>
+                                    <select id="edit-genero-<?= (int) $usuario->getCodigo() ?>" name="genero" class="form-control" required>
+                                        <?php foreach ($generos as $genero): ?>
+                                            <option value="<?= htmlspecialchars($genero) ?>"
+                                                <?= ($usuario->getGenero() === $genero) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($genero) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-telefone-<?= (int) $usuario->getCodigo() ?>">Telefone <span class="required">*</span></label>
+                                    <input type="text" id="edit-telefone-<?= (int) $usuario->getCodigo() ?>" name="telefone" class="form-control"
+                                        maxlength="20" value="<?= htmlspecialchars($usuario->getTelefone() ?? '') ?>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-email-<?= (int) $usuario->getCodigo() ?>">E-mail <span class="required">*</span></label>
+                                    <input type="email" id="edit-email-<?= (int) $usuario->getCodigo() ?>" name="email" class="form-control"
+                                        maxlength="100" value="<?= htmlspecialchars($usuario->getEmail() ?? '') ?>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-bi-<?= (int) $usuario->getCodigo() ?>">Nº do BI <span class="required">*</span></label>
+                                    <input type="text" id="edit-bi-<?= (int) $usuario->getCodigo() ?>" name="bi" class="form-control"
+                                        maxlength="20" value="<?= htmlspecialchars($usuario->getBi() ?? '') ?>" required>
                                 </div>
                                 <div class="form-group">
                                     <label for="edit-perfil-<?= (int) $usuario->getCodigo() ?>">Perfil <span class="required">*</span></label>
@@ -350,6 +440,37 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             <input type="password" id="novo-password" name="password" class="form-control"
                                    maxlength="60" autocomplete="new-password" required>
                         </div> -->
+                        <div class="form-group">
+                            <label for="novo-estadoCivil">Estado Civil <span class="required">*</span></label>
+                            <select id="novo-estadoCivil" name="estadoCivil" class="form-control" required>
+                                <?php foreach ($estados_civil as $estado): ?>
+                                    <option value="<?= htmlspecialchars($estado) ?>"><?= htmlspecialchars($estado) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="novo-genero">Género <span class="required">*</span></label>
+                            <select id="novo-genero" name="genero" class="form-control" required>
+                                <?php foreach ($generos as $genero): ?>
+                                    <option value="<?= htmlspecialchars($genero) ?>"><?= htmlspecialchars($genero) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="novo-telefone">Telefone <span class="required">*</span></label>
+                            <input type="text" id="novo-telefone" name="telefone" class="form-control"
+                                maxlength="9" placeholder="Ex: 834323726" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="novo-email">E-mail <span class="required">*</span></label>
+                            <input type="email" id="novo-email" name="email" class="form-control"
+                                maxlength="100" placeholder="Ex: nome@email.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="novo-bi">Nº do BI <span class="required">*</span></label>
+                            <input type="text" id="novo-bi" name="bi" class="form-control"
+                                maxlength="13" required>
+                        </div>
                         <div class="form-group">
                             <label for="novo-perfil">Perfil <span class="required">*</span></label>
                             <select id="novo-perfil" name="idPerfil" class="form-control" required>

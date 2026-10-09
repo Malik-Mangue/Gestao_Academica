@@ -40,7 +40,7 @@ class InscricaoDao {
         return $result;
     }
 
-    public function getAll($semestre) {
+    public function getAll($pesquisa = null) {
         $sql = "select i.codigo_inscricao, i.codigo_formando, i.codigo_modulo, i.semestre, i.data_inscricao,
                        f.nome_formando, f.apelido_formando, m.nome_modulo,
                        qn.codigo_Quali_Nivel, q.cod_Quali, q.titulo
@@ -49,10 +49,15 @@ class InscricaoDao {
                 join Modulo m on m.codigo = i.codigo_modulo
                 left join Quali_Nivel qn on qn.codigo_Quali_Nivel = m.id_Quali_Nivel
                 left join Qualificacao q on q.cod_Quali = qn.cod_Quali
-                where i.semestre like ?";
+                where i.semestre like ?
+                   or f.nome_formando like ?
+                   or f.apelido_formando like ?
+                   or m.nome_modulo like ?
+                   or q.titulo like ?
+                   or CAST(i.data_inscricao as CHAR) like ?";
         $stmt = $this->db->prepare($sql);
-        $busca = "%" . $semestre . "%";
-        $stmt->bind_param("s", $busca);
+        $busca = "%" . $pesquisa . "%";
+        $stmt->bind_param("ssssss", $busca, $busca, $busca, $busca, $busca, $busca);
         $stmt->execute();
         $result = $stmt->get_result();
 

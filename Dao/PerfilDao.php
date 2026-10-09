@@ -3,7 +3,10 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
 require_once __DIR__ . '/../config/conexao.php';
+require_once __DIR__ . '/../services/Sessao.php';
 require_once __DIR__ . '/../model/Perfil.php';
+require_once __DIR__ . '/../model/Logs.php';
+require_once __DIR__ . '/LogDao.php';
 
 class PerfilDAO {
     private $db;
@@ -44,7 +47,11 @@ class PerfilDAO {
         $nome = $perfil->getNome();
         $stmt->bind_param("is", $id, $nome);
         try {
-            return $stmt->execute();
+            $result = $stmt->execute();
+            if ($result) {
+                $this->registarLog("INSERT", "Perfil " . $nome . " (ID: " . $id . ") foi cadastrado");
+            }
+            return $result;
         } catch (mysqli_sql_exception $e) {
             return false;
         }
@@ -57,7 +64,11 @@ class PerfilDAO {
         $id = $perfil->getId();
         $stmt->bind_param("si", $nome, $id);
         try {
-            return $stmt->execute();
+            $result = $stmt->execute();
+            if ($result) {
+                $this->registarLog("UPDATE", "Perfil " . $nome . " (ID: " . $id . ") foi atualizado");
+            }
+            return $result;
         } catch (mysqli_sql_exception $e) {
             return false;
         }
@@ -68,9 +79,23 @@ class PerfilDAO {
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("i", $codigo);
         try {
-            return $stmt->execute();
+            $result = $stmt->execute();
+            if ($result) {
+                $this->registarLog("DELETE", "Perfil (ID: " . $codigo . ") foi removido");
+            }
+            return $result;
         } catch (mysqli_sql_exception $e) {
             return false;
+        }
+    }
+
+    // Regista uma acao de auditoria em nome do utilizador autenticado.
+    private function registarLog($acao, $descricao) {
+        $usuario = Sessao::obterUtilizador();
+        if ($usuario != null) {
+            $log = new Logs(null, $acao, $descricao, $usuario);
+            $log->setData(date('Y-m-d H:i:s'));
+            (new LogDao())->salvar($log);
         }
     }
 }

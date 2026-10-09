@@ -4,8 +4,7 @@ Sessao::exigirLogin('../login/index.php');
 require_once __DIR__ . '/../../services/Validador.php';
 require_once __DIR__ . '/../../controller/MatriculaController.php';
 require_once __DIR__ . '/../../controller/FormandoController.php';
-require_once __DIR__ . '/../../controller/QualificacaoController.php';
-require_once __DIR__ . '/../../controller/Quali_NivelController.php'; // NOVO
+require_once __DIR__ . '/../../controller/Quali_NivelController.php';
 
 $controller     = new MatriculaController();
 $formandoCtrl   = new FormandoController();
@@ -30,28 +29,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'index.php'
         );
 
-        $codigo      = $acao === 'editar' ? filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT) : null;
-        $codFormando = filter_input(INPUT_POST, 'codFormando', FILTER_VALIDATE_INT);
-        $codQuali    = filter_input(INPUT_POST, 'codQuali', FILTER_VALIDATE_INT);
-        $codNivel    = filter_input(INPUT_POST, 'codNivel', FILTER_VALIDATE_INT); // NOVO
-        $idQualiNivel = (new Quali_NivelController())->buscarCodigo(
-            new Qualificacao((int) $codQuali, null, null),
-            new Nivel((int) $codNivel, null)
-        );
-        $data        = trim($_POST['data'] ?? '');
+        $codigo       = $acao === 'editar' ? filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT) : null;
+        $codFormando  = filter_input(INPUT_POST, 'codFormando', FILTER_VALIDATE_INT);
+        $idQualiNivel = filter_input(INPUT_POST, 'idQualiNivel', FILTER_VALIDATE_INT);
+        $data         = trim($_POST['data'] ?? '');
+
+        // Resolve o par Qualificacao+Nivel a partir da associacao escolhida no
+        // select unico (sem JavaScript), garantindo que o nivel selecionado
+        // pertence sempre a qualificacao escolhida.
+        $qualiNivel = $idQualiNivel
+            ? (new Quali_NivelController())->buscar($idQualiNivel)
+            : null;
 
         if (!$codFormando) {
-    $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione o formando.'];
-    } elseif (!$codQuali) {
-    $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione a qualificação.'];
-    } elseif (!$codNivel) { // NOVO
-    $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione o nível.'];
-      } elseif (!Validador::data($data)) {
+            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione o formando.'];
+        } elseif ($qualiNivel === null) {
+            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione a qualificação e o nível.'];
+        } elseif (!Validador::data($data)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Indique uma data de matrícula válida.'];
         } else {
             $formando     = new Formando($codFormando, null, null, null, null, null);
-            $qualificacao = new Qualificacao($codQuali, null, null);
-            $nivel        = new Nivel($codNivel, null); // ALTERADO: antes era new Nivel(null, null)
+            $qualificacao = new Qualificacao($qualiNivel->getCod_quali(), null, null);
+            $nivel        = new Nivel($qualiNivel->getCod_nivel(), null);
 
             $sucesso = $acao === 'gravar'
                 ? $controller->cadastrarMatricula($formando, $qualificacao, $nivel, $idQualiNivel, $data)
@@ -69,8 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $pesquisa       = trim($_GET['pesquisa'] ?? '');
 $matriculas     = $controller->listarMatricula($pesquisa);
 $formandos      = $formandoCtrl->listar();
-$qualificacoes  = (new QualificacaoController())->comboQualificacao();
-$niveis         = (new Quali_NivelController())->listarNiveis(); // NOVO
+$pares          = (new Quali_NivelController())->listarPares();
 
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
@@ -186,24 +184,13 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                         </select>
                                                     </div>
                                                     <div class="form-group">
-                                                        <label for="e-q-<?= $matricula->getCodigo() ?>">Qualificação <span class="required">*</span></label>
-                                                        <select id="e-q-<?= $matricula->getCodigo() ?>" name="codQuali" class="form-control" required>
-                                                            <?php foreach ($qualificacoes as $q): ?>
-                                                                <option value="<?= (int) $q->getCodigo() ?>"
-                                                                    <?= (int) $matricula->getQualificacao()->getCodigo() === (int) $q->getCodigo() ? 'selected' : '' ?>>
-                                                                    <?= htmlspecialchars($q->getTitulo()) ?>
-                                                                </option>
-                                                            <?php endforeach; ?>
-                                                        </select>
-                                                    </div>
-                                                    <!-- NOVO: dropdown de Nível -->
-                                                    <div class="form-group">
-                                                        <label for="e-n-<?= $matricula->getCodigo() ?>">Nível <span class="required">*</span></label>
-                                                        <select id="e-n-<?= $matricula->getCodigo() ?>" name="codNivel" class="form-control" required>
-                                                            <?php foreach ($niveis as $n): ?>
-                                                                <option value="<?= (int) $n['codigo'] ?>"
-                                                                    <?= ($matricula->getNivel() && (int) $matricula->getNivel()->getCodigo() === (int) $n['codigo']) ? 'selected' : '' ?>>
-                                                                    <?= htmlspecialchars($n['descricao']) ?>
+                                                        <label for="e-qn-<?= $matricula->getCodigo() ?>">Qualificação / Nível <span class="required">*</span></label>
+                                                        <select id="e-qn-<?= $matricula->getCodigo() ?>" name="idQualiNivel" class="form-control" required>
+                                                            <option value="">Selecione a qualificação e o nível...</option>
+                                                            <?php foreach ($pares as $p): ?>
+                                                                <option value="<?= (int) $p['codigo'] ?>"
+                                                                    <?= (int) $matricula->getId_quali_nivel() === (int) $p['codigo'] ? 'selected' : '' ?>>
+                                                                    <?= htmlspecialchars($p['descricao']) ?>
                                                                 </option>
                                                             <?php endforeach; ?>
                                                         </select>
@@ -285,22 +272,12 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="n-q">Qualificação <span class="required">*</span></label>
-                            <select id="n-q" name="codQuali" class="form-control" required>
-                                <?php foreach ($qualificacoes as $q): ?>
-                                    <option value="<?= (int) $q->getCodigo() ?>">
-                                        <?= htmlspecialchars($q->getTitulo()) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="n-n">Nível <span class="required">*</span></label>
-                            <select id="n-n" name="codNivel" class="form-control" required>
-                                <?php foreach ($niveis as $n): ?>
-                                    <option value="<?= (int) $n['codigo'] ?>">
-                                        <?= htmlspecialchars($n['descricao']) ?>
+                            <label for="n-qn">Qualificação / Nível <span class="required">*</span></label>
+                            <select id="n-qn" name="idQualiNivel" class="form-control" required>
+                                <option value="">Selecione a qualificação e o nível...</option>
+                                <?php foreach ($pares as $p): ?>
+                                    <option value="<?= (int) $p['codigo'] ?>">
+                                        <?= htmlspecialchars($p['descricao']) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>

@@ -55,7 +55,18 @@ class TurmaDao {
         $codigo = $turma->getCodigo();
 
         $stmt->bind_param("sisiii", $nome, $anoIngresso, $turno, $codigoFormador, $codigoQualiNivel, $codigo);
-        return $stmt->execute();
+        $result = $stmt->execute();
+
+        if ($result) {
+            $usuario = Sessao::obterUtilizador();
+            if ($usuario != null) {
+                $log = new Logs(null, "UPDATE", "Turma " . $nome . " (ID: " . $codigo . ") foi atualizada", $usuario);
+                $log->setData(date('Y-m-d H:i:s'));
+                (new LogDao())->salvar($log);
+            }
+        }
+
+        return $result;
     }
 
     public function getAll($nome) {
@@ -178,7 +189,18 @@ class TurmaDao {
         $sql = "delete from Turma where codigo = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("i", $codigo);
-        return $stmt->execute();
+        $result = $stmt->execute();
+
+        if ($result) {
+            $usuario = Sessao::obterUtilizador();
+            if ($usuario != null) {
+                $log = new Logs(null, "DELETE", "Turma (ID: " . $codigo . ") foi removida", $usuario);
+                $log->setData(date('Y-m-d H:i:s'));
+                (new LogDao())->salvar($log);
+            }
+        }
+
+        return $result;
     }
 
     public function existeTurmaComDiretor($codigoFormador) {

@@ -4,9 +4,10 @@ require_once __DIR__ . '/../../services/Sessao.php';
 Sessao::exigirLogin('../login/index.php');
 require_once __DIR__ . '/../../services/Validador.php';
 require_once __DIR__ . '/../../controller/QualificacaoController.php';
+require_once __DIR__ . '/../../controller/Quali_NivelController.php';
 
 $controller = new QualificacaoController();
-
+$qualiNivelController = new Quali_NivelController();
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $acao = isset($_POST['gravar']) ? 'gravar'
           : (isset($_POST['editar']) ? 'editar'
@@ -241,7 +242,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             <select id="campo-e" name="campo" class="form-control" required>
                                 <option value="">Selecione o campo...</option>
                                 <?php foreach ($campos as $c): ?>
-                                    <option value="<?= (int) $c->getCodigo() ?>" <?= (int) $c->getCodigo() === ((int) $qualificacao->getCampo()) ? 'selected' : '' ?>><?= htmlspecialchars($c->getNome()) ?></option>
+                                    <option value="<?= (int) $c->getCodigo() ?>"><?= htmlspecialchars($c->getNome()) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -258,8 +259,9 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             <label for="nivel-e">Nível <span class="required">*</span></label>
                             <select id="nivel-e" name="nivel" class="form-control" required>
                                 <option value="">Selecione o nível...</option>
-                                <?php foreach ($niveis as $n): ?>
-                                    <option value="<?= (int) $n->getCodigo() ?>" <?= (int) $n->getCodigo() === ((int) $qualificacao->getNiveisArray()[0]) ? 'selected' : '' ?>><?= htmlspecialchars($n->getNome()) ?></option>
+                                <?php $niveisQuali = (new Quali_NivelController())->listarNiveisDaQualificacao($qualificacao->getCodigo()); ?>
+                                <?php foreach ($niveisQuali as $n): ?>
+                                    <option value="<?= (int) $n['codigo'] ?>"><?= htmlspecialchars($n['descricao']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>

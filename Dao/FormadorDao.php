@@ -1,6 +1,9 @@
 <?php
 require_once __DIR__ . '/../config/conexao.php';
+require_once __DIR__ . '/../services/Sessao.php';
 require_once __DIR__ . '/../model/Formador.php';
+require_once __DIR__ . '/../model/Logs.php';
+require_once __DIR__ . '/LogDao.php';
 
 class FormadorDao {
     private $db;
@@ -25,15 +28,29 @@ class FormadorDao {
         $salario = $formador->getSalario();
 
         $stmt->bind_param("sssssiiid", $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valorHoras, $horasMes, $salario);
-        return $stmt->execute();
+        $result = $stmt->execute();
+        if ($result) {
+            $this->registarLog("INSERT", "Formador " . $nome . " " . $apelido . " foi cadastrado");
+        }
+        return $result;
 
     }
 
-    public function getAll() {
+    public function getAll($pesquisa = null) {
         $sql = "select codigo, nome, apelido, email, genero, estadoCivil, contacto,
                        valor_hora, horas_mes, salario
-                from Formador order by nome";
-        $stmt = $this->db->prepare($sql);
+                from Formador";
+        if ($pesquisa !== null && strlen($pesquisa) > 0) {
+            $sql .= " where nome like ? or apelido like ? or email like ? or genero like ?
+                            or estadoCivil like ? or contacto like ?
+                      order by nome";
+            $stmt = $this->db->prepare($sql);
+            $busca = "%" . $pesquisa . "%";
+            $stmt->bind_param("ssssss", $busca, $busca, $busca, $busca, $busca, $busca);
+        } else {
+            $sql .= " order by nome";
+            $stmt = $this->db->prepare($sql);
+        }
         $stmt->execute();
         $result = $stmt->get_result();
 
@@ -75,14 +92,32 @@ class FormadorDao {
         $codigo = $formador->getCodigo();
 
         $stmt->bind_param("sssssiiidi", $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valorHoras, $horasMes, $salario, $codigo);
-        return $stmt->execute();
+        $result = $stmt->execute();
+        if ($result) {
+            $this->registarLog("UPDATE", "Formador " . $nome . " " . $apelido . " (ID: " . $codigo . ") foi atualizado");
+        }
+        return $result;
     }
 
     public function delete($codigo) {
         $sql = "delete from Formador where codigo = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("i", $codigo);
-        return $stmt->execute();
+        $result = $stmt->execute();
+        if ($result) {
+            $this->registarLog("DELETE", "Formador (ID: " . $codigo . ") foi removido");
+        }
+        return $result;
+    }
+
+    // Regista uma acao de auditoria em nome do utilizador autenticado.
+    private function registarLog($acao, $descricao) {
+        $usuario = Sessao::obterUtilizador();
+        if ($usuario != null) {
+            $log = new Logs(null, $acao, $descricao, $usuario);
+            $log->setData(date('Y-m-d H:i:s'));
+            (new LogDao())->salvar($log);
+        }
     }
 
     private function montarFormador($rs) {

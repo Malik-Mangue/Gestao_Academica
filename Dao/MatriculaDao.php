@@ -21,12 +21,17 @@ class MatriculaDao {
         $stmt = $this->db->prepare($sql);
 
         $codigoFormando = $matricula->getFormando()->getCodigo();
+        
         $codigoQuali = $matricula->getQualificacao()->getCodigo();
         $idQualiNivel = $matricula->getId_quali_nivel();
         $dataMatricula = $matricula->getDataMatricula();
 
-        $stmt->bind_param("iisi", $codigoFormando, $codigoQuali, $idQualiNivel, $dataMatricula);
-        $result = $stmt->execute();
+        $stmt->bind_param("iiis", $codigoFormando, $codigoQuali, $idQualiNivel, $dataMatricula);
+        try {
+            $result = $stmt->execute();
+        } catch (mysqli_sql_exception $e) {
+            return false;
+        }
 
         if ($result) {
             $usuario = Sessao::obterUtilizador();
@@ -78,8 +83,12 @@ class MatriculaDao {
         $dataMatricula = $matricula->getDataMatricula();
         $codigo = $matricula->getCodigo();
 
-        $stmt->bind_param("iisii", $codigoFormando, $codigoQuali, $idQualiNivel, $dataMatricula, $codigo);
-        $result = $stmt->execute();
+        $stmt->bind_param("iiisi", $codigoFormando, $codigoQuali, $idQualiNivel, $dataMatricula, $codigo);
+        try {
+            $result = $stmt->execute();
+        } catch (mysqli_sql_exception $e) {
+            return false;
+        }
 
         if ($result) {
             $usuario = Sessao::obterUtilizador();
@@ -131,15 +140,6 @@ class MatriculaDao {
         $sql = "select count(*) as total from Matricula where cod_Quali = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("i", $codigoQualificacao);
-        $stmt->execute();
-        $rs = $stmt->get_result()->fetch_assoc();
-        return $rs['total'] > 0;
-    }
-
-    public function existeMatriculaPorIdQuaLiNivel($idQualiNivel) {
-        $sql = "select count(*) as total from Matricula where id_Quali_Nivel = ?";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bind_param("i", $idQualiNivel);
         $stmt->execute();
         $rs = $stmt->get_result()->fetch_assoc();
         return $rs['total'] > 0;

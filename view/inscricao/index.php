@@ -107,16 +107,16 @@ require_once __DIR__ . '/../partials/sidebar.php';
             <?php endif; ?>
         </div>
         <div class="card-body">
-            <!-- <form method="get" action="index.php" class="form-actions">
-                 <div class="form-group">
-                    <label for="pesquisa">Pesquisar por semestre</label>
+            <form method="get" action="index.php" class="form-actions">
+                <div class="form-group">
+                    <label for="pesquisa">Pesquisar</label>
                     <input type="text" id="pesquisa" name="pesquisa" class="form-control"
-                           maxlength="20" placeholder="Ex: 1º Semestre"
+                           maxlength="100" placeholder="Formando, módulo, qualificação, semestre ou data"
                            value="<?= htmlspecialchars($pesquisa) ?>">
                 </div>
                 <button type="submit" class="btn btn-primary">Filtrar</button>
                 <a href="index.php" class="btn btn-secondary">Limpar</a>
-            </form> -->
+            </form>
 
             <div class="table-responsive">
                 <table class="table-custom">
@@ -136,8 +136,8 @@ require_once __DIR__ . '/../partials/sidebar.php';
                     <tbody>
                         <?php if (empty($inscricoes)): ?>
                             <tr>
-                                <td colspan="<?= $pode_editar || $pode_remover ? 7 : 6 ?>" class="table-empty"> <!-- ALTERADO: colspan +1 -->
-                                    Nenhuma inscrição registada no momento.
+                                <td colspan="<?= $pode_editar || $pode_remover ? 7 : 6 ?>" class="table-empty">
+                                    Nenhuma inscrição encontrada.
                                 </td>
                             </tr>
                         <?php else: ?>

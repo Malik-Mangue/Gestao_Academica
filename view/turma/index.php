@@ -134,15 +134,21 @@ require_once __DIR__ . '/../partials/sidebar.php';
     <div class="card">
         <div class="card-header">
             <h2>Listagem de Turmas</h2>
-            <form method="get" action="index.php">
-                <input type="text" name="pesquisa" class="form-control" placeholder="Pesquisar por nome..."
-                       value="<?= htmlspecialchars($pesquisa) ?>">
-            </form>
             <?php if ($pode_criar): ?>
                 <a href="#modal-novo" class="btn btn-primary">+ Nova Turma</a>
             <?php endif; ?>
         </div>
         <div class="card-body">
+            <form method="get" action="index.php" class="form-actions">
+                <div class="form-group">
+                    <label for="pesquisa">Pesquisar</label>
+                    <input type="text" id="pesquisa" name="pesquisa" class="form-control"
+                           maxlength="60" placeholder="Pesquisar por nome..."
+                           value="<?= htmlspecialchars($pesquisa) ?>">
+                </div>
+                <button type="submit" class="btn btn-primary">Filtrar</button>
+                <a href="index.php" class="btn btn-secondary">Limpar</a>
+            </form>
             <div class="table-responsive">
                 <table class="table-custom">
                     <thead>

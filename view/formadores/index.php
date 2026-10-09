@@ -110,7 +110,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$formadores = $controller->listar();
+$pesquisa = trim($_GET['pesquisa'] ?? '');
+$formadores = $controller->listar($pesquisa !== '' ? $pesquisa : null);
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
 
@@ -148,6 +149,16 @@ require_once __DIR__ . '/../partials/sidebar.php';
             <?php endif; ?>
         </div>
         <div class="card-body">
+            <form method="get" action="index.php" class="form-actions">
+                <div class="form-group">
+                    <label for="pesquisa">Pesquisar</label>
+                    <input type="text" id="pesquisa" name="pesquisa" class="form-control"
+                           maxlength="100" placeholder="Nome, apelido, e-mail, género, estado civil ou contacto"
+                           value="<?= htmlspecialchars($pesquisa) ?>">
+                </div>
+                <button type="submit" class="btn btn-primary">Filtrar</button>
+                <a href="index.php" class="btn btn-secondary">Limpar</a>
+            </form>
             <div class="table-responsive">
                 <table class="table-custom">
                     <thead>
@@ -171,7 +182,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                         <?php if (empty($formadores)): ?>
                             <tr>
                                 <td colspan="<?= $pode_editar || $pode_remover ? 11 : 10 ?>" class="table-empty">
-                                    Nenhum formador cadastrado no momento.
+                                    Nenhum formador encontrado.
                                 </td>
                             </tr>
                         <?php else: ?>
@@ -231,6 +242,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     </div>
                                 <?php endif; ?>
 
+
                                 <?php if ($pode_remover): ?>
                                     <div id="modal-deletar-<?= $formador->getCodigo() ?>" class="modal-overlay">
                                         <div class="modal-box">
@@ -273,22 +285,23 @@ require_once __DIR__ . '/../partials/sidebar.php';
     </div>
 
     <?php if ($pode_criar): ?>
-        <div id="modal-novo" class="modal-overlay">
-            <div class="modal-box">
-                <div class="modal-header">
-                    <h3>Cadastrar Novo Formador</h3>
-                    <a href="#" class="modal-close">
-                        <img src="../../assets/icons/close.svg" alt="Fechar">
-                    </a>
+    <div id="modal-novo" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Cadastrar Novo Formador</h3>
+                <a href="#" class="modal-close">
+                    <img src="../../assets/icons/close.svg" alt="Fechar">
+                </a>
+            </div>
+            <form method="post" action="index.php">
+                <div class="modal-body">
+                    <?php
+                    $formador = null;
+                    $sufixo = 'novo';
+                    $acao   = 'Salvar Formador';
+                    require __DIR__ . '/_campos.php';
+                    ?>
                 </div>
-                <form method="post" action="index.php">
-                    <div class="modal-body">
-                        <?php
-                        $sufixo = 'novo';
-                        $acao   = 'Salvar Formador';
-                        require __DIR__ . '/_campos.php';
-                        ?>
-                    </div>
                     <div class="modal-footer">
                         <a href="#" class="btn btn-secondary">Cancelar</a>
                         <button type="reset" class="btn btn-reset">Limpar</button>

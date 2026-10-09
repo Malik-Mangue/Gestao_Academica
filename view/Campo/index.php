@@ -84,7 +84,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$campos = $controller->listarCampo();
+$pesquisa = trim($_GET['pesquisa'] ?? '');
+$campos = $controller->listarCampo($pesquisa !== '' ? $pesquisa : null);
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
 
@@ -122,6 +123,16 @@ require_once __DIR__ . '/../partials/sidebar.php';
             <?php endif; ?>
         </div>
         <div class="card-body">
+            <form method="get" action="index.php" class="form-actions">
+                <div class="form-group">
+                    <label for="pesquisa">Pesquisar</label>
+                    <input type="text" id="pesquisa" name="pesquisa" class="form-control"
+                           maxlength="60" placeholder="Pesquisar por nome..."
+                           value="<?= htmlspecialchars($pesquisa) ?>">
+                </div>
+                <button type="submit" class="btn btn-primary">Filtrar</button>
+                <a href="index.php" class="btn btn-secondary">Limpar</a>
+            </form>
             <div class="table-responsive">
                 <table class="table-custom">
                     <thead>
@@ -135,7 +146,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                         <?php if (empty($campos)): ?>
                             <tr>
                                 <td colspan="3" class="table-empty">
-                                    Nenhum campo ou área cadastrada no momento.
+                                    Nenhum campo ou área encontrada.
                                 </td>
                             </tr>
                         <?php else: ?>

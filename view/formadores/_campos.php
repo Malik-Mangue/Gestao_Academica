@@ -1,6 +1,12 @@
 <?php
 // Campos partilhados entre o formulario de criar e o de editar um formador.
 // $acao define o rotulo do botao; $formador (opcional) preenche os valores.
+/**
+ * @var string $sufixo
+ * @var array $generos
+ * @var array $estados_civil
+ * @var FormadorController $controller
+ */
 $acao    = $acao ?? 'Gravar';
 $formador = $formador ?? null;
 $v = function ($getter) use ($formador) {

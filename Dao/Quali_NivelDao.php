@@ -1,7 +1,10 @@
 <?php
 require_once __DIR__ . '/../config/conexao.php';
+require_once __DIR__ . '/../services/Sessao.php';
 require_once __DIR__ . '/../model/Quali_Nivel.php';
 require_once __DIR__ . '/../model/Nivel.php';
+require_once __DIR__ . '/../model/Logs.php';
+require_once __DIR__ . '/LogDao.php';
 
 class Quali_NivelDAO {
     private $db;
@@ -45,6 +48,7 @@ class Quali_NivelDAO {
             $result = $stmt->execute();
             if ($result) {
                 $qualiNivel->setCodigo($this->db->insert_id);
+                $this->registarLog("INSERT", "Associação qualificação/nível (ID: " . $qualiNivel->getCodigo() . ") foi cadastrada");
             }
             return $result;
         } catch (mysqli_sql_exception $e) {
@@ -60,7 +64,11 @@ class Quali_NivelDAO {
         $codigo = $qualiNivel->getCodigo();
         $stmt->bind_param("iii", $cod_quali, $cod_nivel, $codigo);
         try {
-            return $stmt->execute();
+            $result = $stmt->execute();
+            if ($result) {
+                $this->registarLog("UPDATE", "Associação qualificação/nível (ID: " . $codigo . ") foi atualizada");
+            }
+            return $result;
         } catch (mysqli_sql_exception $e) {
             return false;
         }
@@ -71,9 +79,23 @@ class Quali_NivelDAO {
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("i", $codigo);
         try {
-            return $stmt->execute();
+            $result = $stmt->execute();
+            if ($result) {
+                $this->registarLog("DELETE", "Associação qualificação/nível (ID: " . $codigo . ") foi removida");
+            }
+            return $result;
         } catch (mysqli_sql_exception $e) {
             return false;
+        }
+    }
+
+    // Regista uma acao de auditoria em nome do utilizador autenticado.
+    private function registarLog($acao, $descricao) {
+        $usuario = Sessao::obterUtilizador();
+        if ($usuario != null) {
+            $log = new Logs(null, $acao, $descricao, $usuario);
+            $log->setData(date('Y-m-d H:i:s'));
+            (new LogDao())->salvar($log);
         }
     }
 
@@ -94,6 +116,20 @@ class Quali_NivelDAO {
 
     public function getNiveis() {
         return $this->listaOpcoes("select codigo, nome as descricao from Nivel order by nome");
+    }
+
+    // Pares validos (qualificacao + nivel) ja associados: opcoes do <select>
+    // unico que substitui os dois selects dependentes, mantendo a restricao
+    // sem JavaScript. O valor de cada opcao e o codigo da associacao.
+    public function getPares() {
+        return $this->listaOpcoes(
+            "select qn.codigo_Quali_Nivel as codigo,
+                    concat(q.titulo, ' — ', n.nome) as descricao
+             from Quali_Nivel qn
+             join Qualificacao q on q.cod_Quali = qn.cod_Quali
+             join Nivel n on n.codigo = qn.cod_Nivel
+             order by q.titulo, n.nome"
+        );
     }
 
     // Niveis de uma qualificacao (tabela associativa Quali_Nivel): opcoes do

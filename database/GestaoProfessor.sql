@@ -202,12 +202,15 @@ CREATE TABLE `Matricula` (
   `codigo` int NOT NULL AUTO_INCREMENT,
   `cod_formando` int NOT NULL,
   `cod_Quali` int NOT NULL,
+  `id_Quali_Nivel` int NOT NULL,
   `data` varchar(10) NOT NULL,
   PRIMARY KEY (`codigo`),
   KEY `cod_formando` (`cod_formando`),
   KEY `cod_Quali` (`cod_Quali`),
+  KEY `fk_id_Quali_Nivel` (`id_Quali_Nivel`),
   CONSTRAINT `Matricula_ibfk_1` FOREIGN KEY (`cod_formando`) REFERENCES `Formando` (`codigo_formando`),
-  CONSTRAINT `Matricula_ibfk_2` FOREIGN KEY (`cod_Quali`) REFERENCES `Qualificacao` (`cod_Quali`)
+  CONSTRAINT `Matricula_ibfk_2` FOREIGN KEY (`cod_Quali`) REFERENCES `Qualificacao` (`cod_Quali`),
+  CONSTRAINT `Matricula_ibfk_3` FOREIGN KEY (`id_Quali_Nivel`) REFERENCES `Quali_Nivel` (`codigo_Quali_Nivel`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -272,7 +275,8 @@ CREATE TABLE `Quali_Nivel` (
   KEY `fk_codigo_Qualificacao` (`cod_Quali`),
   KEY `fk_codigo_Nivel` (`cod_Nivel`),
   CONSTRAINT `fk_codigo_Nivel` FOREIGN KEY (`cod_Nivel`) REFERENCES `Nivel` (`codigo`),
-  CONSTRAINT `fk_codigo_Qualificacao` FOREIGN KEY (`cod_Quali`) REFERENCES `Qualificacao` (`cod_Quali`)
+  CONSTRAINT `fk_codigo_Qualificacao` FOREIGN KEY (`cod_Quali`) REFERENCES `Qualificacao` (`cod_Quali`),
+  UNIQUE KEY `uk_qual_nivel` (`cod_Quali`, `cod_Nivel`)
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 

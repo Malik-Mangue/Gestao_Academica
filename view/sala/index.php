@@ -95,7 +95,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$salas = $controller->listar();
+$pesquisa = trim($_GET['pesquisa'] ?? '');
+$salas = $controller->listar($pesquisa !== '' ? $pesquisa : null);
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
 
@@ -128,9 +129,21 @@ require_once __DIR__ . '/../partials/sidebar.php';
     <div class="card">
         <div class="card-header">
             <h2>Listagem de Salas</h2>
+            <?php if($pode_criar): ?>
             <a href="#modal-novo" class="btn btn-primary">+ Nova Sala</a>
+            <?php endif; ?>
         </div>
         <div class="card-body">
+            <form method="get" action="index.php" class="form-actions">
+                <div class="form-group">
+                    <label for="pesquisa">Pesquisar</label>
+                    <input type="text" id="pesquisa" name="pesquisa" class="form-control"
+                           maxlength="20" placeholder="Designação ou tipo de sala"
+                           value="<?= htmlspecialchars($pesquisa) ?>">
+                </div>
+                <button type="submit" class="btn btn-primary">Filtrar</button>
+                <a href="index.php" class="btn btn-secondary">Limpar</a>
+            </form>
             <div class="table-responsive">
                 <table class="table-custom">
                     <thead>
@@ -145,7 +158,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                         <?php if (empty($salas)): ?>
                             <tr>
                                 <td colspan="4" class="table-empty">
-                                    Nenhuma sala cadastrada no momento.
+                                    Nenhuma sala encontrada.
                                 </td>
                             </tr>
                         <?php else: ?>
@@ -244,7 +257,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
             </div>
         </div>
     </div>
-
+    <?php if($pode_criar): ?>
     <div id="modal-novo" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-header">
@@ -276,6 +289,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
             </form>
         </div>
     </div>
+    <?php endif; ?>
 </main>
 
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>

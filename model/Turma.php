@@ -41,5 +41,3 @@ class Turma {
     public function setQualiNivel($quali_nivel){ $this->quali_nivel = $quali_nivel; }
 }
 ?>
-
-

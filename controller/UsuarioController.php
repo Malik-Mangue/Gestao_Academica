@@ -16,8 +16,8 @@ class UsuarioController {
         $this->dao = new UsuarioDao();
     }
 
-    public function listar() {
-        return $this->dao->getAll();
+    public function listar($pesquisa = null) {
+        return $this->dao->getAll($pesquisa);
     }
 
     public function listarPerfis() {
@@ -66,7 +66,12 @@ class UsuarioController {
             trim($_POST['username'] ?? ''),
             trim($_POST['apelido'] ?? ''),
             $password,
-            $primeiroAcesso
+            $primeiroAcesso,
+            trim($_POST['estadoCivil'] ?? ''),
+            trim($_POST['genero'] ?? ''),
+            trim($_POST['telefone'] ?? ''),
+            trim($_POST['email'] ?? ''),
+            trim($_POST['bi'] ?? '')
         );
         return $this->dao->update($usuario);
     }
@@ -108,7 +113,14 @@ class UsuarioController {
         }
 
         $hash = password_hash($senhaNova, PASSWORD_BCRYPT);
-        return $this->dao->atualizarPassword($usuario->getCodigo(), $hash, 0);
+        $resultado = $this->dao->atualizarPassword($usuario->getCodigo(), $hash, 0);
+        if ($resultado) {
+            $this->dao->registarLog(
+                "UPDATE",
+                "Senha do utilizador " . $usuario->getUsername() . " (ID: " . $usuario->getCodigo() . ") foi alterada"
+            );
+        }
+        return $resultado;
     }
 
     // "Reset senha" (Administrador): repoe a senha padrao e volta a exigir

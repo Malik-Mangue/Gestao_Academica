@@ -37,8 +37,8 @@ class FormadorController {
         return false;
     }
 
-    public function listar() {
-        return $this->dao->getAll();
+    public function listar($pesquisa = null) {
+        return $this->dao->getAll($pesquisa);
     }
 
     public function atualizarFormador($codigo, $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valor_horas, $horas_mes, $salario, $isDiretor, $isCoordenador) {

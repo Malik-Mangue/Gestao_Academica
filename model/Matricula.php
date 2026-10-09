@@ -4,14 +4,16 @@ class Matricula {
     private $formando;
     private $qualificacao;
     private $nivel;
+    private $id_quali_nivel;
     private $data_matricula;
 
-    public function __construct($codigo, $formando, $qualificacao, $nivel, $data_matricula)
+    public function __construct($codigo, $formando, $qualificacao, $nivel, $id_quali_nivel, $data_matricula)
     {
         $this->codigo = $codigo;
         $this->formando = $formando;
         $this->qualificacao = $qualificacao;
         $this->nivel = $nivel;
+        $this->id_quali_nivel = $id_quali_nivel;
         $this->data_matricula = $data_matricula;
     }
 
@@ -26,6 +28,9 @@ class Matricula {
 
     public function getNivel(){ return $this->nivel; }
     public function setNivel($nivel){ $this->nivel = $nivel; }
+
+    public function getId_quali_nivel(){ return $this->id_quali_nivel; }
+    public function setId_quali_nivel($id_quali_nivel){ $this->id_quali_nivel = $id_quali_nivel; }
 
     public function getDataMatricula(){ return $this->data_matricula; }
     public function setDataMatricula($data_matricula){ $this->data_matricula = $data_matricula; }

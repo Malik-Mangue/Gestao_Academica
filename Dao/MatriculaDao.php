@@ -17,15 +17,21 @@ class MatriculaDao {
     }
 
     public function create(Matricula $matricula) {
-        $sql = "insert into Matricula (cod_formando, cod_Quali, data) values (?, ?, ?)";
+        $sql = "insert into Matricula (cod_formando, cod_Quali, id_Quali_Nivel, data) values (?, ?, ?, ?)";
         $stmt = $this->db->prepare($sql);
 
         $codigoFormando = $matricula->getFormando()->getCodigo();
+        
         $codigoQuali = $matricula->getQualificacao()->getCodigo();
+        $idQualiNivel = $matricula->getId_quali_nivel();
         $dataMatricula = $matricula->getDataMatricula();
 
-        $stmt->bind_param("iis", $codigoFormando, $codigoQuali, $dataMatricula);
-        $result = $stmt->execute();
+        $stmt->bind_param("iiis", $codigoFormando, $codigoQuali, $idQualiNivel, $dataMatricula);
+        try {
+            $result = $stmt->execute();
+        } catch (mysqli_sql_exception $e) {
+            return false;
+        }
 
         if ($result) {
             $usuario = Sessao::obterUtilizador();
@@ -40,10 +46,12 @@ class MatriculaDao {
     }
 
     public function getAll($nome) {
-        $sql = "select Matricula.codigo, nome_formando, apelido_formando, titulo, Nivel.nome as nivel, data from Matricula
+        $sql = "select Matricula.codigo, nome_formando, apelido_formando, titulo, Nivel.nome as nivel, data,
+                       Quali_Nivel.codigo_Quali_Nivel
+                from Matricula
                 join Formando on codigo_formando = Matricula.cod_formando
                 join Qualificacao on Qualificacao.cod_Quali = Matricula.cod_Quali
-                join Quali_Nivel on Qualificacao.cod_Quali = Quali_Nivel.cod_Quali
+                left join Quali_Nivel on Quali_Nivel.codigo_Quali_Nivel = Matricula.id_Quali_Nivel
                 join Nivel on Nivel.codigo = Quali_Nivel.cod_Nivel
                 where nome_formando like ?";
         $stmt = $this->db->prepare($sql);
@@ -57,24 +65,30 @@ class MatriculaDao {
             $formando = new Formando(null, $rs['nome_formando'], $rs['apelido_formando'], null, null, null);
             $qualificacao = new Qualificacao(null, $rs['titulo'], null);
             $nivel = new Nivel(null, $rs['nivel']);
+            $idQualiNivel = $rs['codigo_Quali_Nivel'] ?? null;
 
-            $matricula = new Matricula($rs['codigo'], $formando, $qualificacao, $nivel, $rs['data']);
+            $matricula = new Matricula($rs['codigo'], $formando, $qualificacao, $nivel, $idQualiNivel, $rs['data']);
             $matriculas[] = $matricula;
         }
         return $matriculas;
     }
 
     public function update(Matricula $matricula) {
-        $sql = "update Matricula set cod_formando = ?, cod_Quali = ?, data = ? where codigo = ?";
+        $sql = "update Matricula set cod_formando = ?, cod_Quali = ?, id_Quali_Nivel = ?, data = ? where codigo = ?";
         $stmt = $this->db->prepare($sql);
 
         $codigoFormando = $matricula->getFormando()->getCodigo();
         $codigoQuali = $matricula->getQualificacao()->getCodigo();
+        $idQualiNivel = $matricula->getId_quali_nivel();
         $dataMatricula = $matricula->getDataMatricula();
         $codigo = $matricula->getCodigo();
 
-        $stmt->bind_param("iisi", $codigoFormando, $codigoQuali, $dataMatricula, $codigo);
-        $result = $stmt->execute();
+        $stmt->bind_param("iiisi", $codigoFormando, $codigoQuali, $idQualiNivel, $dataMatricula, $codigo);
+        try {
+            $result = $stmt->execute();
+        } catch (mysqli_sql_exception $e) {
+            return false;
+        }
 
         if ($result) {
             $usuario = Sessao::obterUtilizador();

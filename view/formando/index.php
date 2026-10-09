@@ -109,7 +109,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$formandos = $controller->listar();
+$pesquisa = trim($_GET['pesquisa'] ?? '');
+$formandos = $controller->listar($pesquisa !== '' ? $pesquisa : null);
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
 
@@ -147,6 +148,16 @@ require_once __DIR__ . '/../partials/sidebar.php';
             <?php endif; ?>
         </div>
         <div class="card-body">
+            <form method="get" action="index.php" class="form-actions">
+                <div class="form-group">
+                    <label for="pesquisa">Pesquisar</label>
+                    <input type="text" id="pesquisa" name="pesquisa" class="form-control"
+                           maxlength="100" placeholder="Nome, apelido, contacto, e-mail ou BI"
+                           value="<?= htmlspecialchars($pesquisa) ?>">
+                </div>
+                <button type="submit" class="btn btn-primary">Filtrar</button>
+                <a href="index.php" class="btn btn-secondary">Limpar</a>
+            </form>
             <div class="table-responsive">
                 <table class="table-custom">
                     <thead>
@@ -164,7 +175,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                         <?php if (empty($formandos)): ?>
                             <tr>
                                 <td colspan="7" class="table-empty">
-                                    Nenhum formando cadastrado no momento.
+                                    Nenhum formando encontrado.
                                 </td>
                             </tr>
                         <?php else: ?>
@@ -206,7 +217,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                 </div>
                                                 <div class="form-group">
                                                     <label for="contacto-<?= $formando->getCodigo() ?>">Contacto</label>
-                                                    <input type="number" id="contacto-<?= $formando->getCodigo() ?>" name="contacto" class="form-control" min="0" value="<?= htmlspecialchars($formando->getContacto() ?? '') ?>">
+                                                    <input type="number" id="contacto-<?= $formando->getCodigo() ?>" name="contacto" class="form-control" maxlength="9" value="<?= htmlspecialchars($formando->getContacto() ?? '') ?>">
                                                 </div>
                                                 <div class="form-group">
                                                     <label for="email-<?= $formando->getCodigo() ?>">E-mail</label>
@@ -214,7 +225,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                 </div>
                                                 <div class="form-group">
                                                     <label for="bi-<?= $formando->getCodigo() ?>">Nº do BI <span class="required">*</span></label>
-                                                    <input type="text" id="bi-<?= $formando->getCodigo() ?>" name="bi" class="form-control" value="<?= htmlspecialchars($formando->getBi()) ?>" maxlength="20" required>
+                                                    <input type="text" id="bi-<?= $formando->getCodigo() ?>" name="bi" class="form-control" value="<?= htmlspecialchars($formando->getBi()) ?>" maxlength="13" required>
                                                 </div>
                                             </div>
                                             <div class="modal-footer">
@@ -296,7 +307,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                     </div>
                     <div class="form-group">
                         <label for="novo-contacto">Contacto</label>
-                        <input type="number" id="novo-contacto" name="contacto" class="form-control" min="0" placeholder="Ex: 912345678">
+                        <input type="number" id="novo-contacto" name="contacto" class="form-control" maxlength="83" placeholder="Ex: 912345678">
                     </div>
                     <div class="form-group">
                         <label for="novo-email">E-mail</label>
@@ -304,7 +315,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                     </div>
                     <div class="form-group">
                         <label for="novo-bi">Nº do BI <span class="required">*</span></label>
-                        <input type="text" id="novo-bi" name="bi" class="form-control" placeholder="Ex: 001234567LA042" maxlength="20" required>
+                        <input type="text" id="novo-bi" name="bi" class="form-control" placeholder="Ex: 112001200201" maxlength="13" required>
                     </div>
                 </div>
                 <div class="modal-footer">

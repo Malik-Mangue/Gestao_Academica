@@ -15,7 +15,8 @@ class UsuarioDao {
     }
 
     // Ordem canonica do construtor Usuario:
-    // (codigo, idPerfil, nome, username, apelido, password, primeiroAcesso)
+    // (codigo, idPerfil, nome, username, apelido, password, primeiroAcesso,
+    //  estadoCivil, genero, telefone, email, bi, perfil)
     private function montarUsuario($rs) {
         $usuario = new Usuario(
             $rs['idUser'],
@@ -23,7 +24,13 @@ class UsuarioDao {
             $rs['nome'],
             $rs['username'],
             $rs['apelido'],
-            (int) $rs['primeiroAcesso'] === 1
+            $rs['password'] ?? null,
+            (int) $rs['primeiroAcesso'] === 1,
+            $rs['estadoCivil'] ?? null,
+            $rs['genero'] ?? null,
+            $rs['telefone'] ?? null,
+            $rs['email'] ?? null,
+            $rs['bi'] ?? null
         );
         $usuario->setPerfil(new Perfil($rs['idPerfil'], $rs['nome_perfil'] ?? null));
 
@@ -42,7 +49,9 @@ class UsuarioDao {
     }
 
     public function create(Usuario $usuario) {
-        $sql = "insert into Usuario (nome, username, password, apelido, idPerfil, primeiroAcesso) values (?, ?, ?, ?, ?, 1)";
+        $sql = "insert into Usuario (nome, username, password, apelido, idPerfil, primeiroAcesso,
+                                     estadoCivil, genero, telefone, email, BI)
+                values (?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)";
         $stmt = $this->db->prepare($sql);
 
         $nome = $usuario->getNome();
@@ -50,8 +59,14 @@ class UsuarioDao {
         $password = $usuario->getPassword();
         $apelido = $usuario->getApelido();
         $idPerfil = $usuario->getPerfil()->getId();
+        $estadoCivil = $usuario->getEstadoCivil();
+        $genero = $usuario->getGenero();
+        $telefone = $usuario->getTelefone();
+        $email = $usuario->getEmail();
+        $bi = $usuario->getBi();
 
-        $stmt->bind_param("ssssi", $nome, $username, $password, $apelido, $idPerfil);
+        $stmt->bind_param("ssssisssss", $nome, $username, $password, $apelido, $idPerfil,
+                          $estadoCivil, $genero, $telefone, $email, $bi);
 
         try {
             $result = $stmt->execute();
@@ -66,17 +81,22 @@ class UsuarioDao {
         return $result;
     }
 
-    public function getAll($username = null) {
+    public function getAll($pesquisa = null) {
         $sql = "select Usuario.idUser, Usuario.idPerfil, Usuario.nome, Usuario.username,
-                       Usuario.apelido, Usuario.primeiroAcesso, Perfil.nome as nome_perfil
+                       Usuario.apelido, Usuario.primeiroAcesso, Usuario.estadoCivil,
+                       Usuario.genero, Usuario.telefone, Usuario.email, Usuario.BI,
+                       Perfil.nome as nome_perfil
                 from Usuario
                 join Perfil on Usuario.idPerfil = Perfil.id";
 
-        if ($username !== null && strlen($username) > 0) {
-            $sql .= " where Usuario.username like ? order by Usuario.nome";
+        if ($pesquisa !== null && strlen($pesquisa) > 0) {
+            $sql .= " where Usuario.nome like ? or Usuario.apelido like ? or Usuario.username like ?
+                            or Usuario.email like ? or Usuario.telefone like ? or Usuario.BI like ?
+                            or Perfil.nome like ?
+                      order by Usuario.nome";
             $stmt = $this->db->prepare($sql);
-            $busca = "%" . $username . "%";
-            $stmt->bind_param("s", $busca);
+            $busca = "%" . $pesquisa . "%";
+            $stmt->bind_param("sssssss", $busca, $busca, $busca, $busca, $busca, $busca, $busca);
         } else {
             $sql .= " order by Usuario.nome";
             $stmt = $this->db->prepare($sql);
@@ -116,6 +136,8 @@ class UsuarioDao {
     public function obterUsuarioPorCodigo($codigo) {
         $sql = "select Usuario.idUser, Usuario.idPerfil, Usuario.nome, Usuario.username,
                        Usuario.apelido, Usuario.password, Usuario.primeiroAcesso,
+                       Usuario.estadoCivil, Usuario.genero, Usuario.telefone,
+                       Usuario.email, Usuario.BI,
                        Perfil.nome as nome_perfil
                 from Usuario
                 join Perfil on Usuario.idPerfil = Perfil.id
@@ -135,6 +157,8 @@ class UsuarioDao {
     public function getByUsername($username) {
         $sql = "select Usuario.idUser, Usuario.idPerfil, Usuario.nome, Usuario.username,
                        Usuario.apelido, Usuario.password, Usuario.primeiroAcesso,
+                       Usuario.estadoCivil, Usuario.genero, Usuario.telefone,
+                       Usuario.email, Usuario.BI,
                        Perfil.nome as nome_perfil
                 from Usuario
                 join Perfil on Usuario.idPerfil = Perfil.id
@@ -148,17 +172,7 @@ class UsuarioDao {
             return null;
         }
 
-            $usuario = new Usuario(
-            $rs['idUser'],
-            $rs['idPerfil'],
-            $rs['nome'],
-            $rs['username'],
-            $rs['apelido'],
-            $rs['password'],
-            (int) $rs['primeiroAcesso']
-        );
-        $usuario->setPerfil(new Perfil($rs['idPerfil'], null));
-        return $usuario;
+        return $this->montarUsuario($rs);
     }
 
     public function atualizarPassword($codigo, $password, $primeiroAcesso) {
@@ -175,6 +189,7 @@ class UsuarioDao {
 
     public function update(Usuario $usuario) {
         $sql = "update Usuario set nome = ?, username = ?, apelido = ?, idPerfil = ?,
+                       estadoCivil = ?, genero = ?, telefone = ?, email = ?, BI = ?,
                        password = ?, primeiroAcesso = ?
                 where idUser = ?";
 
@@ -192,11 +207,18 @@ class UsuarioDao {
         $nome = $usuario->getNome();
         $username = $usuario->getUsername();
         $apelido = $usuario->getApelido();
-        $idPerfil = $usuario->getIdPerfil();
+        $idPerfil = (int) $usuario->getIdPerfil();
+        $estadoCivil = $usuario->getEstadoCivil();
+        $genero = $usuario->getGenero();
+        $telefone = $usuario->getTelefone();
+        $email = $usuario->getEmail();
+        $bi = $usuario->getBi();
         $primeiroAcesso = (int) $usuario->getPrimeiroAcesso();
         $codigo = $usuario->getCodigo();
 
-        $stmt->bind_param("sssssii", $nome, $username, $apelido, $idPerfil, $password, $primeiroAcesso, $codigo);
+        $stmt->bind_param("sssissssssii", $nome, $username, $apelido, $idPerfil,
+                          $estadoCivil, $genero, $telefone, $email, $bi,
+                          $password, $primeiroAcesso, $codigo);
 
         try {
             $result = $stmt->execute();

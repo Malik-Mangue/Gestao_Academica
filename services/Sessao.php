@@ -142,7 +142,7 @@ final class Sessao
             'CR',
         ],
         self::AUDITOR  => [
-            'R', 'Logs',
+            'CRUD', 'Logs',
         ],
     ];
 

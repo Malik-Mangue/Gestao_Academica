@@ -18,8 +18,8 @@ class CampoController {
         return false;
     }
 
-    public function listarCampo() {
-        return $this->dao->getAll();
+    public function listarCampo($pesquisa = null) {
+        return $this->dao->getAll($pesquisa);
     }
 
     public function buscarCampo($codigo) {

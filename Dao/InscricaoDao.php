@@ -3,6 +3,8 @@ require_once __DIR__ . '/../config/conexao.php';
 require_once __DIR__ . '/../model/Inscricao.php';
 require_once __DIR__ . '/../model/Formando.php';
 require_once __DIR__ . '/../model/Modulo.php';
+require_once __DIR__ . '/../model/Quali_Nivel.php';
+require_once __DIR__ . '/../model/Qualificacao.php';
 require_once __DIR__ . '/../model/Logs.php';
 require_once __DIR__ . '/LogDao.php';
 
@@ -38,16 +40,24 @@ class InscricaoDao {
         return $result;
     }
 
-    public function getAll($semestre) {
+    public function getAll($pesquisa = null) {
         $sql = "select i.codigo_inscricao, i.codigo_formando, i.codigo_modulo, i.semestre, i.data_inscricao,
-                       f.nome_formando, f.apelido_formando, m.nome_modulo
+                       f.nome_formando, f.apelido_formando, m.nome_modulo,
+                       qn.codigo_Quali_Nivel, q.cod_Quali, q.titulo
                 from Inscricao i
                 join Formando f on f.codigo_formando = i.codigo_formando
                 join Modulo m on m.codigo = i.codigo_modulo
-                where i.semestre like ?";
+                left join Quali_Nivel qn on qn.codigo_Quali_Nivel = m.id_Quali_Nivel
+                left join Qualificacao q on q.cod_Quali = qn.cod_Quali
+                where i.semestre like ?
+                   or f.nome_formando like ?
+                   or f.apelido_formando like ?
+                   or m.nome_modulo like ?
+                   or q.titulo like ?
+                   or CAST(i.data_inscricao as CHAR) like ?";
         $stmt = $this->db->prepare($sql);
-        $busca = "%" . $semestre . "%";
-        $stmt->bind_param("s", $busca);
+        $busca = "%" . $pesquisa . "%";
+        $stmt->bind_param("ssssss", $busca, $busca, $busca, $busca, $busca, $busca);
         $stmt->execute();
         $result = $stmt->get_result();
 
@@ -55,6 +65,14 @@ class InscricaoDao {
         while ($rs = $result->fetch_assoc()) {
             $formando = new Formando($rs['codigo_formando'], $rs['nome_formando'], $rs['apelido_formando'], null, null, null);
             $modulo = new Modulo($rs['codigo_modulo'], $rs['nome_modulo'], null);
+
+            // NOVO: liga a qualificação ao módulo
+            if ($rs['cod_Quali'] !== null) {
+                $qualificacao = new Qualificacao($rs['cod_Quali'], $rs['titulo'], null);
+                $qualiNivel = new Quali_Nivel($rs['codigo_Quali_Nivel'], $rs['cod_Quali'], null);
+                $qualiNivel->setQualificacao($qualificacao);
+                $modulo->setQualiNivel($qualiNivel);
+            }
 
             $inscricao = new Inscricao(
                 $rs['codigo_inscricao'],

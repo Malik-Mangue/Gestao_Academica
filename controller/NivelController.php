@@ -9,8 +9,8 @@ class NivelController {
         $this->dao = new NivelDao();
     }
 
-    public function listar() {
-        return $this->dao->getAll();
+    public function listar($pesquisa = null) {
+        return $this->dao->getAll($pesquisa);
     }
 
     public function buscar($codigo) {

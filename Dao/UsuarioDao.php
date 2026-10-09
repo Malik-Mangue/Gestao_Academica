@@ -149,7 +149,17 @@ class UsuarioDao {
             return null;
         }
 
-        return $this->montarUsuario($rs);
+            $usuario = new Usuario(
+            $rs['idUser'],
+            $rs['idPerfil'],
+            $rs['nome'],
+            $rs['username'],
+            $rs['apelido'],
+            $rs['password'],
+            (int) $rs['primeiroAcesso']
+        );
+        $usuario->setPerfil(new Perfil($rs['idPerfil'], null));
+        return $usuario;
     }
 
     public function atualizarPassword($codigo, $password, $primeiroAcesso) {

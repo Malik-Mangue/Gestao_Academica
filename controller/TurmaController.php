@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../Dao/TurmaDao.php';
 require_once __DIR__ . '/../model/Turma.php';
 require_once __DIR__ . '/Quali_NivelController.php';
-require_once __DIR__ . '/Diretor_TurmaController.php';
+require_once __DIR__ . '/Diretor_turmaController.php';
 require_once __DIR__ . '/LicaoController.php';
 
 class TurmaController {

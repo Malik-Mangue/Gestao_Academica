@@ -8,7 +8,7 @@ class UsuarioController {
     // Senha reposta pelo Administrador na acao "Reset senha". O primeiro
     // acesso fica obrigatorio, portanto o utilizador tem de a trocar no login.
     const SENHA_PADRAO = 1234;
-    
+
 
     private $dao;
 

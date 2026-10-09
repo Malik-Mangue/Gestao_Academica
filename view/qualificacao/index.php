@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $titulo   = trim($_POST['titulo'] ?? '');
         $coordenador = filter_input(INPUT_POST, 'coordenador', FILTER_VALIDATE_INT);
         $codCampo = filter_input(INPUT_POST, 'campo', FILTER_VALIDATE_INT);
-        $codNivel = filter_input(INPUT_POST, 'nivel', FILTER_VALIDATE_INT);
+        $niveis = $_POST['nivel'] ?? [];
 
         if (!Validador::texto($titulo, 60)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'O título da qualificação é obrigatório (até 60 caracteres).'];
@@ -45,8 +45,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione o coordenador da qualificação.'];
         } elseif ($acao === 'gravar' && !$codCampo) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione o campo a que a qualificação pertence.'];
-        } elseif ($acao === 'gravar' && !$codNivel) {
-            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione o nível da qualificação.'];
+        } elseif ($acao === 'gravar' && ( !is_array($niveis) || count($niveis) === 0 )) {
+            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione pelo menos um nível.'];
         } elseif ($acao === 'editar' && !$codigo) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Código inválido para atualização da qualificação.'];
         } else {
@@ -191,13 +191,13 @@ require_once __DIR__ . '/../partials/sidebar.php';
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="nivel-novo">Nível <span class="required">*</span></label>
-                        <select id="nivel-novo" name="nivel" class="form-control" required>
-                            <option value="">Selecione o nível...</option>
-                            <?php foreach ($niveis as $n): ?>
-                                <option value="<?= (int) $n->getCodigo() ?>"><?= htmlspecialchars($n->getNome()) ?></option>
-                            <?php endforeach; ?>
-                        </select>
+                        <label class="required">Níveis <span class="required">*</span></label>
+                        <?php foreach ($niveis as $n): ?>
+                            <div class="checkbox-inline">
+                                <input type="checkbox" name="nivel[]" value="<?= (int) $n->getCodigo() ?>" id="nivel-<?= (int) $n->getCodigo() ?>">
+                                <label for="nivel-<?= (int) $n->getCodigo() ?>"><?= htmlspecialchars($n->getNome()) ?></label>
+                            </div>
+                        <?php endforeach; ?>
                     </div>
                     <div class="form-group">
                         <label for="coordenador-novo">Coordenador <span class="required">*</span></label>
@@ -237,11 +237,29 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             <input type="text" id="titulo-e" name="titulo" class="form-control" maxlength="60" value="<?= htmlspecialchars($qualificacao->getTitulo()) ?>" required>
                         </div>
                         <div class="form-group">
+                            <label for="campo-e">Campo / Área <span class="required">*</span></label>
+                            <select id="campo-e" name="campo" class="form-control" required>
+                                <option value="">Selecione o campo...</option>
+                                <?php foreach ($campos as $c): ?>
+                                    <option value="<?= (int) $c->getCodigo() ?>" <?= (int) $c->getCodigo() === ((int) $qualificacao->getCampo()) ? 'selected' : '' ?>><?= htmlspecialchars($c->getNome()) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
                             <label for="coordenador-e">Coordenador <span class="required">*</span></label>
                             <select id="coordenador-e" name="coordenador" class="form-control" required>
                                 <option value="">Selecione o coordenador...</option>
                                 <?php foreach ($coordenadores as $coordenador): ?>
                                     <option value="<?= (int) $coordenador['codigo'] ?>" <?= (int) $coordenador['codigo'] === (int) $qualificacao->getCod_coordenador() ? 'selected' : '' ?>><?= htmlspecialchars($coordenador['descricao']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="nivel-e">Nível <span class="required">*</span></label>
+                            <select id="nivel-e" name="nivel" class="form-control" required>
+                                <option value="">Selecione o nível...</option>
+                                <?php foreach ($niveis as $n): ?>
+                                    <option value="<?= (int) $n->getCodigo() ?>" <?= (int) $n->getCodigo() === ((int) $qualificacao->getNiveisArray()[0]) ? 'selected' : '' ?>><?= htmlspecialchars($n->getNome()) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>

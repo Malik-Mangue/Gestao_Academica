@@ -155,6 +155,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             <th>Genero</th>
                             <th>Telefone</th>
                             <th>Email</th>
+                            <th>BI</th>
                             <th>Perfil</th>
                             <th class="col-opcoes">Opções</th>
                         </tr>
@@ -170,6 +171,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     <td class="col-codigo">#<?= htmlspecialchars($usuario->getCodigo()) ?></td>
                                     <td><?= htmlspecialchars($usuario->getNome() . ' ' . $usuario->getApelido()) ?></td>
                                     <td><?= htmlspecialchars($usuario->getUsername()) ?></td>
+                                    <td></td>
                                     <td></td>
                                     <td></td>
                                     <td></td>

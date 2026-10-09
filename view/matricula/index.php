@@ -34,6 +34,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $codFormando = filter_input(INPUT_POST, 'codFormando', FILTER_VALIDATE_INT);
         $codQuali    = filter_input(INPUT_POST, 'codQuali', FILTER_VALIDATE_INT);
         $codNivel    = filter_input(INPUT_POST, 'codNivel', FILTER_VALIDATE_INT); // NOVO
+        $idQualiNivel = (new Quali_NivelController())->buscarCodigo(
+            new Qualificacao((int) $codQuali, null, null),
+            new Nivel((int) $codNivel, null)
+        );
         $data        = trim($_POST['data'] ?? '');
 
         if (!$codFormando) {
@@ -50,8 +54,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $nivel        = new Nivel($codNivel, null); // ALTERADO: antes era new Nivel(null, null)
 
             $sucesso = $acao === 'gravar'
-                ? $controller->cadastrarMatricula($formando, $qualificacao, $nivel, $data)
-                : $controller->atualizarMatricula($codigo, $formando, $qualificacao, $nivel, $data);
+                ? $controller->cadastrarMatricula($formando, $qualificacao, $nivel, $idQualiNivel, $data)
+                : $controller->atualizarMatricula($codigo, $formando, $qualificacao, $nivel, $idQualiNivel, $data);
 
             $_SESSION['flash'] = $sucesso
                 ? ['type' => 'success', 'msg' => $acao === 'gravar' ? 'Matrícula registada com sucesso!' : 'Matrícula atualizada com sucesso!']
@@ -315,6 +319,8 @@ require_once __DIR__ . '/../partials/sidebar.php';
             </div>
         </div>
     <?php endif; ?>
+
+
 </main>
 
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>

@@ -39,7 +39,7 @@ class LogDao {
         $sql = "select Usuario.username, Perfil.nome, acao, descricao, data from Log
                 join Usuario on id_Usuario = idUser
                 join Perfil on idPerfil = id
-                order by data desc";
+                order by codigo desc";
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -59,8 +59,8 @@ class LogDao {
                 or Perfil.nome like ?
                 or acao like ?
                 or descricao like ?
-                or CAST(data as CHAR) like ?
-                order by data desc";
+                or data like ?
+                order by codigo desc";
         $stmt = $this->db->prepare($sql);
         $termo = "%" . $filtro . "%";
         $stmt->bind_param("sssss", $termo, $termo, $termo, $termo, $termo);

@@ -21,7 +21,7 @@ rotas públicas de autenticação (login, redefinição de senha e logout).
 | Permissão | `permissao` | `id` (PK AUTO_INCREMENT), `nome`(100, UNIQUE) |
 | Associação | `perfil_permissao` | `id` (PK), `perfil_id`(FK→`Perfil`), `recurso_id`(FK→`recurso`), `permissao_id`(FK→`permissao`), UNIQUE(`perfil_id`,`recurso_id`,`permissao_id`) |
 | Sessão | (memória) | chaves `user_id`, `username`, `nome`, `apelido`, `idPerfil`, `perfil`, `primeiro_acesso`, `permissoes` |
-| Registo (Log) | `Log` | `codigo`(PK auto), `id_Usuario`(FK→`Usuario.idUser`), `acao`(100), `descricao`(200), `data`(datetime) |
+| Registo (Log) | `Log` | `codigo`(PK auto), `id_Usuario`(FK→`Usuario.idUser`), `acao`(100), `descricao`(200), `data`(varchar(19), formato `d/m/Y H:i:s`) |
 
 > - `password varchar(60)` = tamanho exato de um hash bcrypt. Nunca se guarda a senha em texto simples.
 > - Os perfis existentes são sempre **rastreados a partir da BD** através da classe `model/Perfil.php`

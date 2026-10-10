@@ -44,7 +44,7 @@ class UsuarioDao {
             return;
         }
         $log = new Logs(null, $acao, $descricao, $usuarioLogado);
-        $log->setData(date('Y-m-d H:i:s'));
+        $log->setData(date('d/m/Y H:i:s'));
         (new LogDao())->salvar($log);
     }
 
@@ -265,14 +265,14 @@ class UsuarioDao {
     // Regista o login apos autenticacao bem sucedida.
     public function registarLogin(Usuario $usuario) {
         $log = new Logs(null, "LOGIN", "Utilizador " . $usuario->getUsername() . " iniciou sessão", $usuario);
-        $log->setData(date('Y-m-d H:i:s'));
+        $log->setData(date('d/m/Y H:i:s'));
         (new LogDao())->salvar($log);
     }
 
     public function registarLogout(Usuario $usuario) {
         if ($usuario != null) {
             $log = new Logs(null, "LOGOUT", "Utilizador " . $usuario->getUsername() . " terminou sessão", $usuario);
-            $log->setData(date('Y-m-d H:i:s'));
+            $log->setData(date('d/m/Y H:i:s'));
             (new LogDao())->salvar($log);
         }
     }

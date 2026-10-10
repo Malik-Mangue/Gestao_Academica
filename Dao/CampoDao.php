@@ -98,7 +98,7 @@ class CampoDAO {
         $usuario = Sessao::obterUtilizador();
         if ($usuario != null) {
             $log = new Logs(null, $acao, $descricao, $usuario);
-            $log->setData(date('Y-m-d H:i:s'));
+            $log->setData(date('d/m/Y H:i:s'));
             (new LogDao())->salvar($log);
         }
     }

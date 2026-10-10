@@ -8,6 +8,7 @@ $active = $active_menu ?? 'dashboard';
 // de logs apenas para o Auditor — os menus respeitam a politica de perfis.
 $mostrar_utilizadores = Sessao::gestaoUtilizadores();
 $mostrar_logs        = Sessao::auditoriaLogs();
+$mostrar_perfis      = Sessao::pode(Sessao::ACAO_LEITURA, Sessao::RECURSO_PERFIS);
 
 ?>
 <aside class="sidebar">
@@ -46,7 +47,7 @@ $mostrar_logs        = Sessao::auditoriaLogs();
                 <span class="sidebar-icon">
                     <img src="../../assets/icons/licao.svg" alt="Lições">
                 </span>
-                <span>Horarios</span>
+                <span>Horários</span>
             </a>
         </li> -->
     </ul>
@@ -131,8 +132,7 @@ $mostrar_logs        = Sessao::auditoriaLogs();
         </li>
     </ul>
 
-    
-    <?php if ($mostrar_utilizadores || $mostrar_logs): ?>
+    <?php if ($mostrar_utilizadores || $mostrar_logs || $mostrar_perfis): ?>
     <div class="sidebar-heading">Administração</div>
     <ul class="sidebar-menu">
         <?php if ($mostrar_utilizadores): ?>
@@ -152,6 +152,16 @@ $mostrar_logs        = Sessao::auditoriaLogs();
                     <img src="../../assets/icons/dashboard.svg" alt="Registos">
                 </span>
                 <span>Registos (Log)</span>
+            </a>
+        </li>
+        <?php endif; ?>
+        <?php if ($mostrar_perfis): ?>
+        <li class="<?php echo $active === 'perfil' ? 'active' : ''; ?>">
+            <a href="../../view/perfil/index.php">
+                <span class="sidebar-icon">
+                    <img src="../../assets/icons/usuario.svg" alt="Perfis">
+                </span>
+                <span>Perfis</span>
             </a>
         </li>
         <?php endif; ?>

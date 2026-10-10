@@ -1,0 +1,45 @@
+/* Ecruns de Gestao de Perfis e Permissoes.
+   Conformes ao modelo docs/docs_markdown/IDENTIDADE_VISUAL.md (CSS puro). */
+
+/* Matriz de gestao de permissoes: recursos em linhas e acoes em colunas. */
+.permissao-matrix {
+  min-width: 820px;
+}
+
+.permissao-matrix th,
+.permissao-matrix td {
+  vertical-align: middle;
+  text-align: center;
+  padding: 8px 10px;
+  white-space: nowrap;
+}
+
+.permissao-matrix td.col-recurso {
+  text-align: left;
+  width: 240px;
+}
+
+.permissao-matrix th.col-permissao,
+.permissao-matrix td.col-permissao {
+  width: 105px;
+}
+
+.permissao-matrix td input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+.note {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-top: 12px;
+}
+
+.associated-table {
+  margin-top: 8px;
+}

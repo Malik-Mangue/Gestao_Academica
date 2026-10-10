@@ -8,8 +8,8 @@ class FormandoController {
         $this->dao = new FormandoDao();
     }
 
-    public function listar() {
-        return $this->dao->getAll();
+    public function listar($pesquisa = null) {
+        return $this->dao->getAll($pesquisa);
     }
 
     public function buscar($codigo) {

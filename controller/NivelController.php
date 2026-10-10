@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../Dao/NivelDao.php';
+require_once __DIR__ . '/../model/Nivel.php';
 
 class NivelController {
     private $dao;
@@ -8,8 +9,8 @@ class NivelController {
         $this->dao = new NivelDao();
     }
 
-    public function listar() {
-        return $this->dao->getAll();
+    public function listar($pesquisa = null) {
+        return $this->dao->getAll($pesquisa);
     }
 
     public function buscar($codigo) {

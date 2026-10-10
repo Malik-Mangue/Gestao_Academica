@@ -1,21 +1,20 @@
 <?php
-
 class Formando {
     private $codigo;
     private $nome;
     private $apelido;
-    private $contacto;
     private $email;
     private $bi;
+    private $contacto;
 
-    public function __construct($codigo, $nome, $apelido, $contacto, $email, $bi)
+    public function __construct($codigo, $nome, $apelido, $email, $bi, $contacto)
     {
         $this->codigo = $codigo;
         $this->nome = $nome;
         $this->apelido = $apelido;
-        $this->contacto = $contacto;
         $this->email = $email;
         $this->bi = $bi;
+        $this->contacto = $contacto;
     }
 
     public function getCodigo(){ return $this->codigo; }
@@ -27,14 +26,13 @@ class Formando {
     public function getApelido(){ return $this->apelido; }
     public function setApelido($apelido){ $this->apelido = $apelido; }
 
-    public function getContacto(){ return $this->contacto; }
-    public function setContacto($contacto){ $this->contacto = $contacto; }
-
     public function getEmail(){ return $this->email; }
     public function setEmail($email){ $this->email = $email; }
 
     public function getBi(){ return $this->bi; }
     public function setBi($bi){ $this->bi = $bi; }
-}
 
+    public function getContacto(){ return $this->contacto; }
+    public function setContacto($contacto){ $this->contacto = $contacto; }
+}
 ?>

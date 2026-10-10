@@ -1,6 +1,9 @@
 <?php
 require_once __DIR__ . '/../config/conexao.php';
+require_once __DIR__ . '/../services/Sessao.php';
 require_once __DIR__ . '/../model/Campo.php';
+require_once __DIR__ . '/../model/Logs.php';
+require_once __DIR__ . '/LogDao.php';
 
 class CampoDAO {
     private $db;
@@ -10,9 +13,17 @@ class CampoDAO {
         $this->db = $database->getConnection();
     }
 
-    public function getAll() {
-        $sql = "select codigo, nome from Campo order by codigo";
-        $stmt = $this->db->prepare($sql);
+    public function getAll($pesquisa = null) {
+        $sql = "select codigo, nome from Campo";
+        if ($pesquisa !== null && strlen($pesquisa) > 0) {
+            $sql .= " where nome like ? order by codigo";
+            $stmt = $this->db->prepare($sql);
+            $busca = "%" . $pesquisa . "%";
+            $stmt->bind_param("s", $busca);
+        } else {
+            $sql .= " order by codigo";
+            $stmt = $this->db->prepare($sql);
+        }
         $stmt->execute();
         $result = $stmt->get_result();
         $campos = [];
@@ -40,7 +51,11 @@ class CampoDAO {
         $nome = $campo->getNome();
         $stmt->bind_param("s", $nome);
         try {
-            return $stmt->execute();
+            $result = $stmt->execute();
+            if ($result) {
+                $this->registarLog("INSERT", "Campo " . $nome . " foi cadastrado");
+            }
+            return $result;
         } catch (mysqli_sql_exception $e) {
             return false;
         }
@@ -53,7 +68,11 @@ class CampoDAO {
         $codigo = $campo->getCodigo();
         $stmt->bind_param("si", $nome, $codigo);
         try {
-            return $stmt->execute();
+            $result = $stmt->execute();
+            if ($result) {
+                $this->registarLog("UPDATE", "Campo " . $nome . " (ID: " . $codigo . ") foi atualizado");
+            }
+            return $result;
         } catch (mysqli_sql_exception $e) {
             return false;
         }
@@ -64,9 +83,23 @@ class CampoDAO {
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("i", $codigo);
         try {
-            return $stmt->execute();
+            $result = $stmt->execute();
+            if ($result) {
+                $this->registarLog("DELETE", "Campo (ID: " . $codigo . ") foi removido");
+            }
+            return $result;
         } catch (mysqli_sql_exception $e) {
             return false;
+        }
+    }
+
+    // Regista uma acao de auditoria em nome do utilizador autenticado.
+    private function registarLog($acao, $descricao) {
+        $usuario = Sessao::obterUtilizador();
+        if ($usuario != null) {
+            $log = new Logs(null, $acao, $descricao, $usuario);
+            $log->setData(date('Y-m-d H:i:s'));
+            (new LogDao())->salvar($log);
         }
     }
 }

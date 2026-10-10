@@ -6,7 +6,7 @@ class Campo {
 
     public function __construct($codigo, $nome)
     {
-        $this->codigo = $codigo;
+        $this->codigo = $codigo; 
         $this->nome = $nome;
     }
 

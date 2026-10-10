@@ -1,14 +1,15 @@
 <?php
+require_once __DIR__ . '/../../services/Sessao.php';
 require_once __DIR__ . '/../../controller/NivelController.php';
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+Sessao::exigirLogin('../login/index.php');
 
 $controller = new NivelController();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['gravar'])) {
+        Sessao::exigirAcao(Sessao::ACAO_CRIAR, 'index.php');
+
         $nome = trim($_POST['nome'] ?? '');
         if (empty($nome)) {
             $_SESSION['flash'] = [
@@ -31,6 +32,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (isset($_POST['editar'])) {
+        Sessao::exigirAcao(Sessao::ACAO_EDITAR, 'index.php');
+
         $codigo = filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT);
         $nome = trim($_POST['nome'] ?? '');
         if (!$codigo || empty($nome)) {
@@ -54,6 +57,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (isset($_POST['deletar'])) {
+        Sessao::exigirAcao(Sessao::ACAO_REMOVER, 'index.php');
+
         $codigo = filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT);
         if (!$codigo) {
             $_SESSION['flash'] = [
@@ -76,9 +81,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$niveis = $controller->listar();
+$pesquisa = trim($_GET['pesquisa'] ?? '');
+$niveis = $controller->listar($pesquisa !== '' ? $pesquisa : null);
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
+
+$pode_criar   = Sessao::pode(Sessao::ACAO_CRIAR);
+$pode_editar  = Sessao::pode(Sessao::ACAO_EDITAR);
+$pode_remover = Sessao::pode(Sessao::ACAO_REMOVER);
 
 $page_title = 'Gestão de Níveis de Formação';
 $active_menu = 'nivel';
@@ -105,9 +115,21 @@ require_once __DIR__ . '/../partials/sidebar.php';
     <div class="card">
         <div class="card-header">
             <h2>Listagem de Níveis de Formação</h2>
+            <?php if ($pode_criar): ?>
             <a href="#modal-novo" class="btn btn-primary">+ Novo Nível</a>
+            <?php endif; ?>
         </div>
         <div class="card-body">
+            <form method="get" action="index.php" class="form-actions">
+                <div class="form-group">
+                    <label for="pesquisa">Pesquisar</label>
+                    <input type="text" id="pesquisa" name="pesquisa" class="form-control"
+                           maxlength="60" placeholder="Pesquisar por nome..."
+                           value="<?= htmlspecialchars($pesquisa) ?>">
+                </div>
+                <button type="submit" class="btn btn-primary">Filtrar</button>
+                <a href="index.php" class="btn btn-secondary">Limpar</a>
+            </form>
             <div class="table-responsive">
                 <table class="table-custom">
                     <thead>
@@ -121,7 +143,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                         <?php if (empty($niveis)): ?>
                             <tr>
                                 <td colspan="3" class="table-empty">
-                                    Nenhum nível de formação cadastrado no momento.
+                                    Nenhum nível de formação encontrado.
                                 </td>
                             </tr>
                         <?php else: ?>
@@ -131,12 +153,13 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     <td><?= htmlspecialchars($nivel->getNome()) ?></td>
                                     <td class="col-opcoes">
                                         <div class="table-actions table-actions-end">
-                                            <a href="#modal-editar-<?= $nivel->getCodigo() ?>" class="btn btn-sm btn-edit">Editar</a>
-                                            <a href="#modal-deletar-<?= $nivel->getCodigo() ?>" class="btn btn-sm btn-delete">Remover</a>
+                                            <?php if ($pode_editar): ?><a href="#modal-editar-<?= $nivel->getCodigo() ?>" class="btn btn-sm btn-edit">Editar</a><?php endif; ?>
+                                            <?php if ($pode_remover): ?><a href="#modal-deletar-<?= $nivel->getCodigo() ?>" class="btn btn-sm btn-delete">Remover</a><?php endif; ?>
                                         </div>
                                     </td>
                                 </tr>
 
+                                <?php if ($pode_editar): ?>
                                 <div id="modal-editar-<?= $nivel->getCodigo() ?>" class="modal-overlay">
                                     <div class="modal-box">
                                         <div class="modal-header">
@@ -145,6 +168,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                 <img src="../../assets/icons/close.svg" alt="Fechar">
                                             </a>
                                         </div>
+                                <?php endif; ?>
                                         <form method="post" action="index.php">
                                             <div class="modal-body">
                                                 <input type="hidden" name="codigo" value="<?= htmlspecialchars($nivel->getCodigo()) ?>">
@@ -161,6 +185,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     </div>
                                 </div>
 
+                                <?php if ($pode_remover): ?>
                                 <div id="modal-deletar-<?= $nivel->getCodigo() ?>" class="modal-overlay">
                                     <div class="modal-box">
                                         <div class="modal-header modal-header-danger">
@@ -169,6 +194,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                 <img src="../../assets/icons/close.svg" alt="Fechar">
                                             </a>
                                         </div>
+                                <?php endif; ?>
                                         <form method="post" action="index.php">
                                             <div class="modal-body">
                                                 <input type="hidden" name="codigo" value="<?= htmlspecialchars($nivel->getCodigo()) ?>">

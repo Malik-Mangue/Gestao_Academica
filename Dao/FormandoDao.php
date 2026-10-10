@@ -1,6 +1,9 @@
 <?php
 require_once __DIR__ . '/../config/conexao.php';
+require_once __DIR__ . '/../services/Sessao.php';
 require_once __DIR__ . '/../model/Formando.php';
+require_once __DIR__ . '/../model/Logs.php';
+require_once __DIR__ . '/LogDao.php';
 
 class FormandoDAO {
     private $db;
@@ -10,28 +13,53 @@ class FormandoDAO {
         $this->db = $database->getConnection();
     }
 
-    public function getAll() {
-        $sql = "select codigo_formando, nome_formando, apelido_formando, contacto_formando, email, BI from Formando order by nome_formando, apelido_formando";
-        $stmt = $this->db->prepare($sql);
+    // Ordem do construtor Formando: (codigo, nome, apelido, email, bi, contacto)
+    private function montarFormando($rs) {
+        return new Formando(
+            $rs['codigo_formando'],
+            $rs['nome_formando'],
+            $rs['apelido_formando'],
+            $rs['email'],
+            $rs['BI'],
+            $rs['contacto_formando']
+        );
+    }
+
+    public function getAll($pesquisa = null) {
+        $sql = "select codigo_formando, nome_formando, apelido_formando, contacto_formando, email, BI
+                from Formando";
+        if ($pesquisa !== null && strlen($pesquisa) > 0) {
+            $sql .= " where nome_formando like ? or apelido_formando like ? or email like ?
+                            or BI like ? or contacto_formando like ?
+                      order by nome_formando, apelido_formando";
+            $stmt = $this->db->prepare($sql);
+            $busca = "%" . $pesquisa . "%";
+            $stmt->bind_param("sssss", $busca, $busca, $busca, $busca, $busca);
+        } else {
+            $sql .= " order by nome_formando, apelido_formando";
+            $stmt = $this->db->prepare($sql);
+        }
         $stmt->execute();
         $result = $stmt->get_result();
         $formandos = [];
         while ($rs = $result->fetch_assoc()) {
-            $formandos[] = new Formando($rs['codigo_formando'], $rs['nome_formando'], $rs['apelido_formando'], $rs['contacto_formando'], $rs['email'], $rs['BI']);
+            $formandos[] = $this->montarFormando($rs);
         }
         return $formandos;
     }
 
     public function getById($codigo) {
-        $sql = "select codigo_formando, nome_formando, apelido_formando, contacto_formando, email, BI from Formando where codigo_formando = ?";
+        $sql = "select codigo_formando, nome_formando, apelido_formando, contacto_formando, email, BI
+                from Formando where codigo_formando = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("i", $codigo);
         $stmt->execute();
         $rs = $stmt->get_result()->fetch_assoc();
+
         if ($rs === null) {
             return null;
         }
-        return new Formando($rs['codigo_formando'], $rs['nome_formando'], $rs['apelido_formando'], $rs['contacto_formando'], $rs['email'], $rs['BI']);
+        return $this->montarFormando($rs);
     }
 
     public function create(Formando $formando) {
@@ -44,7 +72,11 @@ class FormandoDAO {
         $bi = $formando->getBi();
         $stmt->bind_param("ssiss", $nome, $apelido, $contacto, $email, $bi);
         try {
-            return $stmt->execute();
+            $result = $stmt->execute();
+            if ($result) {
+                $this->registarLog("INSERT", "Formando " . $nome . " " . $apelido . " foi cadastrado");
+            }
+            return $result;
         } catch (mysqli_sql_exception $e) {
             return false;
         }
@@ -61,7 +93,11 @@ class FormandoDAO {
         $codigo = $formando->getCodigo();
         $stmt->bind_param("ssissi", $nome, $apelido, $contacto, $email, $bi, $codigo);
         try {
-            return $stmt->execute();
+            $result = $stmt->execute();
+            if ($result) {
+                $this->registarLog("UPDATE", "Formando " . $nome . " " . $apelido . " (ID: " . $codigo . ") foi atualizado");
+            }
+            return $result;
         } catch (mysqli_sql_exception $e) {
             return false;
         }
@@ -72,9 +108,23 @@ class FormandoDAO {
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("i", $codigo);
         try {
-            return $stmt->execute();
+            $result = $stmt->execute();
+            if ($result) {
+                $this->registarLog("DELETE", "Formando (ID: " . $codigo . ") foi removido");
+            }
+            return $result;
         } catch (mysqli_sql_exception $e) {
             return false;
+        }
+    }
+
+    // Regista uma acao de auditoria em nome do utilizador autenticado.
+    private function registarLog($acao, $descricao) {
+        $usuario = Sessao::obterUtilizador();
+        if ($usuario != null) {
+            $log = new Logs(null, $acao, $descricao, $usuario);
+            $log->setData(date('Y-m-d H:i:s'));
+            (new LogDao())->salvar($log);
         }
     }
 }

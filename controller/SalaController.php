@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../Dao/SalaDao.php';
+require_once __DIR__ . '/../model/Sala.php';
 
 class SalaController {
     private $dao;
@@ -8,8 +9,8 @@ class SalaController {
         $this->dao = new SalaDao();
     }
 
-    public function listar() {
-        return $this->dao->getAll();
+    public function listar($pesquisa = null) {
+        return $this->dao->getAll($pesquisa);
     }
 
     public function buscar($codigo) {

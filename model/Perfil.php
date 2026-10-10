@@ -1,10 +1,9 @@
 <?php
-
 class Perfil {
     private $id;
     private $nome;
 
-    public function __construct($id, $nome)
+    public function __construct($id = null, $nome = null)
     {
         $this->id = $id;
         $this->nome = $nome;
@@ -15,6 +14,10 @@ class Perfil {
 
     public function getNome(){ return $this->nome; }
     public function setNome($nome){ $this->nome = $nome; }
-}
 
+    public function __toString()
+    {
+        return $this->nome;
+    }
+}
 ?>

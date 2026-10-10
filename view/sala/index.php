@@ -1,9 +1,8 @@
 <?php
+require_once __DIR__ . '/../../services/Sessao.php';
 require_once __DIR__ . '/../../controller/SalaController.php';
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+Sessao::exigirLogin('../login/index.php');
 
 $controller = new SalaController();
 
@@ -11,6 +10,8 @@ $tipos_sala = ['Teórica', 'Laboratório', 'Oficina', 'Manutenção'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['gravar'])) {
+        Sessao::exigirAcao(Sessao::ACAO_CRIAR, 'index.php');
+
         $designacao = trim($_POST['designacao'] ?? '');
         $tipo_sala = trim($_POST['tipo_sala'] ?? '');
         if (empty($designacao) || empty($tipo_sala)) {
@@ -39,6 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (isset($_POST['editar'])) {
+        Sessao::exigirAcao(Sessao::ACAO_EDITAR, 'index.php');
+
         $codigo = filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT);
         $designacao = trim($_POST['designacao'] ?? '');
         $tipo_sala = trim($_POST['tipo_sala'] ?? '');
@@ -68,6 +71,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (isset($_POST['deletar'])) {
+        Sessao::exigirAcao(Sessao::ACAO_REMOVER, 'index.php');
+
         $codigo = filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT);
         if (!$codigo) {
             $_SESSION['flash'] = [
@@ -90,9 +95,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$salas = $controller->listar();
+$pesquisa = trim($_GET['pesquisa'] ?? '');
+$salas = $controller->listar($pesquisa !== '' ? $pesquisa : null);
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
+
+$pode_criar   = Sessao::pode(Sessao::ACAO_CRIAR);
+$pode_editar  = Sessao::pode(Sessao::ACAO_EDITAR);
+$pode_remover = Sessao::pode(Sessao::ACAO_REMOVER);
 
 $page_title = 'Gestão de Salas';
 $active_menu = 'sala';
@@ -102,7 +112,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
 
 <main class="main-wrapper">
     <div class="content-header">
-        <h1>Salas de Formação</h1>
+        <h1>Gestao de Salas</h1>
         <div class="breadcrumb">
             <a href="../../view/dashboard/index.php">Home</a>
             <span class="divider">/</span>
@@ -119,9 +129,21 @@ require_once __DIR__ . '/../partials/sidebar.php';
     <div class="card">
         <div class="card-header">
             <h2>Listagem de Salas</h2>
+            <?php if($pode_criar): ?>
             <a href="#modal-novo" class="btn btn-primary">+ Nova Sala</a>
+            <?php endif; ?>
         </div>
         <div class="card-body">
+            <form method="get" action="index.php" class="form-actions">
+                <div class="form-group">
+                    <label for="pesquisa">Pesquisar</label>
+                    <input type="text" id="pesquisa" name="pesquisa" class="form-control"
+                           maxlength="20" placeholder="Designação ou tipo de sala"
+                           value="<?= htmlspecialchars($pesquisa) ?>">
+                </div>
+                <button type="submit" class="btn btn-primary">Filtrar</button>
+                <a href="index.php" class="btn btn-secondary">Limpar</a>
+            </form>
             <div class="table-responsive">
                 <table class="table-custom">
                     <thead>
@@ -136,7 +158,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                         <?php if (empty($salas)): ?>
                             <tr>
                                 <td colspan="4" class="table-empty">
-                                    Nenhuma sala cadastrada no momento.
+                                    Nenhuma sala encontrada.
                                 </td>
                             </tr>
                         <?php else: ?>
@@ -147,12 +169,13 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     <td><?= htmlspecialchars($sala->getTipo_sala()) ?></td>
                                     <td class="col-opcoes">
                                         <div class="table-actions table-actions-end">
-                                            <a href="#modal-editar-<?= $sala->getCodigo() ?>" class="btn btn-sm btn-edit">Editar</a>
-                                            <a href="#modal-deletar-<?= $sala->getCodigo() ?>" class="btn btn-sm btn-delete">Remover</a>
+                                            <?php if ($pode_editar): ?><a href="#modal-editar-<?= $sala->getCodigo() ?>" class="btn btn-sm btn-edit">Editar</a><?php endif; ?>
+                                            <?php if ($pode_remover): ?><a href="#modal-deletar-<?= $sala->getCodigo() ?>" class="btn btn-sm btn-delete">Remover</a><?php endif; ?>
                                         </div>
                                     </td>
                                 </tr>
 
+                                <?php if ($pode_editar): ?>
                                 <div id="modal-editar-<?= $sala->getCodigo() ?>" class="modal-overlay">
                                     <div class="modal-box">
                                         <div class="modal-header">
@@ -187,7 +210,9 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                         </form>
                                     </div>
                                 </div>
+                                <?php endif; ?>
 
+                                <?php if ($pode_remover): ?>
                                 <div id="modal-deletar-<?= $sala->getCodigo() ?>" class="modal-overlay">
                                     <div class="modal-box">
                                         <div class="modal-header modal-header-danger">
@@ -224,6 +249,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                         </form>
                                     </div>
                                 </div>
+                                <?php endif; ?>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </tbody>
@@ -231,7 +257,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
             </div>
         </div>
     </div>
-
+    <?php if($pode_criar): ?>
     <div id="modal-novo" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-header">
@@ -263,6 +289,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
             </form>
         </div>
     </div>
+    <?php endif; ?>
 </main>
 
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>

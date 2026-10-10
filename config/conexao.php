@@ -5,6 +5,7 @@ class Database {
     private $user_name = "root";
     private $password = "Malikdb123!";
 
+
     private static $conn = null;
 
     public function getConnection(){

@@ -1,8 +1,11 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/../../services/Sessao.php';
+Sessao::iniciar();
 
+$sessao_atual = Sessao::utilizador();
+
+$utilizador_logado = $sessao_atual['nome'] ?? 'Utilizador';
+$perfil_logado     = $sessao_atual['perfil'] ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="pt">
@@ -31,9 +34,15 @@ if (session_status() === PHP_SESSION_NONE) {
         </div>
         <div class="user-info">
             <div class="user-avatar-mini">
-                <img src="../../assets/icons/user.svg" alt="Admin">
+                <img src="../../assets/icons/user.svg" alt="Utilizador">
             </div>
-            <span>admin</span>
+            <span><?= htmlspecialchars($utilizador_logado) ?></span>
+            <?php if ($perfil_logado !== ''): ?>
+                <span class="brand-badge"><?= htmlspecialchars($perfil_logado) ?></span>
+            <?php endif; ?>
         </div>
+        <a href="../../view/login/logout.php" class="user-info" title="Terminar sessão">
+            <span>Sair</span>
+        </a>
     </div>
 </header>

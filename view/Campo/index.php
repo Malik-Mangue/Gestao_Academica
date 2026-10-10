@@ -1,21 +1,25 @@
 <?php
-require_once __DIR__ . '/../../controller/CampoController.php';
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/../../services/Sessao.php';
+Sessao::exigirLogin('../login/index.php');
+
+require_once __DIR__ . '/../../controller/CampoController.php';
 
 $controller = new CampoController();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['gravar'])) {
+        Sessao::exigirAcao(Sessao::ACAO_CRIAR, 'index.php');
+
         $nome = trim($_POST['nome'] ?? '');
         if (empty($nome)) {
             $_SESSION['flash'] = [
                 'type' => 'danger',
                 'msg' => 'O nome do campo não pode estar vazio.'
             ];
-        } elseif ($controller->store()) {
+        } elseif ($controller->cadastrarCampo($nome)) {
             $_SESSION['flash'] = [
                 'type' => 'success',
                 'msg' => 'Campo cadastrado com sucesso!'
@@ -31,6 +35,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (isset($_POST['editar'])) {
+        Sessao::exigirAcao(Sessao::ACAO_EDITAR, 'index.php');
+
         $codigo = filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT);
         $nome = trim($_POST['nome'] ?? '');
         if (!$codigo || empty($nome)) {
@@ -38,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'type' => 'danger',
                 'msg' => 'Dados inválidos para atualização do campo.'
             ];
-        } elseif ($controller->update($codigo)) {
+        } elseif ($controller->atualizarCampo($codigo, $nome)) {
             $_SESSION['flash'] = [
                 'type' => 'success',
                 'msg' => 'Campo atualizado com sucesso!'
@@ -54,13 +60,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (isset($_POST['deletar'])) {
+        Sessao::exigirAcao(Sessao::ACAO_REMOVER, 'index.php');
+
         $codigo = filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT);
         if (!$codigo) {
             $_SESSION['flash'] = [
                 'type' => 'danger',
                 'msg' => 'Código inválido para remoção.'
             ];
-        } elseif ($controller->delete($codigo)) {
+        } elseif ($controller->apagarCampo($codigo)) {
             $_SESSION['flash'] = [
                 'type' => 'success',
                 'msg' => 'Campo removido com sucesso!'
@@ -76,9 +84,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$campos = $controller->listar();
+$pesquisa = trim($_GET['pesquisa'] ?? '');
+$campos = $controller->listarCampo($pesquisa !== '' ? $pesquisa : null);
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
+
+$pode_criar   = Sessao::pode(Sessao::ACAO_CRIAR);
+$pode_editar  = Sessao::pode(Sessao::ACAO_EDITAR);
+$pode_remover = Sessao::pode(Sessao::ACAO_REMOVER);
 
 $page_title = 'Gestão de Campos / Áreas';
 $active_menu = 'campo';
@@ -105,9 +118,21 @@ require_once __DIR__ . '/../partials/sidebar.php';
     <div class="card">
         <div class="card-header">
             <h2>Listagem de Áreas de Formação</h2>
+            <?php if ($pode_criar): ?>
             <a href="#modal-novo" class="btn btn-primary">+ Novo Campo</a>
+            <?php endif; ?>
         </div>
         <div class="card-body">
+            <form method="get" action="index.php" class="form-actions">
+                <div class="form-group">
+                    <label for="pesquisa">Pesquisar</label>
+                    <input type="text" id="pesquisa" name="pesquisa" class="form-control"
+                           maxlength="60" placeholder="Pesquisar por nome..."
+                           value="<?= htmlspecialchars($pesquisa) ?>">
+                </div>
+                <button type="submit" class="btn btn-primary">Filtrar</button>
+                <a href="index.php" class="btn btn-secondary">Limpar</a>
+            </form>
             <div class="table-responsive">
                 <table class="table-custom">
                     <thead>
@@ -121,7 +146,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                         <?php if (empty($campos)): ?>
                             <tr>
                                 <td colspan="3" class="table-empty">
-                                    Nenhum campo ou área cadastrada no momento.
+                                    Nenhum campo ou área encontrada.
                                 </td>
                             </tr>
                         <?php else: ?>
@@ -131,12 +156,13 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     <td><?= htmlspecialchars($campo->getNome()) ?></td>
                                     <td class="col-opcoes">
                                         <div class="table-actions table-actions-end">
-                                            <a href="#modal-editar-<?= $campo->getCodigo() ?>" class="btn btn-sm btn-edit">Editar</a>
-                                            <a href="#modal-deletar-<?= $campo->getCodigo() ?>" class="btn btn-sm btn-delete">Remover</a>
+                                            <?php if ($pode_editar): ?><a href="#modal-editar-<?= $campo->getCodigo() ?>" class="btn btn-sm btn-edit">Editar</a><?php endif; ?>
+                                            <?php if ($pode_remover): ?><a href="#modal-deletar-<?= $campo->getCodigo() ?>" class="btn btn-sm btn-delete">Remover</a><?php endif; ?>
                                         </div>
                                     </td>
                                 </tr>
 
+                                <?php if ($pode_editar): ?>
                                 <div id="modal-editar-<?= $campo->getCodigo() ?>" class="modal-overlay">
                                     <div class="modal-box">
                                         <div class="modal-header">
@@ -160,7 +186,9 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                         </form>
                                     </div>
                                 </div>
+                                <?php endif; ?>
 
+                                <?php if ($pode_remover): ?>
                                 <div id="modal-deletar-<?= $campo->getCodigo() ?>" class="modal-overlay">
                                     <div class="modal-box">
                                         <div class="modal-header modal-header-danger">
@@ -194,6 +222,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                         </form>
                                     </div>
                                 </div>
+                                <?php endif; ?>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </tbody>

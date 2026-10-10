@@ -175,6 +175,17 @@ class UsuarioDao {
         return $this->montarUsuario($rs);
     }
 
+    // Quantos utilizadores estao associados a um perfil. Usado para impedir
+    // remover um perfil ainda atribuido a alguem.
+    public function contarPorPerfil($idPerfil) {
+        $sql = "select count(*) as total from Usuario where idPerfil = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $idPerfil);
+        $stmt->execute();
+        $rs = $stmt->get_result()->fetch_assoc();
+        return $rs !== null ? (int) $rs['total'] : 0;
+    }
+
     public function atualizarPassword($codigo, $password, $primeiroAcesso) {
         $sql = "update Usuario set password = ?, primeiroAcesso = ? where idUser = ?";
         $stmt = $this->db->prepare($sql);

@@ -8,7 +8,7 @@ $controller = new NivelController();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['gravar'])) {
-        Sessao::exigirAcao(Sessao::ACAO_CRIAR, 'index.php');
+        Sessao::exigirAcao(Sessao::ACAO_CRIAR, Sessao::RECURSO_NIVEIS, 'index.php');
 
         $nome = trim($_POST['nome'] ?? '');
         if (empty($nome)) {
@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (isset($_POST['editar'])) {
-        Sessao::exigirAcao(Sessao::ACAO_EDITAR, 'index.php');
+        Sessao::exigirAcao(Sessao::ACAO_EDITAR, Sessao::RECURSO_NIVEIS, 'index.php');
 
         $codigo = filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT);
         $nome = trim($_POST['nome'] ?? '');
@@ -57,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (isset($_POST['deletar'])) {
-        Sessao::exigirAcao(Sessao::ACAO_REMOVER, 'index.php');
+        Sessao::exigirAcao(Sessao::ACAO_REMOVER, Sessao::RECURSO_NIVEIS, 'index.php');
 
         $codigo = filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT);
         if (!$codigo) {
@@ -86,9 +86,9 @@ $niveis = $controller->listar($pesquisa !== '' ? $pesquisa : null);
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
 
-$pode_criar   = Sessao::pode(Sessao::ACAO_CRIAR);
-$pode_editar  = Sessao::pode(Sessao::ACAO_EDITAR);
-$pode_remover = Sessao::pode(Sessao::ACAO_REMOVER);
+$pode_criar   = Sessao::podeCriar(Sessao::RECURSO_NIVEIS);
+$pode_editar  = Sessao::podeEditar(Sessao::RECURSO_NIVEIS);
+$pode_remover = Sessao::podeRemover(Sessao::RECURSO_NIVEIS);
 
 $page_title = 'Gestão de Níveis de Formação';
 $active_menu = 'nivel';

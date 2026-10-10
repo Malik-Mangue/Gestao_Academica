@@ -10,7 +10,7 @@ $tipos_sala = ['Teórica', 'Laboratório', 'Oficina', 'Manutenção'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['gravar'])) {
-        Sessao::exigirAcao(Sessao::ACAO_CRIAR, 'index.php');
+        Sessao::exigirAcao(Sessao::ACAO_CRIAR, Sessao::RECURSO_SALAS, 'index.php');
 
         $designacao = trim($_POST['designacao'] ?? '');
         $tipo_sala = trim($_POST['tipo_sala'] ?? '');
@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (isset($_POST['editar'])) {
-        Sessao::exigirAcao(Sessao::ACAO_EDITAR, 'index.php');
+        Sessao::exigirAcao(Sessao::ACAO_EDITAR, Sessao::RECURSO_SALAS, 'index.php');
 
         $codigo = filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT);
         $designacao = trim($_POST['designacao'] ?? '');
@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (isset($_POST['deletar'])) {
-        Sessao::exigirAcao(Sessao::ACAO_REMOVER, 'index.php');
+        Sessao::exigirAcao(Sessao::ACAO_REMOVER, Sessao::RECURSO_SALAS, 'index.php');
 
         $codigo = filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT);
         if (!$codigo) {
@@ -100,9 +100,9 @@ $salas = $controller->listar($pesquisa !== '' ? $pesquisa : null);
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
 
-$pode_criar   = Sessao::pode(Sessao::ACAO_CRIAR);
-$pode_editar  = Sessao::pode(Sessao::ACAO_EDITAR);
-$pode_remover = Sessao::pode(Sessao::ACAO_REMOVER);
+$pode_criar   = Sessao::podeCriar(Sessao::RECURSO_SALAS);
+$pode_editar  = Sessao::podeEditar(Sessao::RECURSO_SALAS);
+$pode_remover = Sessao::podeRemover(Sessao::RECURSO_SALAS);
 
 $page_title = 'Gestão de Salas';
 $active_menu = 'sala';

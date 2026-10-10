@@ -41,15 +41,15 @@ class PerfilDAO {
     }
 
     public function create(Perfil $perfil) {
-        $sql = "insert into Perfil (id, nome) values (?, ?)";
+        $sql = "insert into Perfil (nome) values (?)";
         $stmt = $this->db->prepare($sql);
-        $id = $perfil->getId();
         $nome = $perfil->getNome();
-        $stmt->bind_param("is", $id, $nome);
+        $stmt->bind_param("s", $nome);
         try {
             $result = $stmt->execute();
             if ($result) {
-                $this->registarLog("INSERT", "Perfil " . $nome . " (ID: " . $id . ") foi cadastrado");
+                $perfil->setId($this->db->insert_id);
+                $this->registarLog("INSERT", "Perfil " . $nome . " (ID: " . $perfil->getId() . ") foi cadastrado");
             }
             return $result;
         } catch (mysqli_sql_exception $e) {

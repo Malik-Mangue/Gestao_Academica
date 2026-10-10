@@ -8,7 +8,7 @@ $controller = new FormandoController();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['gravar'])) {
-        Sessao::exigirAcao(Sessao::ACAO_CRIAR, 'index.php');
+        Sessao::exigirAcao(Sessao::ACAO_CRIAR, Sessao::RECURSO_FORMANDOS, 'index.php');
 
         $nome = trim($_POST['nome'] ?? '');
         $apelido = trim($_POST['apelido'] ?? '');
@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (isset($_POST['editar'])) {
-        Sessao::exigirAcao(Sessao::ACAO_EDITAR, 'index.php');
+        Sessao::exigirAcao(Sessao::ACAO_EDITAR, Sessao::RECURSO_FORMANDOS, 'index.php');
 
         $codigo = filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT);
         $nome = trim($_POST['nome'] ?? '');
@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (isset($_POST['deletar'])) {
-        Sessao::exigirAcao(Sessao::ACAO_REMOVER, 'index.php');
+        Sessao::exigirAcao(Sessao::ACAO_REMOVER, Sessao::RECURSO_FORMANDOS, 'index.php');
 
         $codigo = filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT);
         if (!$codigo) {
@@ -114,9 +114,9 @@ $formandos = $controller->listar($pesquisa !== '' ? $pesquisa : null);
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
 
-$pode_criar   = Sessao::pode(Sessao::ACAO_CRIAR);
-$pode_editar  = Sessao::pode(Sessao::ACAO_EDITAR);
-$pode_remover = Sessao::pode(Sessao::ACAO_REMOVER);
+$pode_criar   = Sessao::podeCriar(Sessao::RECURSO_FORMANDOS);
+$pode_editar  = Sessao::podeEditar(Sessao::RECURSO_FORMANDOS);
+$pode_remover = Sessao::podeRemover(Sessao::RECURSO_FORMANDOS);
 
 $page_title = 'Gestão de Formandos';
 $active_menu = 'formando';

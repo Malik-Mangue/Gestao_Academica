@@ -4,34 +4,29 @@ require_once __DIR__ . '/../../services/Sessao.php';
 // Gestao de perfis: restricao por recurso (exclusiva do Administrador).
 Sessao::exigirLeitura(Sessao::RECURSO_PERFIS, '../dashboard/index.php');
 
-require_once __DIR__ . '/../../Dao/PerfilDao.php';
+require_once __DIR__ . '/../../controller/PerfilController.php';
 
-$perfilDao = new PerfilDao();
+$controller = new PerfilController();
 
-// Processamento de POST (unica acao disponivel nesta fase e a criacao).
+// Criacao de perfil. O controller valida nome (vazio, tamanho e duplicado).
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['gravar'])) {
-    $nome = trim($_POST['nome'] ?? '');
+    Sessao::exigirAcao(Sessao::ACAO_CRIAR, Sessao::RECURSO_PERFIS, '../dashboard/index.php');
 
-    if ($nome === '') {
-        $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'O nome e obrigatorio.'];
-    } elseif (mb_strlen($nome) > 60) {
-        $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'O nome nao pode exceder 60 caracteres.'];
+    $nome = trim($_POST['nome'] ?? '');
+    if ($controller->store($nome)) {
+        $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Perfil cadastrado com sucesso!'];
     } else {
-        try {
-            $sucesso = $perfilDao->create(new Perfil(null, $nome));
-            $_SESSION['flash'] = $sucesso
-                ? ['type' => 'success', 'msg' => 'Perfil cadastrado com sucesso!']
-                : ['type' => 'danger', 'msg' => 'Nao foi possivel gravar o registo.'];
-        } catch (Exception $e) {
-            $_SESSION['flash'] = ['type' => 'danger', 'msg' => $e->getMessage()];
-        }
+        $_SESSION['flash'] = [
+            'type' => 'danger',
+            'msg'  => 'Nao foi possivel gravar. Verifique o nome (obrigatorio, ate 60 caracteres e unico).'
+        ];
     }
 
     header('Location: index.php');
     exit;
 }
 
-$perfis = $perfilDao->getAll();
+$perfis = $controller->listar();
 
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
@@ -60,6 +55,9 @@ require_once __DIR__ . '/../partials/sidebar.php';
     <div class="card">
         <div class="card-header">
             <h2>Lista de Perfis</h2>
+            <?php if (Sessao::pode(Sessao::ACAO_CRIAR, Sessao::RECURSO_PERFIS)): ?>
+                <a href="#modal-novo" class="btn btn-primary">+ Novo Perfil</a>
+            <?php endif; ?>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -84,7 +82,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     <td class="col-opcoes">
                                         <div class="table-actions table-actions-end">
                                             <a href="../../view/perfil/visualizar.php?id=<?= (int) $perfil->getId() ?>"
-                                               class="btn btn-sm btn-edit">Ver descricao</a>
+                                               class="btn btn-sm btn-info">Ver detalhes</a>
                                             <a href="../../view/permissoes/index.php?perfil=<?= (int) $perfil->getId() ?>"
                                                class="btn btn-sm btn-edit">Permissoes</a>
                                         </div>

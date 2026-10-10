@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // O controller revalida o perfil: a view esconde os botoes nao permitidos,
     // mas quem salta a interface continua a ser barrado aqui.
     if (isset($_POST['gravar'])) {
-        Sessao::exigirAcao(Sessao::ACAO_CRIAR, 'index.php');
+        Sessao::exigirAcao(Sessao::ACAO_CRIAR, Sessao::RECURSO_FORMADORES, 'index.php');
 
         $nome         = trim($_POST['nome'] ?? '');
         $apelido      = trim($_POST['apelido'] ?? '');
@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (isset($_POST['editar'])) {
-        Sessao::exigirAcao(Sessao::ACAO_EDITAR, 'index.php');
+        Sessao::exigirAcao(Sessao::ACAO_EDITAR, Sessao::RECURSO_FORMADORES, 'index.php');
 
         $codigo        = filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT);
         $nome          = trim($_POST['nome'] ?? '');
@@ -90,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (isset($_POST['deletar'])) {
-        Sessao::exigirAcao(Sessao::ACAO_REMOVER, 'index.php');
+        Sessao::exigirAcao(Sessao::ACAO_REMOVER, Sessao::RECURSO_FORMADORES, 'index.php');
 
         $codigo = filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT);
         if (!$codigo) {
@@ -115,9 +115,9 @@ $formadores = $controller->listar($pesquisa !== '' ? $pesquisa : null);
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
 
-$pode_criar   = Sessao::pode(Sessao::ACAO_CRIAR);
-$pode_editar  = Sessao::pode(Sessao::ACAO_EDITAR);
-$pode_remover = Sessao::pode(Sessao::ACAO_REMOVER);
+$pode_criar   = Sessao::podeCriar(Sessao::RECURSO_FORMADORES);
+$pode_editar  = Sessao::podeEditar(Sessao::RECURSO_FORMADORES);
+$pode_remover = Sessao::podeRemover(Sessao::RECURSO_FORMADORES);
 
 $page_title = 'Gestão de Formadores';
 $active_menu = 'professor';

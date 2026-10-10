@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           : (isset($_POST['editar']) ? 'editar' : (isset($_POST['deletar']) ? 'deletar' : null));
 
     if ($acao === 'deletar') {
-        Sessao::exigirAcao(Sessao::ACAO_REMOVER, 'index.php');
+        Sessao::exigirAcao(Sessao::ACAO_REMOVER, Sessao::RECURSO_MATRICULAS, 'index.php');
         $codigo = filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT);
         $_SESSION['flash'] = $controller->apagarMatricula($codigo)
             ? ['type' => 'success', 'msg' => 'Matrícula removida com sucesso!']
@@ -26,6 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($acao === 'gravar' || $acao === 'editar') {
         Sessao::exigirAcao(
             $acao === 'gravar' ? Sessao::ACAO_CRIAR : Sessao::ACAO_EDITAR,
+            Sessao::RECURSO_MATRICULAS,
             'index.php'
         );
 
@@ -73,9 +74,9 @@ $pares          = (new Quali_NivelController())->listarPares();
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
 
-$pode_criar   = Sessao::pode(Sessao::ACAO_CRIAR);
-$pode_editar  = Sessao::pode(Sessao::ACAO_EDITAR);
-$pode_remover = Sessao::pode(Sessao::ACAO_REMOVER);
+$pode_criar   = Sessao::podeCriar(Sessao::RECURSO_MATRICULAS);
+$pode_editar  = Sessao::podeEditar(Sessao::RECURSO_MATRICULAS);
+$pode_remover = Sessao::podeRemover(Sessao::RECURSO_MATRICULAS);
 
 $page_title = 'Gestão de Matrículas';
 $active_menu = 'matricula';

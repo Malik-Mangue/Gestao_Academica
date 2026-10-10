@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           : (isset($_POST['editar']) ? 'editar' : (isset($_POST['deletar']) ? 'deletar' : null));
 
     if ($acao === 'deletar') {
-        Sessao::exigirAcao(Sessao::ACAO_REMOVER, 'index.php');
+        Sessao::exigirAcao(Sessao::ACAO_REMOVER, Sessao::RECURSO_INSCRICOES, 'index.php');
         $codigo = filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT);
         $_SESSION['flash'] = $controller->apagarInscricao($codigo)
             ? ['type' => 'success', 'msg' => 'Inscrição removida com sucesso!']
@@ -31,6 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($acao === 'gravar' || $acao === 'editar') {
         Sessao::exigirAcao(
             $acao === 'gravar' ? Sessao::ACAO_CRIAR : Sessao::ACAO_EDITAR,
+            Sessao::RECURSO_INSCRICOES,
             'index.php'
         );
 
@@ -74,9 +75,9 @@ $qualificacoes = $qualiCtrl->comboQualificacao();
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
 
-$pode_criar   = Sessao::pode(Sessao::ACAO_CRIAR);
-$pode_editar  = Sessao::pode(Sessao::ACAO_EDITAR);
-$pode_remover = Sessao::pode(Sessao::ACAO_REMOVER);
+$pode_criar   = Sessao::podeCriar(Sessao::RECURSO_INSCRICOES);
+$pode_editar  = Sessao::podeEditar(Sessao::RECURSO_INSCRICOES);
+$pode_remover = Sessao::podeRemover(Sessao::RECURSO_INSCRICOES);
 
 $page_title = 'Inscrições em Módulos';
 $active_menu = 'inscricao';

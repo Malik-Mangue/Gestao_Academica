@@ -1,9 +1,9 @@
 <?php
 require_once __DIR__ . '/../../services/Sessao.php';
 
-// Rota privada e exclusiva do Administrador: exige login e revalida o perfil
-// (a view esconde o link da sidebar, o guard e que protege mesmo o acesso direto).
-Sessao::exigirPerfil([Sessao::ADMIN], '../dashboard/index.php');
+// Gestao de utilizadores: guarda por recurso (por defeito, exclusiva do
+// Administrador). A view esconde os controlos, mas o guard protege o acesso direto.
+Sessao::exigirLeitura(Sessao::RECURSO_UTILIZADORES, '../dashboard/index.php');
 
 require_once __DIR__ . '/../../services/Validador.php';
 require_once __DIR__ . '/../../controller/UsuarioController.php';

@@ -639,6 +639,53 @@ LOCK TABLES `recurso` WRITE;
 INSERT INTO `recurso` VALUES (1,'dashboard','Academico'),(2,'formadores','Academico'),(3,'formandos','Academico'),(4,'matriculas','Academico'),(5,'inscricoes','Academico'),(6,'turmas','Academico'),(7,'modulos','Academico'),(8,'qualificacoes','Academico'),(9,'niveis','Academico'),(10,'campos','Academico'),(11,'salas','Academico'),(12,'licoes','Academico'),(13,'utilizadores','Administrativos'),(14,'logs','Administrativos'),(15,'perfis','Administrativos');
 /*!40000 ALTER TABLE `recurso` ENABLE KEYS */;
 UNLOCK TABLES;
+
+--
+-- Seed de `perfil_permissao` (perfis de sistema)
+-- perfil x recurso x permissao. IDEMPOTENTE via INSERT IGNORE, pois existe
+-- a UNIQUE KEY (perfil_id, recurso_id, permissao_id).
+--
+
+-- Operador (1): recursos academicos -> consultar + criar
+INSERT IGNORE INTO `perfil_permissao` (`perfil_id`, `recurso_id`, `permissao_id`)
+SELECT p.id, r.id, pm.id
+FROM `Perfil` p
+JOIN `recurso` r ON r.grupo = 'Academico'
+JOIN `permissao` pm ON pm.nome IN ('consultar', 'criar')
+WHERE p.nome = 'Operador';
+
+-- SuperOperador (2): recursos academicos -> CRUD
+INSERT IGNORE INTO `perfil_permissao` (`perfil_id`, `recurso_id`, `permissao_id`)
+SELECT p.id, r.id, pm.id
+FROM `Perfil` p
+JOIN `recurso` r ON r.grupo = 'Academico'
+JOIN `permissao` pm ON pm.nome IN ('consultar', 'criar', 'editar', 'eliminar')
+WHERE p.nome = 'SuperOperador';
+
+-- Administrador (3): academicos CRUD + utilizadores CRUD + perfis CRUD (sem logs)
+INSERT IGNORE INTO `perfil_permissao` (`perfil_id`, `recurso_id`, `permissao_id`)
+SELECT p.id, r.id, pm.id
+FROM `Perfil` p
+JOIN `recurso` r ON (r.grupo = 'Academico' OR r.nome IN ('utilizadores', 'perfis'))
+JOIN `permissao` pm ON pm.nome IN ('consultar', 'criar', 'editar', 'eliminar')
+WHERE p.nome = 'Administrador';
+
+-- Auditor (4): academicos CRUD
+INSERT IGNORE INTO `perfil_permissao` (`perfil_id`, `recurso_id`, `permissao_id`)
+SELECT p.id, r.id, pm.id
+FROM `Perfil` p
+JOIN `recurso` r ON r.grupo = 'Academico'
+JOIN `permissao` pm ON pm.nome IN ('consultar', 'criar', 'editar', 'eliminar')
+WHERE p.nome = 'Auditor';
+
+-- Auditor (4): logs apenas consultar
+INSERT IGNORE INTO `perfil_permissao` (`perfil_id`, `recurso_id`, `permissao_id`)
+SELECT p.id, r.id, pm.id
+FROM `Perfil` p
+JOIN `recurso` r ON r.nome = 'logs'
+JOIN `permissao` pm ON pm.nome = 'consultar'
+WHERE p.nome = 'Auditor';
+
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;

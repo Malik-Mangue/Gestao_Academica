@@ -246,7 +246,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                 <img src="../../assets/icons/close.svg" alt="Fechar">
                                             </a>
                                         </div>
-                                
+
                                         <form method="post" action="index.php">
                                             <div class="modal-body">
                                                 <input type="hidden" name="codigo" value="<?= htmlspecialchars($formando->getCodigo()) ?>">

@@ -26,7 +26,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $controller = new UsuarioController();
         if ($controller->redefinirSenha($username, $senhaAntiga, $senhaNova)) {
-            // Primeiro acesso concluído: tratado internamente pelo sistema
             unset($_SESSION['primeiro_acesso']);
             $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Senha alterada com sucesso!'];
             header('Location: ' . ($autenticado ? '../dashboard/index.php' : 'index.php'));

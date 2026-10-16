@@ -102,7 +102,6 @@ class QualificacaoController {
             return false;
         }
 
-        // Verificar dependencias antes de eliminar
         if ((new LicaoController())->existeLicaoPorQualificacao($codigo)) {
             throw new Exception("Não é possível eliminar esta qualificação pois está sendo usada em uma ou mais lições.");
         }

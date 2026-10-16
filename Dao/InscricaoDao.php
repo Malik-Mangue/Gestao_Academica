@@ -32,7 +32,7 @@ class InscricaoDao {
             $usuario = Sessao::obterUtilizador();
             if ($usuario != null) {
                 $log = new Logs(null, "INSERT", "Inscrição para o semestre " . $semestre . " foi cadastrada", $usuario);
-                $log->setData(date('Y-m-d H:i:s'));
+                $log->setData(date('d/m/Y H:i:s'));
                 (new LogDao())->salvar($log);
             }
         }
@@ -66,7 +66,6 @@ class InscricaoDao {
             $formando = new Formando($rs['codigo_formando'], $rs['nome_formando'], $rs['apelido_formando'], null, null, null);
             $modulo = new Modulo($rs['codigo_modulo'], $rs['nome_modulo'], null);
 
-            // NOVO: liga a qualificação ao módulo
             if ($rs['cod_Quali'] !== null) {
                 $qualificacao = new Qualificacao($rs['cod_Quali'], $rs['titulo'], null);
                 $qualiNivel = new Quali_Nivel($rs['codigo_Quali_Nivel'], $rs['cod_Quali'], null);
@@ -103,7 +102,7 @@ class InscricaoDao {
             $usuario = Sessao::obterUtilizador();
             if ($usuario != null) {
                 $log = new Logs(null, "UPDATE", "Inscrição (ID: " . $codigo . ") para o semestre " . $semestre . " foi atualizada", $usuario);
-                $log->setData(date('Y-m-d H:i:s'));
+                $log->setData(date('d/m/Y H:i:s'));
                 (new LogDao())->salvar($log);
             }
         }
@@ -131,7 +130,7 @@ class InscricaoDao {
             $usuario = Sessao::obterUtilizador();
             if ($usuario != null) {
                 $log = new Logs(null, "DELETE", "Inscrição (ID: " . $codigo . ") para o semestre " . $semestre . " foi removida", $usuario);
-                $log->setData(date('Y-m-d H:i:s'));
+                $log->setData(date('d/m/Y H:i:s'));
                 (new LogDao())->salvar($log);
             }
         }

@@ -26,7 +26,7 @@ class Diretor_TurmaDao {
             $usuario = Sessao::obterUtilizador();
             if ($usuario != null) {
                 $log = new Logs(null, "INSERT", "Diretor de Turma " . $dt->getFormador()->getNome() . " foi cadastrado", $usuario);
-                $log->setData(date('Y-m-d H:i:s'));
+                $log->setData(date('d/m/Y H:i:s'));
                 (new LogDao())->salvar($log);
             }
         }
@@ -59,7 +59,7 @@ class Diretor_TurmaDao {
             $usuario = Sessao::obterUtilizador();
             if ($usuario != null) {
                 $log = new Logs(null, "UPDATE", "Diretor de Turma " . $diretor->getFormador()->getNome() . " foi atualizado", $usuario);
-                $log->setData(date('Y-m-d H:i:s'));
+                $log->setData(date('d/m/Y H:i:s'));
                 (new LogDao())->salvar($log);
             }
         }
@@ -86,7 +86,7 @@ class Diretor_TurmaDao {
             $usuario = Sessao::obterUtilizador();
             if ($usuario != null) {
                 $log = new Logs(null, "DELETE", "Diretor de Turma (ID Formador: " . $codigoFormador . ") foi removido", $usuario);
-                $log->setData(date('Y-m-d H:i:s'));
+                $log->setData(date('d/m/Y H:i:s'));
                 (new LogDao())->salvar($log);
             }
         }

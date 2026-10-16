@@ -13,7 +13,6 @@ class FormandoDAO {
         $this->db = $database->getConnection();
     }
 
-    // Ordem do construtor Formando: (codigo, nome, apelido, email, bi, contacto)
     private function montarFormando($rs) {
         return new Formando(
             $rs['codigo_formando'],
@@ -118,12 +117,11 @@ class FormandoDAO {
         }
     }
 
-    // Regista uma acao de auditoria em nome do utilizador autenticado.
     private function registarLog($acao, $descricao) {
         $usuario = Sessao::obterUtilizador();
         if ($usuario != null) {
             $log = new Logs(null, $acao, $descricao, $usuario);
-            $log->setData(date('Y-m-d H:i:s'));
+            $log->setData(date('d/m/Y H:i:s'));
             (new LogDao())->salvar($log);
         }
     }

@@ -254,7 +254,7 @@ CREATE TABLE `Log` (
   `id_Usuario` int NOT NULL,
   `acao` varchar(100) NOT NULL,
   `descricao` varchar(200) NOT NULL,
-  `data` datetime NOT NULL,
+  `data` varchar(19) NOT NULL,
   PRIMARY KEY (`codigo`),
   KEY `fk_id_Usuario` (`id_Usuario`),
   CONSTRAINT `fk_id_Usuario` FOREIGN KEY (`id_Usuario`) REFERENCES `Usuario` (`idUser`)

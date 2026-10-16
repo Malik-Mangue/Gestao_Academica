@@ -4,6 +4,7 @@ Sessao::exigirLogin('../login/index.php');
 require_once __DIR__ . '/../../services/Validador.php';
 require_once __DIR__ . '/../../controller/TurmaController.php';
 require_once __DIR__ . '/../../controller/Quali_NivelController.php';
+require_once __DIR__ . '/../../controller/CampoController.php';
 require_once __DIR__ . '/../../model/Formador.php';
 require_once __DIR__ . '/../../model/Diretor_turma.php';
 require_once __DIR__ . '/../../model/Qualificacao.php';
@@ -11,16 +12,13 @@ require_once __DIR__ . '/../../model/Nivel.php';
 
 $controller = new TurmaController();
 
-// Ajusta estes valores aos turnos usados na tua base de dados.
 $turnos = ['Manhã', 'Tarde', 'Noite'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $acao = $_POST['acao'] ?? '';
 
-    // O controller revalida o perfil: a view esconde os botoes nao permitidos,
-    // mas quem salta a interface continua a ser barrado aqui.
     if ($acao === 'deletar') {
-        Sessao::exigirAcao(Sessao::ACAO_REMOVER, 'index.php');
+        Sessao::exigirAcao(Sessao::ACAO_REMOVER, Sessao::RECURSO_TURMAS, 'index.php');
 
         $codigo = filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT);
         if (!$codigo) {
@@ -42,52 +40,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($acao === 'gravar' || $acao === 'editar') {
         Sessao::exigirAcao(
             $acao === 'gravar' ? Sessao::ACAO_CRIAR : Sessao::ACAO_EDITAR,
+            Sessao::RECURSO_TURMAS,
             'index.php'
         );
 
-        $codigo     = $acao === 'editar' ? filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT) : null;
-        $nome       = trim($_POST['nome'] ?? '');
-        $anoLectivo = $_POST['ano_lectivo'] ?? '';
-        $turno      = trim($_POST['turno'] ?? '');
-        $codDiretor = filter_input(INPUT_POST, 'codDiretor', FILTER_VALIDATE_INT);
-        $codQuali   = filter_input(INPUT_POST, 'qualificacao', FILTER_VALIDATE_INT);
-        $codNivel   = filter_input(INPUT_POST, 'nivel', FILTER_VALIDATE_INT);
+        $codigo       = $acao === 'editar' ? filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT) : null;
+        $nome         = trim($_POST['nome'] ?? '');
+        $anoLectivo   = trim($_POST['ano_lectivo'] ?? '');
+        $turno        = trim($_POST['turno'] ?? '');
+        $codDiretor   = filter_input(INPUT_POST, 'codDiretor', FILTER_VALIDATE_INT);
+        $idQualiNivel = filter_input(INPUT_POST, 'idQualiNivel', FILTER_VALIDATE_INT);
+
+        $qualiNivel = $idQualiNivel ? (new Quali_NivelController())->buscar($idQualiNivel) : null;
 
         if ($acao === 'editar' && !$codigo) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Turma inválida para atualização.'];
         } elseif (!Validador::texto($nome, 40)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'O nome da turma é obrigatório (até 40 caracteres).'];
-        } elseif (!Validador::inteiroPositivo($anoLectivo)) {
-            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'O ano lectivo deve ser um número positivo.'];
+        } elseif (!Validador::inteiroPositivo($anoLectivo) || strlen($anoLectivo) !== 4) {
+            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'O ano lectivo deve ter 4 dígitos (ex.: 2025).'];
         } elseif (!in_array($turno, $turnos, true)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione um turno válido.'];
         } elseif (!$codDiretor) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione o diretor de turma.'];
-        } elseif (!$codQuali) {
-            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione a qualificação da turma.'];
-        } elseif (!$codNivel) {
-            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione o nível da turma.'];
+        } elseif ($qualiNivel === null) {
+            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione a qualificação e o nível da turma.'];
         } else {
             $formador     = new Formador($codDiretor, null, null, null, null, null, null, null, null, null);
             $diretor      = new Diretor_turma($formador);
-            $qualificacao = new Qualificacao($codQuali, null, null);
-            $nivel        = new Nivel($codNivel, null);
+            $qualificacao = new Qualificacao($qualiNivel->getCod_quali(), null, null);
+            $nivel        = new Nivel($qualiNivel->getCod_nivel(), null);
 
-            // O nivel escolhido tem de estar associado a qualificacao (tabela Quali_Nivel).
-            if (!(new Quali_NivelController())->buscarCodigo($qualificacao, $nivel)) {
-                $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'A qualificação selecionada não tem o nível escolhido.'];
-            } else {
-                try {
-                    $sucesso = $acao === 'gravar'
-                        ? $controller->cadastrarTurma($nome, (int) $anoLectivo, $turno, $diretor, $qualificacao, $nivel)
-                        : $controller->atualizarTurma($codigo, $nome, (int) $anoLectivo, $turno, $diretor, $qualificacao, $nivel);
+            try {
+                $sucesso = $acao === 'gravar'
+                    ? $controller->cadastrarTurma($nome, (int) $anoLectivo, $turno, $diretor, $qualificacao, $nivel, $qualiNivel)
+                    : $controller->atualizarTurma($codigo, $nome, (int) $anoLectivo, $turno, $diretor, $qualificacao, $nivel, $qualiNivel);
 
-                    $_SESSION['flash'] = $sucesso
-                        ? ['type' => 'success', 'msg' => $acao === 'gravar' ? 'Turma cadastrada com sucesso!' : 'Turma atualizada com sucesso!']
-                        : ['type' => 'danger', 'msg' => 'Não foi possível gravar a turma.'];
-                } catch (Exception $e) {
-                    $_SESSION['flash'] = ['type' => 'danger', 'msg' => $e->getMessage()];
-                }
+                $_SESSION['flash'] = $sucesso
+                    ? ['type' => 'success', 'msg' => $acao === 'gravar' ? 'Turma cadastrada com sucesso!' : 'Turma atualizada com sucesso!']
+                    : ['type' => 'danger', 'msg' => 'Não foi possível gravar a turma.'];
+            } catch (Exception $e) {
+                $_SESSION['flash'] = ['type' => 'danger', 'msg' => $e->getMessage()];
             }
         }
         header('Location: index.php');
@@ -99,15 +92,15 @@ $pesquisa = trim($_GET['pesquisa'] ?? '');
 
 $turmas        = $controller->listarTurma($pesquisa);
 $diretores     = $controller->listarDiretores();
-$qualificacoes = $controller->listarQualificacoes();
-$niveis        = $controller->listarNiveis();
+$pares         = (new Quali_NivelController())->listarPares();
+$campos        = (new CampoController())->listarCampo(); 
 
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
 
-$pode_criar   = Sessao::pode(Sessao::ACAO_CRIAR);
-$pode_editar  = Sessao::pode(Sessao::ACAO_EDITAR);
-$pode_remover = Sessao::pode(Sessao::ACAO_REMOVER);
+$pode_criar   = Sessao::podeCriar(Sessao::RECURSO_TURMAS);
+$pode_editar  = Sessao::podeEditar(Sessao::RECURSO_TURMAS);
+$pode_remover = Sessao::podeRemover(Sessao::RECURSO_TURMAS);
 
 $page_title = 'Gestão de Turmas';
 $active_menu = 'turma';
@@ -219,8 +212,66 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                     <input type="hidden" name="codigo" value="<?= htmlspecialchars((string) $turma->getCodigo()) ?>">
                                                     <?php
                                                     $sufixo = 'editar-' . $turma->getCodigo();
-                                                    require __DIR__ . '/_campos.php';
+                                                    $qnTurma = $turma->getQualiNivel();
                                                     ?>
+                                                    <div class="form-group">
+                                                        <label for="t-campo-<?= $sufixo ?>">Campo / Área</label>
+                                                        <select id="t-campo-<?= $sufixo ?>" name="codCampo" class="form-control">
+                                                            <option value="">Selecione o campo...</option>
+                                                            <?php foreach ($campos as $c): ?>
+                                                                <option value="<?= (int) $c->getCodigo() ?>">
+                                                                    <?= htmlspecialchars($c->getNome()) ?>
+                                                                </option>
+                                                            <?php endforeach; ?>
+                                                        </select>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label for="t-qn-<?= $sufixo ?>">Qualificação / Nível <span class="required">*</span></label>
+                                                        <select id="t-qn-<?= $sufixo ?>" name="idQualiNivel" class="form-control" required>
+                                                            <option value="">Selecione...</option>
+                                                            <?php foreach ($pares as $p): ?>
+                                                                <option value="<?= (int) $p['codigo'] ?>"
+                                                                    <?= $qnTurma !== null && (int) $qnTurma->getCodigo() === (int) $p['codigo'] ? 'selected' : '' ?>>
+                                                                    <?= htmlspecialchars($p['descricao']) ?>
+                                                                </option>
+                                                            <?php endforeach; ?>
+                                                        </select>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label for="t-diretor-<?= $sufixo ?>">Diretor de Turma <span class="required">*</span></label>
+                                                        <select id="t-diretor-<?= $sufixo ?>" name="codDiretor" class="form-control" required>
+                                                            <option value="">Selecione...</option>
+                                                            <?php foreach ($diretores as $d): ?>
+                                                                <option value="<?= (int) $d['codigo'] ?>"
+                                                                    <?= (int) $turma->getDiretorTurma()->getFormador()->getCodigo() === (int) $d['codigo'] ? 'selected' : '' ?>>
+                                                                    <?= htmlspecialchars($d['descricao']) ?>
+                                                                </option>
+                                                            <?php endforeach; ?>
+                                                        </select>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label for="t-turno-<?= $sufixo ?>">Turno <span class="required">*</span></label>
+                                                        <select id="t-turno-<?= $sufixo ?>" name="turno" class="form-control" required>
+                                                            <option value="">Selecione...</option>
+                                                            <?php foreach ($turnos as $t): ?>
+                                                                <option value="<?= htmlspecialchars($t) ?>" <?= $t === $turma->getTurno() ? 'selected' : '' ?>>
+                                                                    <?= htmlspecialchars($t) ?>
+                                                                </option>
+                                                            <?php endforeach; ?>
+                                                        </select>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label for="t-ano-<?= $sufixo ?>">Ano lectivo <span class="required">*</span></label>
+                                                        <input type="number" id="t-ano-<?= $sufixo ?>" name="ano_lectivo" class="form-control"
+                                                               min="1000" max="9999" step="1" placeholder="Ex: 2025"
+                                                               value="<?= htmlspecialchars((string) $turma->getAnoIngresso()) ?>" required>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label for="t-nome-<?= $sufixo ?>">Nome da turma <span class="required">*</span></label>
+                                                        <input type="text" id="t-nome-<?= $sufixo ?>" name="nome" class="form-control"
+                                                               placeholder="Ex: TI-2025-A" maxlength="40"
+                                                               value="<?= htmlspecialchars($turma->getNome()) ?>" required>
+                                                    </div>
                                                 </div>
                                                 <div class="modal-footer">
                                                     <a href="#" class="btn btn-secondary">Cancelar</a>
@@ -283,11 +334,52 @@ require_once __DIR__ . '/../partials/sidebar.php';
                 </div>
                 <form method="post" action="index.php">
                     <div class="modal-body">
-                        <?php
-                        $turma = null;
-                        $sufixo = 'novo';
-                        require __DIR__ . '/_campos.php';
-                        ?>
+                        <div class="form-group">
+                            <label for="t-campo-novo">Campo / Área</label>
+                            <select id="t-campo-novo" name="codCampo" class="form-control">
+                                <option value="">Selecione o campo...</option>
+                                <?php foreach ($campos as $c): ?>
+                                    <option value="<?= (int) $c->getCodigo() ?>"><?= htmlspecialchars($c->getNome()) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="t-qn-novo">Qualificação / Nível <span class="required">*</span></label>
+                            <select id="t-qn-novo" name="idQualiNivel" class="form-control" required>
+                                <option value="">Selecione...</option>
+                                <?php foreach ($pares as $p): ?>
+                                    <option value="<?= (int) $p['codigo'] ?>"><?= htmlspecialchars($p['descricao']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="t-diretor-novo">Diretor de Turma <span class="required">*</span></label>
+                            <select id="t-diretor-novo" name="codDiretor" class="form-control" required>
+                                <option value="">Selecione...</option>
+                                <?php foreach ($diretores as $d): ?>
+                                    <option value="<?= (int) $d['codigo'] ?>"><?= htmlspecialchars($d['descricao']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="t-turno-novo">Turno <span class="required">*</span></label>
+                            <select id="t-turno-novo" name="turno" class="form-control" required>
+                                <option value="">Selecione...</option>
+                                <?php foreach ($turnos as $t): ?>
+                                    <option value="<?= htmlspecialchars($t) ?>"><?= htmlspecialchars($t) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="t-ano-novo">Ano lectivo <span class="required">*</span></label>
+                            <input type="number" id="t-ano-novo" name="ano_lectivo" class="form-control"
+                                   min="1000" max="9999" step="1" placeholder="Ex: 2025" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="t-nome-novo">Nome da turma <span class="required">*</span></label>
+                            <input type="text" id="t-nome-novo" name="nome" class="form-control"
+                                   placeholder="Ex: TI-2025-A" maxlength="40" required>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <a href="#" class="btn btn-secondary">Cancelar</a>

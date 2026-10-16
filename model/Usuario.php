@@ -17,10 +17,6 @@ class Usuario {
     private $perfil;
     private $primeiroAcesso;
 
-    // Ordem canonica usada por todos os chamadores (Dao, Controller e Sessao):
-    // (codigo, idPerfil, nome, username, apelido, password, primeiroAcesso,
-    //  estadoCivil, genero, telefone, email, bi, perfil)
-    // Os campos a partir de primeiroAcesso sao opcionais (default null).
     public function __construct($codigo = null, $idPerfil = null, $nome = null, $username = null, $apelido = null, $password = null, $primeiroAcesso = 0, $estadoCivil = null, $genero = null, $telefone = null, $email = null, $bi = null, $perfil = null)
     {
         $this->codigo = $codigo;

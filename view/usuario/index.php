@@ -1,9 +1,7 @@
 <?php
 require_once __DIR__ . '/../../services/Sessao.php';
 
-// Rota privada e exclusiva do Administrador: exige login e revalida o perfil
-// (a view esconde o link da sidebar, o guard e que protege mesmo o acesso direto).
-Sessao::exigirPerfil([Sessao::ADMIN], '../dashboard/index.php');
+Sessao::exigirLeitura(Sessao::RECURSO_UTILIZADORES, '../dashboard/index.php');
 
 require_once __DIR__ . '/../../services/Validador.php';
 require_once __DIR__ . '/../../controller/UsuarioController.php';
@@ -150,7 +148,6 @@ $pesquisa = trim($_GET['pesquisa'] ?? '');
 $usuarios = $controller->listar($pesquisa !== '' ? $pesquisa : null);
 $perfis = $controller->listarPerfis();
 
-// Perfis existentes rastreados na base de dados através da classe Perfil
 $nomesPerfil = [];
 foreach ($perfis as $perfil) {
     $nomesPerfil[(int) $perfil->getId()] = $perfil->getNome();
@@ -435,11 +432,6 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             <input type="text" id="novo-username" name="username" class="form-control"
                                 maxlength="60" autocomplete="username" required>
                         </div>
-                        <!-- <div class="form-group">
-                            <label for="novo-password">Password <span class="required">*</span></label>
-                            <input type="password" id="novo-password" name="password" class="form-control"
-                                   maxlength="60" autocomplete="new-password" required>
-                        </div> -->
                         <div class="form-group">
                             <label for="novo-estadoCivil">Estado Civil <span class="required">*</span></label>
                             <select id="novo-estadoCivil" name="estadoCivil" class="form-control" required>
@@ -481,6 +473,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                 <?php endforeach; ?>
                             </select>
                         </div>
+                
                     </div>
                     <p class="confirm-warning">
                         So admin cria

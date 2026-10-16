@@ -32,7 +32,7 @@ class Quali_moduloDao {
             $usuario = Sessao::obterUtilizador();
             if ($usuario != null) {
                 $log = new Logs(null, "INSERT", "Quali_modulo do semestre " . $semestre . " foi cadastrado", $usuario);
-                $log->setData(date('Y-m-d H:i:s'));
+                $log->setData(date('d/m/Y H:i:s'));
                 (new LogDao())->salvar($log);
             }
         }
@@ -40,9 +40,6 @@ class Quali_moduloDao {
         return $result;
     }
 
-    // Os chamadores (ModuloController) trabalham com o codigo do Modulo, por
-    // isso a associação é feita pela coluna cod_modulo e nao pelo proprio PK
-    // da tabela Quali_modulo (codigo), que e independente.
     public function updateByModulo(Quali_modulo $quali_modulo) {
         $sql = "update Quali_modulo set cod_Quali = ?, semestre = ? where cod_modulo = ?";
         $stmt = $this->db->prepare($sql);
@@ -62,7 +59,7 @@ class Quali_moduloDao {
             $usuario = Sessao::obterUtilizador();
             if ($usuario != null) {
                 $log = new Logs(null, "UPDATE", "Quali_modulo do modulo (ID: " . $codModulo . ") do semestre " . $semestre . " foi atualizado", $usuario);
-                $log->setData(date('Y-m-d H:i:s'));
+                $log->setData(date('d/m/Y H:i:s'));
                 (new LogDao())->salvar($log);
             }
         }
@@ -91,7 +88,7 @@ class Quali_moduloDao {
             $usuario = Sessao::obterUtilizador();
             if ($usuario != null) {
                 $log = new Logs(null, "DELETE", "Quali_modulo do modulo (ID: " . $codModulo . ") do semestre " . $semestre . " foi removido", $usuario);
-                $log->setData(date('Y-m-d H:i:s'));
+                $log->setData(date('d/m/Y H:i:s'));
                 (new LogDao())->salvar($log);
             }
         }
@@ -134,7 +131,7 @@ class Quali_moduloDao {
             $usuario = Sessao::obterUtilizador();
             if ($usuario != null) {
                 $log = new Logs(null, "UPDATE", "Quali_modulo (ID: " . $codigo . ") do semestre " . $semestre . " foi atualizado", $usuario);
-                $log->setData(date('Y-m-d H:i:s'));
+                $log->setData(date('d/m/Y H:i:s'));
                 (new LogDao())->salvar($log);
             }
         }
@@ -163,7 +160,7 @@ class Quali_moduloDao {
             $usuario = Sessao::obterUtilizador();
             if ($usuario != null) {
                 $log = new Logs(null, "DELETE", "Quali_modulo (ID: " . $codigo . ") do semestre " . $semestre . " foi removido", $usuario);
-                $log->setData(date('Y-m-d H:i:s'));
+                $log->setData(date('d/m/Y H:i:s'));
                 (new LogDao())->salvar($log);
             }
         }

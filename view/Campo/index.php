@@ -11,7 +11,7 @@ $controller = new CampoController();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['gravar'])) {
-        Sessao::exigirAcao(Sessao::ACAO_CRIAR, 'index.php');
+        Sessao::exigirAcao(Sessao::ACAO_CRIAR, Sessao::RECURSO_CAMPOS, 'index.php');
 
         $nome = trim($_POST['nome'] ?? '');
         if (empty($nome)) {
@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (isset($_POST['editar'])) {
-        Sessao::exigirAcao(Sessao::ACAO_EDITAR, 'index.php');
+        Sessao::exigirAcao(Sessao::ACAO_EDITAR, Sessao::RECURSO_CAMPOS, 'index.php');
 
         $codigo = filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT);
         $nome = trim($_POST['nome'] ?? '');
@@ -60,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (isset($_POST['deletar'])) {
-        Sessao::exigirAcao(Sessao::ACAO_REMOVER, 'index.php');
+        Sessao::exigirAcao(Sessao::ACAO_REMOVER, Sessao::RECURSO_CAMPOS, 'index.php');
 
         $codigo = filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT);
         if (!$codigo) {
@@ -89,9 +89,9 @@ $campos = $controller->listarCampo($pesquisa !== '' ? $pesquisa : null);
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
 
-$pode_criar   = Sessao::pode(Sessao::ACAO_CRIAR);
-$pode_editar  = Sessao::pode(Sessao::ACAO_EDITAR);
-$pode_remover = Sessao::pode(Sessao::ACAO_REMOVER);
+$pode_criar   = Sessao::podeCriar(Sessao::RECURSO_CAMPOS);
+$pode_editar  = Sessao::podeEditar(Sessao::RECURSO_CAMPOS);
+$pode_remover = Sessao::podeRemover(Sessao::RECURSO_CAMPOS);
 
 $page_title = 'Gestão de Campos / Áreas';
 $active_menu = 'campo';

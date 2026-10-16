@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           : (isset($_POST['editar']) ? 'editar' : (isset($_POST['deletar']) ? 'deletar' : null));
 
     if ($acao === 'deletar') {
-        Sessao::exigirAcao(Sessao::ACAO_REMOVER, 'index.php');
+        Sessao::exigirAcao(Sessao::ACAO_REMOVER, Sessao::RECURSO_LICOES, 'index.php');
         $codigo = filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT);
         $_SESSION['flash'] = $controller->apagarLicao($codigo)
             ? ['type' => 'success', 'msg' => 'Horário removido com sucesso!']
@@ -23,6 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($acao === 'gravar' || $acao === 'editar') {
         Sessao::exigirAcao(
             $acao === 'gravar' ? Sessao::ACAO_CRIAR : Sessao::ACAO_EDITAR,
+            Sessao::RECURSO_LICOES,
             'index.php'
         );
 
@@ -35,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $horaInicio = trim($_POST['hora_inicio'] ?? '');
         $horaFim    = trim($_POST['hora_fim'] ?? '');
 
-        if (view/usuario/index.phpcodModulo || view/usuario/index.phpcodFormador || view/usuario/index.phpcodSala || view/usuario/index.phpcodTurma) {
+        if (!$codModulo || !$codFormador || !$codSala || !$codTurma) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione módulo, formador, sala e turma.'];
         } elseif (!Validador::data($data)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Indique uma data válida.'];
@@ -74,9 +75,9 @@ $turmas      = $controller->listarTurmas();
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
 
-$pode_criar   = Sessao::pode(Sessao::ACAO_CRIAR);
-$pode_editar  = Sessao::pode(Sessao::ACAO_EDITAR);
-$pode_remover = Sessao::pode(Sessao::ACAO_REMOVER);
+$pode_criar   = Sessao::podeCriar(Sessao::RECURSO_LICOES);
+$pode_editar  = Sessao::podeEditar(Sessao::RECURSO_LICOES);
+$pode_remover = Sessao::podeRemover(Sessao::RECURSO_LICOES);
 
 $page_title = 'Gestão de Horários';
 $active_menu = 'licao';
@@ -181,8 +182,74 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                     <input type="hidden" name="codigo" value="<?= htmlspecialchars($licao->getCodigo()) ?>">
                                                     <?php
                                                     $sufixo = 'editar-' . $licao->getCodigo();
-                                                    require __DIR__ . '/_campos.php';
+                                                    $v = function ($getter) use ($licao) {
+                                                        return $licao !== null ? (string) $licao->$getter() : '';
+                                                    };
+                                                    $sel = function ($opcao, $atual) {
+                                                        return (int) $opcao === (int) $atual;
+                                                    };
                                                     ?>
+                                                    <div class="form-grid">
+                                                        <div class="form-group">
+                                                            <label for="m-<?= $sufixo ?>">Módulo <span class="required">*</span></label>
+                                                            <select id="m-<?= $sufixo ?>" name="codModulo" class="form-control" required>
+                                                                <?php foreach ($modulos as $op): ?>
+                                                                    <option value="<?= (int) $op['codigo'] ?>"
+                                                                        <?= $licao !== null && $sel($op['codigo'], $licao->getModulo()->getCodigo()) ? 'selected' : '' ?>>
+                                                                        <?= htmlspecialchars($op['descricao']) ?>
+                                                                    </option>
+                                                                <?php endforeach; ?>
+                                                            </select>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label for="f-<?= $sufixo ?>">Formador <span class="required">*</span></label>
+                                                            <select id="f-<?= $sufixo ?>" name="codFormador" class="form-control" required>
+                                                                <?php foreach ($formadores as $op): ?>
+                                                                    <option value="<?= (int) $op['codigo'] ?>"
+                                                                        <?= $licao !== null && $sel($op['codigo'], $licao->getFormador()->getCodigo()) ? 'selected' : '' ?>>
+                                                                        <?= htmlspecialchars($op['descricao']) ?>
+                                                                    </option>
+                                                                <?php endforeach; ?>
+                                                            </select>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label for="s-<?= $sufixo ?>">Sala <span class="required">*</span></label>
+                                                            <select id="s-<?= $sufixo ?>" name="codSala" class="form-control" required>
+                                                                <?php foreach ($salas as $op): ?>
+                                                                    <option value="<?= (int) $op['codigo'] ?>"
+                                                                        <?= $licao !== null && $sel($op['codigo'], $licao->getSala()->getCodigo()) ? 'selected' : '' ?>>
+                                                                        <?= htmlspecialchars($op['descricao']) ?>
+                                                                    </option>
+                                                                <?php endforeach; ?>
+                                                            </select>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label for="t-<?= $sufixo ?>">Turma <span class="required">*</span></label>
+                                                            <select id="t-<?= $sufixo ?>" name="codTurma" class="form-control" required>
+                                                                <?php foreach ($turmas as $op): ?>
+                                                                    <option value="<?= (int) $op['codigo'] ?>"
+                                                                        <?= $licao !== null && $sel($op['codigo'], $licao->getTurma()->getCodigo()) ? 'selected' : '' ?>>
+                                                                        <?= htmlspecialchars($op['descricao']) ?>
+                                                                    </option>
+                                                                <?php endforeach; ?>
+                                                            </select>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label for="d-<?= $sufixo ?>">Data <span class="required">*</span></label>
+                                                            <input type="date" id="d-<?= $sufixo ?>" name="data" class="form-control"
+                                                                   value="<?= htmlspecialchars($v('getData')) ?>" required>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label for="hi-<?= $sufixo ?>">Hora de início <span class="required">*</span></label>
+                                                            <input type="time" id="hi-<?= $sufixo ?>" name="hora_inicio" class="form-control"
+                                                                   value="<?= htmlspecialchars($v('getHoraInicio')) ?>" required>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label for="hf-<?= $sufixo ?>">Hora de fim <span class="required">*</span></label>
+                                                            <input type="time" id="hf-<?= $sufixo ?>" name="hora_fim" class="form-control"
+                                                                   value="<?= htmlspecialchars($v('getHoraFim')) ?>" required>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                                 <div class="modal-footer">
                                                     <a href="#" class="btn btn-secondary">Cancelar</a>
@@ -249,8 +316,74 @@ require_once __DIR__ . '/../partials/sidebar.php';
                         <?php
                         $sufixo = 'novo';
                         $licao  = null;
-                        require __DIR__ . '/_campos.php';
+                        $v = function ($getter) use ($licao) {
+                            return $licao !== null ? (string) $licao->$getter() : '';
+                        };
+                        $sel = function ($opcao, $atual) {
+                            return (int) $opcao === (int) $atual;
+                        };
                         ?>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="m-<?= $sufixo ?>">Módulo <span class="required">*</span></label>
+                                <select id="m-<?= $sufixo ?>" name="codModulo" class="form-control" required>
+                                    <?php foreach ($modulos as $op): ?>
+                                        <option value="<?= (int) $op['codigo'] ?>"
+                                            <?= $licao !== null && $sel($op['codigo'], $licao->getModulo()->getCodigo()) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($op['descricao']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="f-<?= $sufixo ?>">Formador <span class="required">*</span></label>
+                                <select id="f-<?= $sufixo ?>" name="codFormador" class="form-control" required>
+                                    <?php foreach ($formadores as $op): ?>
+                                        <option value="<?= (int) $op['codigo'] ?>"
+                                            <?= $licao !== null && $sel($op['codigo'], $licao->getFormador()->getCodigo()) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($op['descricao']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="s-<?= $sufixo ?>">Sala <span class="required">*</span></label>
+                                <select id="s-<?= $sufixo ?>" name="codSala" class="form-control" required>
+                                    <?php foreach ($salas as $op): ?>
+                                        <option value="<?= (int) $op['codigo'] ?>"
+                                            <?= $licao !== null && $sel($op['codigo'], $licao->getSala()->getCodigo()) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($op['descricao']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="t-<?= $sufixo ?>">Turma <span class="required">*</span></label>
+                                <select id="t-<?= $sufixo ?>" name="codTurma" class="form-control" required>
+                                    <?php foreach ($turmas as $op): ?>
+                                        <option value="<?= (int) $op['codigo'] ?>"
+                                            <?= $licao !== null && $sel($op['codigo'], $licao->getTurma()->getCodigo()) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($op['descricao']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="d-<?= $sufixo ?>">Data <span class="required">*</span></label>
+                                <input type="date" id="d-<?= $sufixo ?>" name="data" class="form-control"
+                                       value="<?= htmlspecialchars($v('getData')) ?>" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="hi-<?= $sufixo ?>">Hora de início <span class="required">*</span></label>
+                                <input type="time" id="hi-<?= $sufixo ?>" name="hora_inicio" class="form-control"
+                                       value="<?= htmlspecialchars($v('getHoraInicio')) ?>" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="hf-<?= $sufixo ?>">Hora de fim <span class="required">*</span></label>
+                                <input type="time" id="hf-<?= $sufixo ?>" name="hora_fim" class="form-control"
+                                       value="<?= htmlspecialchars($v('getHoraFim')) ?>" required>
+                            </div>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <a href="#" class="btn btn-secondary">Cancelar</a>

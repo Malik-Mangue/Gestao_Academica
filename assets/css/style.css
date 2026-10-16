@@ -1,5 +1,6 @@
 @import './screens/dashboard.css';
 @import './screens/login.css';
+@import './screens/perfil.css';
 
 :root {
   --navy-top: #083e60;
@@ -471,6 +472,7 @@ a {
   margin-bottom: 16px;
   display: flex;
   flex-direction: column;
+
 }
 
 .form-group label {
@@ -515,7 +517,8 @@ textarea.form-control {
 
 .form-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
+  align-items: center;
   gap: 10px;
   margin-top: 20px;
   padding-top: 16px;

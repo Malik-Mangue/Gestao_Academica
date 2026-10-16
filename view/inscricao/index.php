@@ -5,12 +5,12 @@ require_once __DIR__ . '/../../services/Validador.php';
 require_once __DIR__ . '/../../controller/InscricaoController.php';
 require_once __DIR__ . '/../../controller/FormandoController.php';
 require_once __DIR__ . '/../../controller/ModuloController.php';
-require_once __DIR__ . '/../../controller/QualificacaoController.php';
+require_once __DIR__ . '/../../controller/Quali_NivelController.php';
+require_once __DIR__ . '/../../controller/CampoController.php';
 
 $controller   = new InscricaoController();
 $formandoCtrl = new FormandoController();
 $moduloCtrl   = new ModuloController();
-$qualiCtrl    = new QualificacaoController();
 
 $semestres = ['1º Semestre', '2º Semestre'];
 
@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           : (isset($_POST['editar']) ? 'editar' : (isset($_POST['deletar']) ? 'deletar' : null));
 
     if ($acao === 'deletar') {
-        Sessao::exigirAcao(Sessao::ACAO_REMOVER, 'index.php');
+        Sessao::exigirAcao(Sessao::ACAO_REMOVER, Sessao::RECURSO_INSCRICOES, 'index.php');
         $codigo = filter_input(INPUT_POST, 'codigo', FILTER_VALIDATE_INT);
         $_SESSION['flash'] = $controller->apagarInscricao($codigo)
             ? ['type' => 'success', 'msg' => 'Inscrição removida com sucesso!']
@@ -31,6 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($acao === 'gravar' || $acao === 'editar') {
         Sessao::exigirAcao(
             $acao === 'gravar' ? Sessao::ACAO_CRIAR : Sessao::ACAO_EDITAR,
+            Sessao::RECURSO_INSCRICOES,
             'index.php'
         );
 
@@ -69,14 +70,15 @@ $pesquisa  = trim($_GET['pesquisa'] ?? '');
 $inscricoes = $controller->listarInscricao($pesquisa);
 $formandos  = $formandoCtrl->listar();
 $modulos    = $moduloCtrl->listarModulos();
-$qualificacoes = $qualiCtrl->comboQualificacao();
+$pares      = (new Quali_NivelController())->listarPares();
+$campos     = (new CampoController())->listarCampo(); 
 
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
 
-$pode_criar   = Sessao::pode(Sessao::ACAO_CRIAR);
-$pode_editar  = Sessao::pode(Sessao::ACAO_EDITAR);
-$pode_remover = Sessao::pode(Sessao::ACAO_REMOVER);
+$pode_criar   = Sessao::podeCriar(Sessao::RECURSO_INSCRICOES);
+$pode_editar  = Sessao::podeEditar(Sessao::RECURSO_INSCRICOES);
+$pode_remover = Sessao::podeRemover(Sessao::RECURSO_INSCRICOES);
 
 $page_title = 'Inscrições em Módulos';
 $active_menu = 'inscricao';
@@ -125,7 +127,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             <th class="col-codigo">Código</th>
                             <th>Formando</th>
                             <th>Módulo</th>
-                            <th>Qualificação</th>   <!-- NOVO -->
+                            <th>Qualificação</th>   
                             <th>Semestre</th>
                             <th>Data de Inscrição</th>
                             <?php if ($pode_editar || $pode_remover): ?>
@@ -146,7 +148,6 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     <td><strong>#<?= htmlspecialchars($inscricao->getCodigo()) ?></strong></td>
                                     <td><?= htmlspecialchars($inscricao->getFormando()->getNome() . ' ' . $inscricao->getFormando()->getApelido()) ?></td>
                                     <td><?= htmlspecialchars($inscricao->getModulo()->getNome()) ?></td>
-                                    <!-- NOVO: coluna Qualificação -->
                                     <td><?= htmlspecialchars(
                                             $inscricao->getModulo()->getQualiNivel() && $inscricao->getModulo()->getQualiNivel()->getQualificacao()
                                                 ? $inscricao->getModulo()->getQualiNivel()->getQualificacao()->getTitulo()
@@ -180,24 +181,26 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                             <form method="post" action="index.php">
                                                 <div class="modal-body">
                                                     <input type="hidden" name="codigo" value="<?= htmlspecialchars($inscricao->getCodigo()) ?>">
+                                                    <?php $qnInscricao = $inscricao->getModulo()->getQualiNivel(); ?>
                                                     <div class="form-group">
-                                                        <label for="e-f-<?= $inscricao->getCodigo() ?>">Formando <span class="required">*</span></label>
-                                                        <select id="e-f-<?= $inscricao->getCodigo() ?>" name="codFormando" class="form-control" required>
-                                                            <?php foreach ($formandos as $f): ?>
-                                                                <option value="<?= (int) $f->getCodigo() ?>"
-                                                                    <?= (int) $inscricao->getFormando()->getCodigo() === (int) $f->getCodigo() ? 'selected' : '' ?>>
-                                                                    <?= htmlspecialchars($f->getNome() . ' ' . $f->getApelido()) ?>
+                                                        <label for="e-c-<?= $inscricao->getCodigo() ?>">Campo / Área</label>
+                                                        <select id="e-c-<?= $inscricao->getCodigo() ?>" name="codCampo" class="form-control">
+                                                            <option value="">Selecione o campo...</option>
+                                                            <?php foreach ($campos as $c): ?>
+                                                                <option value="<?= (int) $c->getCodigo() ?>">
+                                                                    <?= htmlspecialchars($c->getNome()) ?>
                                                                 </option>
                                                             <?php endforeach; ?>
                                                         </select>
                                                     </div>
                                                     <div class="form-group">
-                                                        <label for="e-m-<?= $inscricao->getCodigo() ?>">Módulo <span class="required">*</span></label>
-                                                        <select id="e-m-<?= $inscricao->getCodigo() ?>" name="codModulo" class="form-control" required>
-                                                            <?php foreach ($modulos as $op): ?>
-                                                                <option value="<?= (int) $op['codigo'] ?>"
-                                                                    <?= (int) $inscricao->getModulo()->getCodigo() === (int) $op['codigo'] ? 'selected' : '' ?>>
-                                                                    <?= htmlspecialchars($op['descricao']) ?>
+                                                        <label for="e-qn-<?= $inscricao->getCodigo() ?>">Qualificação / Nível</label>
+                                                        <select id="e-qn-<?= $inscricao->getCodigo() ?>" name="idQualiNivel" class="form-control">
+                                                            <option value="">Selecione a qualificação e o nível...</option>
+                                                            <?php foreach ($pares as $p): ?>
+                                                                <option value="<?= (int) $p['codigo'] ?>"
+                                                                    <?= $qnInscricao !== null && (int) $qnInscricao->getCodigo() === (int) $p['codigo'] ? 'selected' : '' ?>>
+                                                                    <?= htmlspecialchars($p['descricao']) ?>
                                                                 </option>
                                                             <?php endforeach; ?>
                                                         </select>
@@ -214,9 +217,31 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                         </select>
                                                     </div>
                                                     <div class="form-group">
+                                                        <label for="e-m-<?= $inscricao->getCodigo() ?>">Módulo <span class="required">*</span></label>
+                                                        <select id="e-m-<?= $inscricao->getCodigo() ?>" name="codModulo" class="form-control" required>
+                                                            <?php foreach ($modulos as $op): ?>
+                                                                <option value="<?= (int) $op['codigo'] ?>"
+                                                                    <?= (int) $inscricao->getModulo()->getCodigo() === (int) $op['codigo'] ? 'selected' : '' ?>>
+                                                                    <?= htmlspecialchars($op['descricao']) ?>
+                                                                </option>
+                                                            <?php endforeach; ?>
+                                                        </select>
+                                                    </div>
+                                                    <div class="form-group">
                                                         <label for="e-d-<?= $inscricao->getCodigo() ?>">Data de Inscrição <span class="required">*</span></label>
                                                         <input type="date" id="e-d-<?= $inscricao->getCodigo() ?>" name="data_inscricao" class="form-control"
                                                                value="<?= htmlspecialchars($inscricao->getDataInscricao()) ?>" required>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label for="e-f-<?= $inscricao->getCodigo() ?>">Formando <span class="required">*</span></label>
+                                                        <select id="e-f-<?= $inscricao->getCodigo() ?>" name="codFormando" class="form-control" required>
+                                                            <?php foreach ($formandos as $f): ?>
+                                                                <option value="<?= (int) $f->getCodigo() ?>"
+                                                                    <?= (int) $inscricao->getFormando()->getCodigo() === (int) $f->getCodigo() ? 'selected' : '' ?>>
+                                                                    <?= htmlspecialchars($f->getNome() . ' ' . $f->getApelido()) ?>
+                                                                </option>
+                                                            <?php endforeach; ?>
+                                                        </select>
                                                     </div>
                                                 </div>
                                                 <div class="modal-footer">
@@ -280,31 +305,23 @@ require_once __DIR__ . '/../partials/sidebar.php';
                 <form method="post" action="index.php">
                     <div class="modal-body">
                         <div class="form-group">
-                            <label for="n-f">Formando <span class="required">*</span></label>
-                            <select id="n-f" name="codFormando" class="form-control" required>
-                                <?php foreach ($formandos as $f): ?>
-                                    <option value="<?= (int) $f->getCodigo() ?>">
-                                        <?= htmlspecialchars($f->getNome() . ' ' . $f->getApelido()) ?>
+                            <label for="n-c">Campo / Área</label>
+                            <select id="n-c" name="codCampo" class="form-control">
+                                <option value="">Selecione o campo...</option>
+                                <?php foreach ($campos as $c): ?>
+                                    <option value="<?= (int) $c->getCodigo() ?>">
+                                        <?= htmlspecialchars($c->getNome()) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="n-q">Qualificação <span class="required">*</span></label>
-                            <select id="n-q" name="codQuali" class="form-control" required>
-                                <?php foreach ($qualificacoes as $q): ?>
-                                    <option value="<?= (int) $q->getCodigo() ?>">
-                                        <?= htmlspecialchars($q->getTitulo()) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="n-m">Modulo <span class="required">*</span></label>
-                            <select id="n-m" name="codModulo" class="form-control" required>
-                                <?php foreach ($modulos as $m): ?>
-                                    <option value="<?= (int) $m['codigo'] ?>">
-                                        <?= htmlspecialchars($m['descricao']) ?>
+                            <label for="n-qn">Qualificação / Nível</label>
+                            <select id="n-qn" name="idQualiNivel" class="form-control">
+                                <option value="">Selecione a qualificação e o nível...</option>
+                                <?php foreach ($pares as $p): ?>
+                                    <option value="<?= (int) $p['codigo'] ?>">
+                                        <?= htmlspecialchars($p['descricao']) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -319,8 +336,28 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             </select>
                         </div>
                         <div class="form-group">
+                            <label for="n-m">Módulo <span class="required">*</span></label>
+                            <select id="n-m" name="codModulo" class="form-control" required>
+                                <?php foreach ($modulos as $m): ?>
+                                    <option value="<?= (int) $m['codigo'] ?>">
+                                        <?= htmlspecialchars($m['descricao']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
                             <label for="n-d">Data <span class="required">*</span></label>
                             <input type="date" id="n-d" name="data_inscricao" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="n-f">Formando <span class="required">*</span></label>
+                            <select id="n-f" name="codFormando" class="form-control" required>
+                                <?php foreach ($formandos as $f): ?>
+                                    <option value="<?= (int) $f->getCodigo() ?>">
+                                        <?= htmlspecialchars($f->getNome() . ' ' . $f->getApelido()) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                     </div>
                     <div class="modal-footer">

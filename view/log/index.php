@@ -1,8 +1,7 @@
 <?php
 require_once __DIR__ . '/../../services/Sessao.php';
 
-// Auditoria de logs: exclusiva do Auditor (ver tabela da especificacao).
-Sessao::exigirPerfil([Sessao::AUDITOR], '../dashboard/index.php');
+Sessao::exigirLeitura(Sessao::RECURSO_LOGS, '../dashboard/index.php');
 
 require_once __DIR__ . '/../../controller/LogsController.php';
 

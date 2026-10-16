@@ -1,36 +1,72 @@
 <?php
 require_once __DIR__ . '/../config/conexao.php';
 require_once __DIR__ . '/../Dao/PerfilDao.php';
+require_once __DIR__ . '/../Dao/RecursoDao.php';
+require_once __DIR__ . '/../Dao/PermissaoDao.php';
+require_once __DIR__ . '/../Dao/PerfilPermissaoDao.php';
 require_once __DIR__ . '/../model/Usuario.php';
 
-/**
- * Classe estatica de sessao - unico ponto de inicio/termino de sessoes
- * e de controlo de autenticacao/autorizacao. Nao guarda passwords nem
- * executa regras de negocio.
- */
 final class Sessao
 {
-    // Nomes canonicos dos perfis (resolvidos sempre na BD pela classe Perfil)
     const ADMIN    = 'Administrador';
     const SUPER    = 'SuperOperador';
     const OPERADOR = 'Operador';
     const AUDITOR  = 'Auditor';
 
-    // Acoes usadas pela politica de permissoes (ESPECIFICACAO_AUTENTICACAO)
     const ACAO_CRIAR   = 'C';
     const ACAO_LEITURA = 'R';
     const ACAO_EDITAR  = 'U';
     const ACAO_REMOVER = 'D';
 
-    // Tempo de vida da sessao: 2 horas (7200 segundos)
+    const RECURSO_DASHBOARD      = 'dashboard';
+    const RECURSO_FORMADORES     = 'formadores';
+    const RECURSO_FORMANDOS      = 'formandos';
+    const RECURSO_MATRICULAS     = 'matriculas';
+    const RECURSO_INSCRICOES     = 'inscricoes';
+    const RECURSO_TURMAS         = 'turmas';
+    const RECURSO_MODULOS        = 'modulos';
+    const RECURSO_QUALIFICACOES  = 'qualificacoes';
+    const RECURSO_NIVEIS         = 'niveis';
+    const RECURSO_CAMPOS         = 'campos';
+    const RECURSO_SALAS          = 'salas';
+    const RECURSO_LICOES         = 'licoes';
+    const RECURSO_UTILIZADORES   = 'utilizadores';
+    const RECURSO_LOGS           = 'logs';
+    const RECURSO_PERFIS         = 'perfis';
+
     private static $duracao = 7200;
+
+    private static $apelidoAcao = [
+        self::ACAO_CRIAR   => 'criar',
+        self::ACAO_LEITURA => 'consultar',
+        self::ACAO_EDITAR  => 'editar',
+        self::ACAO_REMOVER => 'eliminar',
+    ];
+
+    private static $matrizLegada = [
+        self::ADMIN => [
+            '*Academico'   => ['consultar', 'criar', 'editar', 'eliminar'],
+            'utilizadores' => ['consultar', 'criar', 'editar', 'eliminar'],
+            'perfis'       => ['consultar', 'criar', 'editar', 'eliminar'],
+        ],
+        self::SUPER => [
+            '*Academico'   => ['consultar', 'criar', 'editar', 'eliminar'],
+        ],
+        self::OPERADOR => [
+            '*Academico'   => ['consultar', 'criar'],
+        ],
+        self::AUDITOR => [
+            '*Academico'   => ['consultar', 'criar', 'editar', 'eliminar'],
+            'logs'         => ['consultar'],
+        ],
+    ];
 
     public static function iniciar()
     {
         if (session_status() === PHP_SESSION_NONE) {
-            ini_set('session.gc_maxlifetime', (string) Sessao::$duracao);
+            ini_set('session.gc_maxlifetime', self::$duracao);
             session_set_cookie_params([
-                'lifetime' => Sessao::$duracao,
+                'lifetime' => self::$duracao,
                 'path'     => '/',
                 'httponly' => true,
                 'samesite' => 'Lax',
@@ -58,8 +94,6 @@ final class Sessao
         ];
     }
 
-    // Reconstroi um objeto Usuario a partir da sessao. Usado pela camada de
-    // auditoria (Log), que precisa do codigo do utilizador e nao de um array.
     public static function obterUtilizador()
     {
         if (!Sessao::esta_logado()) {
@@ -92,8 +126,9 @@ final class Sessao
         $_SESSION['apelido']  = $usuario->getApelido();
         $_SESSION['idPerfil'] = $usuario->getIdPerfil();
         $_SESSION['perfil']   = Sessao::nomePerfil($usuario->getIdPerfil());
-        // Primeiro acesso: flag interno do sistema, nunca escolha do utilizador
         $_SESSION['primeiro_acesso'] = (int) $usuario->getPrimeiroAcesso() === 1;
+
+        Sessao::carregarPermissoes($usuario->getIdPerfil(), $_SESSION['perfil']);
     }
 
     public static function primeiroAcesso()
@@ -118,8 +153,6 @@ final class Sessao
         Sessao::bloquearPrimeiroAcesso();
     }
 
-    // Bloqueia a área privada enquanto o primeiro acesso (troca obrigatória
-    // de senha) não estiver concluído — decisão interna do sistema.
     private static function bloquearPrimeiroAcesso()
     {
         if (Sessao::primeiroAcesso()) {
@@ -127,24 +160,6 @@ final class Sessao
             exit;
         }
     }
-
-    // Matriz de permissoes por perfil (ver tabela da especificacao).
-    // 'Criar + Reset senha', 'CRUD', 'CR' e 'R' sao as operacoes permitidas
-    // sobre os recursos academicos; 'Utilizadores' e 'Log' sao exclusivos.
-    private static $permissoes = [
-        self::ADMIN    => [
-            'CRUD', 'Utilizadores', 'Logs',
-        ],
-        self::SUPER    => [
-            'CRUD',
-        ],
-        self::OPERADOR => [
-            'CR',
-        ],
-        self::AUDITOR  => [
-            'CRUD', 'Logs',
-        ],
-    ];
 
     public static function perfil()
     {
@@ -156,17 +171,34 @@ final class Sessao
         return in_array(Sessao::perfil(), $perfis, true);
     }
 
-    // TRUE quando o perfil actual tem a capacidade indicada ('C', 'R', 'U' ou 'D').
-    public static function pode($acao)
+    public static function pode($acao, $recurso)
     {
-        $capacidades = Sessao::$permissoes[Sessao::perfil()] ?? [];
-        if (in_array('CRUD', $capacidades, true)) {
-            return true;
+        if ($recurso === null || $recurso === '') {
+            return false;
         }
-        if (in_array('CR', $capacidades, true)) {
-            return in_array($acao, [Sessao::ACAO_CRIAR, Sessao::ACAO_LEITURA], true);
-        }
-        return in_array($acao, [Sessao::ACAO_LEITURA], true);
+        Sessao::garantirPermissoesCarregadas();
+        $permissao = Sessao::normalizarAcao($acao);
+        return !empty($_SESSION['permissoes'][$recurso][$permissao]);
+    }
+
+    public static function podeCriar($recurso)
+    {
+        return Sessao::pode(Sessao::ACAO_CRIAR, $recurso);
+    }
+
+    public static function podeLer($recurso)
+    {
+        return Sessao::pode(Sessao::ACAO_LEITURA, $recurso);
+    }
+
+    public static function podeEditar($recurso)
+    {
+        return Sessao::pode(Sessao::ACAO_EDITAR, $recurso);
+    }
+
+    public static function podeRemover($recurso)
+    {
+        return Sessao::pode(Sessao::ACAO_REMOVER, $recurso);
     }
 
     public static function ehAdministrador()
@@ -174,30 +206,45 @@ final class Sessao
         return Sessao::perfil() === Sessao::ADMIN;
     }
 
-    // Gestao de utilizadores: exclusiva do Administrador.
     public static function gestaoUtilizadores()
     {
-        return Sessao::ehAdministrador();
+        return Sessao::pode(Sessao::ACAO_LEITURA, Sessao::RECURSO_UTILIZADORES);
     }
 
-    // Auditoria de logs: exclusiva do Auditor.
     public static function auditoriaLogs()
     {
-        return Sessao::perfil() === Sessao::AUDITOR;
+        return Sessao::pode(Sessao::ACAO_LEITURA, Sessao::RECURSO_LOGS);
     }
 
-    // Revalida o perfil antes de qualquer mutacao (C, U ou D).
-    public static function exigirAcao($acao, $destino)
+    public static function exigirAcao($acao, $recurso, $destino)
     {
         Sessao::iniciar();
         if (!Sessao::esta_logado()) {
             header('Location: ' . $destino);
             exit;
         }
-        if (!Sessao::pode($acao)) {
+        if (!Sessao::pode($acao, $recurso)) {
             $_SESSION['flash'] = [
                 'type' => 'danger',
                 'msg'  => 'Não tem permissão para executar esta operação.',
+            ];
+            header('Location: ' . $destino);
+            exit;
+        }
+        Sessao::bloquearPrimeiroAcesso();
+    }
+
+    public static function exigirLeitura($recurso, $destino)
+    {
+        Sessao::iniciar();
+        if (!Sessao::esta_logado()) {
+            header('Location: ' . $destino);
+            exit;
+        }
+        if (!Sessao::pode(Sessao::ACAO_LEITURA, $recurso)) {
+            $_SESSION['flash'] = [
+                'type' => 'danger',
+                'msg'  => 'Não tem permissão para acessar este recurso.',
             ];
             header('Location: ' . $destino);
             exit;
@@ -219,7 +266,61 @@ final class Sessao
         Sessao::bloquearPrimeiroAcesso();
     }
 
-    // Rastreio do perfil existente na base de dados atraves da classe Perfil
+    public static function recarregarPermissoes()
+    {
+        Sessao::iniciar();
+        Sessao::carregarPermissoes($_SESSION['idPerfil'] ?? null, $_SESSION['perfil'] ?? '');
+    }
+
+    private static function carregarPermissoes($idPerfil, $nomePerfil)
+    {
+        $_SESSION['permissoes'] = [];
+        if ($idPerfil === null || $idPerfil === '') {
+            return;
+        }
+
+        $matriz = (new PerfilPermissaoDao())->getMatrizByPerfil($idPerfil);
+        if (empty($matriz) && isset(self::$matrizLegada[$nomePerfil])) {
+            $matriz = self::construirMatrizLegada($nomePerfil);
+        }
+
+        $_SESSION['permissoes'] = $matriz;
+    }
+
+    private static function construirMatrizLegada($nomePerfil)
+    {
+        $definicao = self::$matrizLegada[$nomePerfil] ?? [];
+        $matriz = [];
+
+        foreach ((new RecursoDao())->getAll() as $recurso) {
+            $nome  = $recurso->getNome();
+            $grupo = $recurso->getGrupo();
+
+            $permissoes = $definicao['*' . $grupo] ?? [];
+            if (isset($definicao[$nome])) {
+                $permissoes = $definicao[$nome];
+            }
+            if (!empty($permissoes)) {
+                $matriz[$nome] = array_fill_keys($permissoes, true);
+            }
+        }
+
+        return $matriz;
+    }
+
+    private static function garantirPermissoesCarregadas()
+    {
+        Sessao::iniciar();
+        if (!array_key_exists('permissoes', $_SESSION)) {
+            Sessao::carregarPermissoes($_SESSION['idPerfil'] ?? null, $_SESSION['perfil'] ?? '');
+        }
+    }
+
+    private static function normalizarAcao($acao)
+    {
+        return self::$apelidoAcao[$acao] ?? $acao;
+    }
+
     private static function nomePerfil($idPerfil)
     {
         if ($idPerfil === null || $idPerfil === '') {

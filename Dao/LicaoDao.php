@@ -36,7 +36,7 @@ class LicaoDao {
             $usuario = Sessao::obterUtilizador();
             if ($usuario != null) {
                 $log = new Logs(null, "INSERT", "Lição do módulo " . $licao->getModulo()->getNome() . " foi cadastrada", $usuario);
-                $log->setData(date('Y-m-d H:i:s'));
+                $log->setData(date('d/m/Y H:i:s'));
                 (new LogDao())->salvar($log);
             }
         }
@@ -96,7 +96,7 @@ class LicaoDao {
             $usuario = Sessao::obterUtilizador();
             if ($usuario != null) {
                 $log = new Logs(null, "UPDATE", "Lição (ID: " . $codigo . ") foi atualizada", $usuario);
-                $log->setData(date('Y-m-d H:i:s'));
+                $log->setData(date('d/m/Y H:i:s'));
                 (new LogDao())->salvar($log);
             }
         }
@@ -114,7 +114,7 @@ class LicaoDao {
             $usuario = Sessao::obterUtilizador();
             if ($usuario != null) {
                 $log = new Logs(null, "DELETE", "Lição (ID: " . $codigo . ") foi removida", $usuario);
-                $log->setData(date('Y-m-d H:i:s'));
+                $log->setData(date('d/m/Y H:i:s'));
                 (new LogDao())->salvar($log);
             }
         }
@@ -158,7 +158,6 @@ class LicaoDao {
         return $rs['total'] > 0;
     }
 
-    // Listas de opcoes para preencher os <select> do formulario de lição.
     public function listarOpcoes($sql) {
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
@@ -187,7 +186,6 @@ class LicaoDao {
         return $this->listarOpcoes("select codigo, nome as descricao from Turma order by nome");
     }
 
-    // Impede a sobreposicao de horario para a mesma sala e formador.
     public function existeConflito($codSala, $codFormador, $data, $horaInicio, $horaFim, $codigoIgnorado = null) {
         $sql = "select count(*) as total from Licao
                 where cod_Sala = ? and cod_Formador = ? and data = ?

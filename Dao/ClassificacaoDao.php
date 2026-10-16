@@ -28,7 +28,7 @@ class ClassificacaoDao {
             $usuario = Sessao::obterUtilizador();
             if ($usuario != null) {
                 $log = new Logs(null, "INSERT", "Classificação " . $classificacao->getCodigo() . " foi cadastrada", $usuario);
-                $log->setData(date('Y-m-d H:i:s'));
+                $log->setData(date('d/m/Y H:i:s'));
                 (new LogDao())->salvar($log);
             }
         }
@@ -68,7 +68,7 @@ class ClassificacaoDao {
             $usuario = Sessao::obterUtilizador();
             if ($usuario != null) {
                 $log = new Logs(null, "UPDATE", "Classificação " . $classificacao->getCodigo() . " foi atualizada", $usuario);
-                $log->setData(date('Y-m-d H:i:s'));
+                $log->setData(date('d/m/Y H:i:s'));
                 (new LogDao())->salvar($log);
             }
         }
@@ -86,7 +86,7 @@ class ClassificacaoDao {
             $usuario = Sessao::obterUtilizador();
             if ($usuario != null) {
                 $log = new Logs(null, "DELETE", "Classificação " . $codigo . " foi removida", $usuario);
-                $log->setData(date('Y-m-d H:i:s'));
+                $log->setData(date('d/m/Y H:i:s'));
                 (new LogDao())->salvar($log);
             }
         }

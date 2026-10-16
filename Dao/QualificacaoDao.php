@@ -40,8 +40,8 @@ class QualificacaoDao {
         $qualificacaos = [];
         while ($rs = $result->fetch_assoc()) {
             $qualificacao = new Qualificacao($rs['cod_Quali'], $rs['titulo'], $rs['cod_Coordenador']);
-            $qualificacao->setCampo($rs['campo']);       // NOVO
-            $qualificacao->setNiveis($rs['niveis']);    // NOVO
+            $qualificacao->setCampo($rs['campo']);       
+            $qualificacao->setNiveis($rs['niveis']);    
             $qualificacaos[] = $qualificacao;
         }
         return $qualificacaos;
@@ -110,8 +110,6 @@ class QualificacaoDao {
         }
     }
 
-    // Apaga a qualificacao e as suas ligacoes (Classificacao e Quali_Nivel)
-    // numa transacao: ou sai tudo, ou nao sai nada.
     public function deleteCompleto($codigo) {
         $this->db->begin_transaction();
         try {
@@ -136,12 +134,11 @@ class QualificacaoDao {
         }
     }
 
-    // Regista uma acao de auditoria em nome do utilizador autenticado.
     private function registarLog($acao, $descricao) {
         $usuario = Sessao::obterUtilizador();
         if ($usuario != null) {
             $log = new Logs(null, $acao, $descricao, $usuario);
-            $log->setData(date('Y-m-d H:i:s'));
+            $log->setData(date('d/m/Y H:i:s'));
             (new LogDao())->salvar($log);
         }
     }

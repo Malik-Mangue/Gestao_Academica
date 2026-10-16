@@ -70,11 +70,6 @@ $v = function ($getter) use ($formador) {
            min="1" value="<?= htmlspecialchars($v('getHorasMes')) ?>" required>
 </div>
 <div class="form-group">
-    <label for="f-salario-<?= $sufixo ?>">Salário</label>
-    <input type="number" id="f-salario-<?= $sufixo ?>" name="salario" class="form-control"
-           min="0" value="<?= htmlspecialchars($v('getSalario')) ?>">
-</div>
-<div class="form-group">
     <label for="f-funcao-<?= $sufixo ?>">Função</label>
     <?php
     $ehDiretor     = $formador !== null && $controller->getStatusFormador($formador->getCodigo())[0];

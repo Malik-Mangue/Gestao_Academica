@@ -158,7 +158,6 @@ class LicaoDao {
         return $rs['total'] > 0;
     }
 
-    // Listas de opcoes para preencher os <select> do formulario de lição.
     public function listarOpcoes($sql) {
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
@@ -187,7 +186,6 @@ class LicaoDao {
         return $this->listarOpcoes("select codigo, nome as descricao from Turma order by nome");
     }
 
-    // Impede a sobreposicao de horario para a mesma sala e formador.
     public function existeConflito($codSala, $codFormador, $data, $horaInicio, $horaFim, $codigoIgnorado = null) {
         $sql = "select count(*) as total from Licao
                 where cod_Sala = ? and cod_Formador = ? and data = ?

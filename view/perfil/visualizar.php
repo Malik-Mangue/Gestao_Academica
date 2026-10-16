@@ -1,8 +1,6 @@
 <?php
 require_once __DIR__ . '/../../services/Sessao.php';
 
-// Informacoes sobre o perfil: identidade + matriz de permissoes (apenas leitura).
-// Nao existe descricao persistida na base de dados nem edicao neste ecra.
 Sessao::exigirLeitura(Sessao::RECURSO_PERFIS, '../dashboard/index.php');
 
 require_once __DIR__ . '/../../controller/PerfilController.php';

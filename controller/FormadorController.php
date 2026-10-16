@@ -21,6 +21,9 @@ class FormadorController {
             && Validador::inteiroPositivo($valor_horas)
             && Validador::inteiroPositivo($horas_mes)) {
 
+            // O salário não é digitado: é calculado (valor por hora x horas por mês).
+            $salario = (int) $valor_horas * (int) $horas_mes;
+
             $formador = new Formador(null, $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valor_horas, $horas_mes, $salario);
             $this->dao->create($formador);
 
@@ -48,6 +51,9 @@ class FormadorController {
             && Validador::inteiroPositivo($valor_horas)
             && Validador::inteiroPositivo($horas_mes)) {
 
+            // O salário não é digitado: é calculado (valor por hora x horas por mês).
+            $salario = (int) $valor_horas * (int) $horas_mes;
+
             $formador = new Formador($codigo, $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valor_horas, $horas_mes, $salario);
             $this->dao->update($formador);
 
@@ -57,7 +63,7 @@ class FormadorController {
             if ($isDiretor && !$isDiretorNow) {
                 $diretorTurmaController->cadastrarDiretor_Turma($formador);
             } elseif (!$isDiretor && $isDiretorNow) {
-                
+
                 $diretorTurmaController->apagarDiretor($codigo);
             }
 

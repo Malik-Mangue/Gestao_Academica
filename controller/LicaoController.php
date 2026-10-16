@@ -10,7 +10,6 @@ class LicaoController {
         $this->dao = new LicaoDao();
     }
 
-    // Constroi a lição a partir de códigos validados e persiste-a.
     public function cadastrarLicao($modulo, $formador, $sala, $turma, $data, $hora_inicio, $hora_fim) {
         if (!$this->dadosValidos($modulo, $formador, $sala, $turma, $data, $hora_inicio, $hora_fim)) {
             return false;
@@ -36,7 +35,6 @@ class LicaoController {
             && Validador::data($data)
             && Validador::hora($hora_inicio)
             && Validador::hora($hora_fim)
-            // A hora de fim tem de ser posterior a hora de inicio.
             && $hora_fim > $hora_inicio;
     }
 

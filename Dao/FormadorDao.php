@@ -30,6 +30,9 @@ class FormadorDao {
         $stmt->bind_param("sssssiiid", $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valorHoras, $horasMes, $salario);
         $result = $stmt->execute();
         if ($result) {
+
+            $formador->setCodigo($this->db->insert_id);
+
             $this->registarLog("INSERT", "Formador " . $nome . " " . $apelido . " foi cadastrado");
         }
         return $result;
@@ -110,7 +113,6 @@ class FormadorDao {
         return $result;
     }
 
-    // Regista uma acao de auditoria em nome do utilizador autenticado.
     private function registarLog($acao, $descricao) {
         $usuario = Sessao::obterUtilizador();
         if ($usuario != null) {

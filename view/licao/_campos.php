@@ -1,11 +1,21 @@
 <?php
+/**
+ * @var string $sufixo
+ * @var array $modulos
+ * @var array $formadores
+ * @var array $salas
+ * @var array $turmas
+ */
 // Campos partilhados entre criar e editar um horário (lição).
 // $licao opcional preenche os valores; $sufixo distingue os ids dos campos.
+$licao = $licao ?? null;
+
 $v = function ($getter) use ($licao) {
     return $licao !== null ? (string) $licao->$getter() : '';
 };
-$sel = function ($lista, $atual) {
-    return (int) $atual;
+// Verdadeiro quando a opção da lista é a que a lição já tem.
+$sel = function ($opcao, $atual) {
+    return (int) $opcao === (int) $atual;
 };
 ?>
 <div class="form-grid">

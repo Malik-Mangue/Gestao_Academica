@@ -71,6 +71,12 @@ $coordenadores = $controller->listarCoordenadores();
 $campos        = $controller->listarCampos();
 $niveis        = $controller->listarNiveis();
 
+// Mapa código => nome do coordenador
+$mapaCoordenadores = [];
+foreach ($coordenadores as $c) {
+    $mapaCoordenadores[(int) $c['codigo']] = $c['descricao'];
+}
+
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
 
@@ -125,16 +131,17 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             <th class="col-codigo">Código</th>
                             <th>Título</th>
                             <th>Coordenador</th>
-                            <th>Campo</th>   
-                            <th>Nível</th>   
+                            <th>Campo</th>
+                            <th>Nível</th>
                             <?php if ($pode_editar || $pode_remover): ?>
                                 <th class="col-opcoes">Opções</th>
                             <?php endif; ?>
                         </tr>
                     </thead>
-                    <tbody>                        <?php if (empty($qualificacoes)): ?>
+                    <tbody>
+                        <?php if (empty($qualificacoes)): ?>
                             <tr>
-                                <td colspan="<?= $pode_editar || $pode_remover ? 6 : 5 ?>" class="table-empty"> 
+                                <td colspan="<?= $pode_editar || $pode_remover ? 6 : 5 ?>" class="table-empty">
                                     Nenhuma qualificacao cadastrada no momento.
                                 </td>
                             </tr>
@@ -143,9 +150,9 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                 <tr>
                                     <td class="col-codigo"><strong>#<?= htmlspecialchars((string) $qualificacao->getCodigo()) ?></strong></td>
                                     <td><?= htmlspecialchars($qualificacao->getTitulo()) ?></td>
-                                    <td><?= htmlspecialchars((string) $qualificacao->getCod_coordenador()) ?></td>
-                                    <td><?= htmlspecialchars($qualificacao->getCampo() ?: '-') ?></td>   
-                                    <td><?= htmlspecialchars($qualificacao->getNiveis() ?: '-') ?></td>   
+                                    <td><?= htmlspecialchars($mapaCoordenadores[(int) $qualificacao->getCod_coordenador()] ?? '-') ?></td>
+                                    <td><?= htmlspecialchars($qualificacao->getCampo() ?: '-') ?></td>
+                                    <td><?= htmlspecialchars($qualificacao->getNiveis() ?: '-') ?></td>
                                     <?php if ($pode_editar || $pode_remover): ?>
                                         <td class="col-opcoes">
                                             <div class="table-actions table-actions-end">
@@ -221,8 +228,9 @@ require_once __DIR__ . '/../partials/sidebar.php';
     <?php endif; ?>
 
     <?php foreach ($qualificacoes as $qualificacao): ?>
+        <?php $cod = (int) $qualificacao->getCodigo(); ?>
         <?php if ($pode_editar): ?>
-        <div id="modal-editar-<?= $qualificacao->getCodigo() ?>" class="modal-overlay">
+        <div id="modal-editar-<?= $cod ?>" class="modal-overlay">
             <div class="modal-box">
                 <div class="modal-header">
                     <h3>Editar Qualificacao</h3>
@@ -232,29 +240,29 @@ require_once __DIR__ . '/../partials/sidebar.php';
                 </div>
                 <form method="post" action="index.php">
                     <div class="modal-body">
-                        <input type="hidden" name="codigo" value="<?= htmlspecialchars((string) $qualificacao->getCodigo()) ?>">
+                        <input type="hidden" name="codigo" value="<?= $cod ?>">
                         <div class="form-group">
-                            <label for="campo-e">Campo / Área <span class="required">*</span></label>
-                            <select id="campo-e" name="campo" class="form-control" required>
+                            <label for="campo-e-<?= $cod ?>">Campo / Área <span class="required">*</span></label>
+                            <select id="campo-e-<?= $cod ?>" name="campo" class="form-control" required>
                                 <option value="">Selecione o campo...</option>
                                 <?php foreach ($campos as $c): ?>
-                                    <option value="<?= (int) $c->getCodigo() ?>"><?= htmlspecialchars($c->getNome()) ?></option>
+                                    <option value="<?= (int) $c->getCodigo() ?>" <?= $c->getNome() === $qualificacao->getCampo() ? 'selected' : '' ?>><?= htmlspecialchars($c->getNome()) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="nivel-e">Nível <span class="required">*</span></label>
-                            <select id="nivel-e" name="nivel" class="form-control" required>
+                            <label for="nivel-e-<?= $cod ?>">Nível <span class="required">*</span></label>
+                            <select id="nivel-e-<?= $cod ?>" name="nivel" class="form-control" required>
                                 <option value="">Selecione o nível...</option>
-                                <?php $niveisQuali = (new Quali_NivelController())->listarNiveisDaQualificacao($qualificacao->getCodigo()); ?>
+                                <?php $niveisQuali = (new Quali_NivelController())->listarNiveisDaQualificacao($cod); ?>
                                 <?php foreach ($niveisQuali as $n): ?>
                                     <option value="<?= (int) $n['codigo'] ?>"><?= htmlspecialchars($n['descricao']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="coordenador-e">Coordenador <span class="required">*</span></label>
-                            <select id="coordenador-e" name="coordenador" class="form-control" required>
+                            <label for="coordenador-e-<?= $cod ?>">Coordenador <span class="required">*</span></label>
+                            <select id="coordenador-e-<?= $cod ?>" name="coordenador" class="form-control" required>
                                 <option value="">Selecione o coordenador...</option>
                                 <?php foreach ($coordenadores as $coordenador): ?>
                                     <option value="<?= (int) $coordenador['codigo'] ?>" <?= (int) $coordenador['codigo'] === (int) $qualificacao->getCod_coordenador() ? 'selected' : '' ?>><?= htmlspecialchars($coordenador['descricao']) ?></option>
@@ -262,8 +270,8 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="titulo-e">Nome da qualificação <span class="required">*</span></label>
-                            <input type="text" id="titulo-e" name="titulo" class="form-control" maxlength="60" value="<?= htmlspecialchars($qualificacao->getTitulo()) ?>" required>
+                            <label for="titulo-e-<?= $cod ?>">Nome da qualificação <span class="required">*</span></label>
+                            <input type="text" id="titulo-e-<?= $cod ?>" name="titulo" class="form-control" maxlength="60" value="<?= htmlspecialchars($qualificacao->getTitulo()) ?>" required>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -276,7 +284,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
         <?php endif; ?>
 
         <?php if ($pode_remover): ?>
-        <div id="modal-deletar-<?= $qualificacao->getCodigo() ?>" class="modal-overlay">
+        <div id="modal-deletar-<?= $cod ?>" class="modal-overlay">
             <div class="modal-box">
                 <div class="modal-header modal-header-danger">
                     <h3>Confirmar Exclusao de Registro</h3>
@@ -286,14 +294,14 @@ require_once __DIR__ . '/../partials/sidebar.php';
                 </div>
                 <form method="post" action="index.php">
                     <div class="modal-body">
-                        <input type="hidden" name="codigo" value="<?= htmlspecialchars((string) $qualificacao->getCodigo()) ?>">
+                        <input type="hidden" name="codigo" value="<?= $cod ?>">
                         <p class="confirm-question">
                             Tem certeza que deseja eliminar permanentemente esta qualificacao?
                         </p>
                         <div class="confirm-detail-box">
-                            <p><strong>Codigo:</strong> #<?= htmlspecialchars((string) $qualificacao->getCodigo()) ?></p>
+                            <p><strong>Codigo:</strong> #<?= $cod ?></p>
                             <p><strong>Titulo:</strong> <?= htmlspecialchars($qualificacao->getTitulo()) ?></p>
-                            <p><strong>Coordenador:</strong> #<?= htmlspecialchars((string) $qualificacao->getCod_coordenador()) ?></p>
+                            <p><strong>Coordenador:</strong> <?= htmlspecialchars($mapaCoordenadores[(int) $qualificacao->getCod_coordenador()] ?? '-') ?></p>
                         </div>
                         <p class="confirm-warning">
                             Atencao: esta acao nao podera ser desfeita e pode afetar licoes, matriculas e modulos associados.

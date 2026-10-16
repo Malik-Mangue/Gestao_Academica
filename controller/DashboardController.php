@@ -8,7 +8,6 @@ class DashboardController {
         $this->dao = new DashboardDao();
     }
 
-    // Numeros do dashboard sempre lidos da base de dados.
     public function resumo() {
         return $this->dao->resumo();
     }

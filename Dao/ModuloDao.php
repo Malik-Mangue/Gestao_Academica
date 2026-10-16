@@ -131,7 +131,6 @@ class ModuloDao {
         return $modulos;
     }
 
-    // Listas de opcoes para os <select> dos formularios.
     public function listarOpcoes($sql) {
         $stmt = $this->db->prepare($sql);
         $stmt->execute();

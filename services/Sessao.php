@@ -6,38 +6,18 @@ require_once __DIR__ . '/../Dao/PermissaoDao.php';
 require_once __DIR__ . '/../Dao/PerfilPermissaoDao.php';
 require_once __DIR__ . '/../model/Usuario.php';
 
-/**
- * Classe estatica de sessao - unico ponto de inicio/termino de sessoes
- * e de controlo de autenticacao/autorizacao. Nao guarda passwords nem
- * executa regras de negocio.
- *
- * Autorizacao (RBAC) granular por recurso:
- *   perfil -> (recurso -> permissoes)
- *
- * - A fonte de verdade e a tabela `perfil_permissao` (recurso.nome x permissao.nome).
- * - Perfis sem qualquer linha em `perfil_permissao` (os perfis "legados") usam
- *   a matriz de fallback definida em codigo, para continuarem a funcionar.
- * - Um recurso novo e apenas um novo INSERT em `recurso`; uma permissao nova e
- *   apenas um novo INSERT em `permissao` (basta depois chamar
- *   Sessao::pode('nome_da_permissao', Sessao::RECURSO_X)).
- */
 final class Sessao
 {
-    // Nomes canonicos dos perfis (resolvidos sempre na BD pela classe Perfil)
     const ADMIN    = 'Administrador';
     const SUPER    = 'SuperOperador';
     const OPERADOR = 'Operador';
     const AUDITOR  = 'Auditor';
 
-    // Acoes usadas pela politica de permissoes. Cada acao curta e traduzida
-    // para o nome correspondente na tabela `permissao` (ver $apelidoAcao).
     const ACAO_CRIAR   = 'C';
     const ACAO_LEITURA = 'R';
     const ACAO_EDITAR  = 'U';
     const ACAO_REMOVER = 'D';
 
-    // Chaves dos recursos (recurso.nome na BD). Novos recursos so precisam de
-    // uma nova constante aqui para serem referidos de forma segura no codigo.
     const RECURSO_DASHBOARD      = 'dashboard';
     const RECURSO_FORMADORES     = 'formadores';
     const RECURSO_FORMANDOS      = 'formandos';
@@ -54,10 +34,8 @@ final class Sessao
     const RECURSO_LOGS           = 'logs';
     const RECURSO_PERFIS         = 'perfis';
 
-    // Duracao da sessao: 2 horas (adequada a sistema academico).
     private static $duracao = 7200;
 
-    // Traducao das acoes curtas para o nome da permissao na BD.
     private static $apelidoAcao = [
         self::ACAO_CRIAR   => 'criar',
         self::ACAO_LEITURA => 'consultar',
@@ -65,10 +43,6 @@ final class Sessao
         self::ACAO_REMOVER => 'eliminar',
     ];
 
-    // Matriz de fallback para os perfis "legados" (sem linhas em
-    // perfil_permissao). '*<grupo>' aplica-se a todos os recursos desse grupo.
-    // Regras de negocio: Administrador sem acesso a logs; Auditor com CRUD nos
-    // recursos academicos e apenas leitura nos logs.
     private static $matrizLegada = [
         self::ADMIN => [
             '*Academico'   => ['consultar', 'criar', 'editar', 'eliminar'],
@@ -120,8 +94,6 @@ final class Sessao
         ];
     }
 
-    // Reconstroi um objeto Usuario a partir da sessao. Usado pela camada de
-    // auditoria (Log), que precisa do codigo do utilizador e nao de um array.
     public static function obterUtilizador()
     {
         if (!Sessao::esta_logado()) {
@@ -154,10 +126,8 @@ final class Sessao
         $_SESSION['apelido']  = $usuario->getApelido();
         $_SESSION['idPerfil'] = $usuario->getIdPerfil();
         $_SESSION['perfil']   = Sessao::nomePerfil($usuario->getIdPerfil());
-        // Primeiro acesso: flag interno do sistema, nunca escolha do utilizador
         $_SESSION['primeiro_acesso'] = (int) $usuario->getPrimeiroAcesso() === 1;
 
-        // Carrega a matriz de permissoes do perfil para a sessao.
         Sessao::carregarPermissoes($usuario->getIdPerfil(), $_SESSION['perfil']);
     }
 
@@ -183,8 +153,6 @@ final class Sessao
         Sessao::bloquearPrimeiroAcesso();
     }
 
-    // Bloqueia a area privada enquanto o primeiro acesso (troca obrigatoria
-    // de senha) nao estiver concluido - decisao interna do sistema.
     private static function bloquearPrimeiroAcesso()
     {
         if (Sessao::primeiroAcesso()) {
@@ -203,9 +171,6 @@ final class Sessao
         return in_array(Sessao::perfil(), $perfis, true);
     }
 
-    // TRUE quando o perfil actual tem a permissao indicada sobre o recurso.
-    // $acao aceita um codigo curto ('C','R','U','D') ou o nome da permissao
-    // (ex.: 'criar', 'consultar' ou uma permissao futura como 'exportar').
     public static function pode($acao, $recurso)
     {
         if ($recurso === null || $recurso === '') {
@@ -241,19 +206,16 @@ final class Sessao
         return Sessao::perfil() === Sessao::ADMIN;
     }
 
-    // Gestao de utilizadores: depende da permissao de leitura no recurso.
     public static function gestaoUtilizadores()
     {
         return Sessao::pode(Sessao::ACAO_LEITURA, Sessao::RECURSO_UTILIZADORES);
     }
 
-    // Auditoria de logs: depende da permissao de leitura no recurso.
     public static function auditoriaLogs()
     {
         return Sessao::pode(Sessao::ACAO_LEITURA, Sessao::RECURSO_LOGS);
     }
 
-    // Revalida a permissao antes de qualquer mutacao (C, U ou D) num recurso.
     public static function exigirAcao($acao, $recurso, $destino)
     {
         Sessao::iniciar();
@@ -272,7 +234,6 @@ final class Sessao
         Sessao::bloquearPrimeiroAcesso();
     }
 
-    // Exige permissao de leitura sobre um recurso (guarda de rota).
     public static function exigirLeitura($recurso, $destino)
     {
         Sessao::iniciar();
@@ -305,16 +266,12 @@ final class Sessao
         Sessao::bloquearPrimeiroAcesso();
     }
 
-    // Recarrega as permissoes do perfil em sessao. Deve ser chamado depois de
-    // alterar as concessoes de um perfil (a UI de gestao de perfis fara-lo).
     public static function recarregarPermissoes()
     {
         Sessao::iniciar();
         Sessao::carregarPermissoes($_SESSION['idPerfil'] ?? null, $_SESSION['perfil'] ?? '');
     }
 
-    // Constroi $_SESSION['permissoes'] a partir da BD. Se o perfil nao tiver
-    // concessoes explicitas e for um perfil legado, aplica a matriz de fallback.
     private static function carregarPermissoes($idPerfil, $nomePerfil)
     {
         $_SESSION['permissoes'] = [];
@@ -330,8 +287,6 @@ final class Sessao
         $_SESSION['permissoes'] = $matriz;
     }
 
-    // Expande a matriz de fallback para todos os recursos existentes na BD,
-    // agrupando por grupo (ex.: todos os recursos 'Academico').
     private static function construirMatrizLegada($nomePerfil)
     {
         $definicao = self::$matrizLegada[$nomePerfil] ?? [];
@@ -361,13 +316,11 @@ final class Sessao
         }
     }
 
-    // Aceita o codigo curto ('C') ou ja o nome da permissao ('criar'/'exportar').
     private static function normalizarAcao($acao)
     {
         return self::$apelidoAcao[$acao] ?? $acao;
     }
 
-    // Rastreio do perfil existente na base de dados atraves da classe Perfil
     private static function nomePerfil($idPerfil)
     {
         if ($idPerfil === null || $idPerfil === '') {

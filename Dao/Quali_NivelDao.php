@@ -89,7 +89,6 @@ class Quali_NivelDAO {
         }
     }
 
-    // Regista uma acao de auditoria em nome do utilizador autenticado.
     private function registarLog($acao, $descricao) {
         $usuario = Sessao::obterUtilizador();
         if ($usuario != null) {
@@ -118,22 +117,21 @@ class Quali_NivelDAO {
         return $this->listaOpcoes("select codigo, nome as descricao from Nivel order by nome");
     }
 
-    // Pares validos (qualificacao + nivel) ja associados: opcoes do <select>
-    // unico que substitui os dois selects dependentes, mantendo a restricao
-    // sem JavaScript. O valor de cada opcao e o codigo da associacao.
     public function getPares() {
         return $this->listaOpcoes(
             "select qn.codigo_Quali_Nivel as codigo,
-                    concat(q.titulo, ' — ', n.nome) as descricao
+                    concat(ifnull(group_concat(distinct c.nome order by c.nome separator ', '), 'Sem campo'),
+                           ' — ', q.titulo, ' — ', n.nome) as descricao
              from Quali_Nivel qn
              join Qualificacao q on q.cod_Quali = qn.cod_Quali
              join Nivel n on n.codigo = qn.cod_Nivel
+             left join Classificacao cl on cl.cod_Qualificacao = q.cod_Quali
+             left join Campo c on c.codigo = cl.cod_Campo
+             group by qn.codigo_Quali_Nivel, q.titulo, n.nome
              order by q.titulo, n.nome"
         );
     }
 
-    // Niveis de uma qualificacao (tabela associativa Quali_Nivel): opcoes do
-    // <select> de nivel que depende da qualificacao escolhida no formulario.
     public function getNiveisDaQualificacao($codQualificacao) {
         $sql = "select Nivel.codigo, Nivel.nome from Quali_Nivel
                 join Nivel on Nivel.codigo = Quali_Nivel.cod_Nivel
@@ -150,8 +148,6 @@ class Quali_NivelDAO {
         return $opcoes;
     }
 
-    // Todos os pares (qualificacao -> niveis) numa so consulta: alimenta o
-    // mapa JavaScript que filtra os niveis conforme a qualificacao escolhida.
     public function getNiveisPorQualificacao() {
         $sql = "select Quali_Nivel.cod_Quali, Quali_Nivel.cod_Nivel, Nivel.nome
                 from Quali_Nivel

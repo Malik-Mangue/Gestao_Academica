@@ -21,7 +21,6 @@ class FormadorController {
             && Validador::inteiroPositivo($valor_horas)
             && Validador::inteiroPositivo($horas_mes)) {
 
-
             $salario = (int) $valor_horas * (int) $horas_mes;
 
             $formador = new Formador(null, $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valor_horas, $horas_mes, $salario);
@@ -50,7 +49,7 @@ class FormadorController {
             && Validador::inteiroPositivo($contacto)
             && Validador::inteiroPositivo($valor_horas)
             && Validador::inteiroPositivo($horas_mes)) {
-                
+
             $salario = (int) $valor_horas * (int) $horas_mes;
 
             $formador = new Formador($codigo, $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valor_horas, $horas_mes, $salario);

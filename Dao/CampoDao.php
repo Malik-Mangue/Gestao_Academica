@@ -93,7 +93,6 @@ class CampoDAO {
         }
     }
 
-    // Regista uma acao de auditoria em nome do utilizador autenticado.
     private function registarLog($acao, $descricao) {
         $usuario = Sessao::obterUtilizador();
         if ($usuario != null) {

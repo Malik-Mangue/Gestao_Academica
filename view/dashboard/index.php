@@ -6,7 +6,6 @@ require_once __DIR__ . '/../../controller/DashboardController.php';
 
 $dashboard = new DashboardController();
 
-// Todos os numeros sao contados na base de dados (nunca fixos no codigo).
 $resumo = $dashboard->resumo();
 
 $page_title = 'Dashboard Geral';

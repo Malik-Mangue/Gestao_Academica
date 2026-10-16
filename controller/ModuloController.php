@@ -46,7 +46,6 @@ class ModuloController {
         return $this->dao->getAll($nome ?? '');
     }
 
-    // Opcoes simples (codigo/descricao) para preencher <select>.
     public function listarModulos() {
         return $this->dao->getModulos();
     }

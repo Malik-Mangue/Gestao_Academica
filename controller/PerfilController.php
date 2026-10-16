@@ -6,17 +6,6 @@ require_once __DIR__ . '/../Dao/PerfilPermissaoDao.php';
 require_once __DIR__ . '/../Dao/UsuarioDao.php';
 require_once __DIR__ . '/../services/Sessao.php';
 
-/**
- * Controlo da gestao de perfis e das permissoes por recurso.
- *
- * Concentra as regras de negocio que as views de perfil/permissoes usam:
- * - CRUD do perfil (nome);
- * - leitura da matriz de concessoes (perfil x recurso x permissao);
- * - gravacao da matriz, recarregando a sessao quando se altera o proprio perfil.
- *
- * Os perfis de sistema (ids 1..4) nao podem ser renomeados nem removidos,
- * para nunca quebrar o motor de autorizacao.
- */
 class PerfilController {
 
     const PERFIS_SISTEMA = [1, 2, 3, 4];
@@ -34,8 +23,6 @@ class PerfilController {
         $this->perfilPermissaoDao = new PerfilPermissaoDao();
         $this->usuarioDao         = new UsuarioDao();
     }
-
-    // ---- Perfis ---------------------------------------------------------
 
     public function listar() {
         return $this->perfilDao->getAll();
@@ -84,8 +71,6 @@ class PerfilController {
         return in_array((int) $id, self::PERFIS_SISTEMA, true);
     }
 
-    // ---- Recursos e permissoes -----------------------------------------
-
     public function listarRecursos() {
         return $this->recursoDao->getAll();
     }
@@ -94,7 +79,6 @@ class PerfilController {
         return $this->permissaoDao->getAll();
     }
 
-    // Concessoes detalhadas de um perfil (linhas recurso x permissao).
     public function concessoes($idPerfil) {
         return $this->perfilPermissaoDao->getConcessoesByPerfil((int) $idPerfil);
     }
@@ -103,9 +87,6 @@ class PerfilController {
         return $this->perfilPermissaoDao->temConcessoes((int) $idPerfil);
     }
 
-    // $concessoes: lista de pares ['recurso_id' => int, 'permissao_id' => int].
-    // Substitui toda a matriz do perfil. Se o perfil for o da sessao actual,
-    // recarrega as permissoes para o efeito ser imediato.
     public function guardarPermissoes($idPerfil, array $concessoes) {
         $idPerfil = (int) $idPerfil;
         $ok = $this->perfilPermissaoDao->substituir($idPerfil, $concessoes);
@@ -115,8 +96,6 @@ class PerfilController {
         }
         return $ok;
     }
-
-    // ---- Auxiliares -----------------------------------------------------
 
     private function nomeEmUso($nome, $ignorarId = null) {
         foreach ($this->perfilDao->getAll() as $perfil) {

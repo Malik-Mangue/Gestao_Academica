@@ -1,5 +1,4 @@
 <?php
-// Rota privada: exige autenticação (ESPECIFICACAO_AUTENTICACAO §7.1).
 require_once __DIR__ . '/../../services/Sessao.php';
 Sessao::exigirLogin('../login/index.php');
 require_once __DIR__ . '/../../services/Validador.php';
@@ -126,8 +125,8 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             <th class="col-codigo">Código</th>
                             <th>Título</th>
                             <th>Coordenador</th>
-                            <th>Campo</th>   <!-- NOVO -->
-                            <th>Nível</th>   <!-- NOVO -->
+                            <th>Campo</th>   
+                            <th>Nível</th>   
                             <?php if ($pode_editar || $pode_remover): ?>
                                 <th class="col-opcoes">Opções</th>
                             <?php endif; ?>
@@ -135,7 +134,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                     </thead>
                     <tbody>                        <?php if (empty($qualificacoes)): ?>
                             <tr>
-                                <td colspan="<?= $pode_editar || $pode_remover ? 6 : 5 ?>" class="table-empty"> <!-- ALTERADO: colspan +2 -->
+                                <td colspan="<?= $pode_editar || $pode_remover ? 6 : 5 ?>" class="table-empty"> 
                                     Nenhuma qualificacao cadastrada no momento.
                                 </td>
                             </tr>
@@ -145,8 +144,8 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     <td class="col-codigo"><strong>#<?= htmlspecialchars((string) $qualificacao->getCodigo()) ?></strong></td>
                                     <td><?= htmlspecialchars($qualificacao->getTitulo()) ?></td>
                                     <td><?= htmlspecialchars((string) $qualificacao->getCod_coordenador()) ?></td>
-                                    <td><?= htmlspecialchars($qualificacao->getCampo() ?: '-') ?></td>   <!-- NOVO -->
-                                    <td><?= htmlspecialchars($qualificacao->getNiveis() ?: '-') ?></td>   <!-- NOVO -->
+                                    <td><?= htmlspecialchars($qualificacao->getCampo() ?: '-') ?></td>   
+                                    <td><?= htmlspecialchars($qualificacao->getNiveis() ?: '-') ?></td>   
                                     <?php if ($pode_editar || $pode_remover): ?>
                                         <td class="col-opcoes">
                                             <div class="table-actions table-actions-end">
@@ -180,10 +179,6 @@ require_once __DIR__ . '/../partials/sidebar.php';
             <form method="post" action="index.php">
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="titulo-novo">Titulo <span class="required">*</span></label>
-                        <input type="text" id="titulo-novo" name="titulo" class="form-control" maxlength="60" placeholder="Ex: Licenciatura em Engenharia Informatica" required>
-                    </div>
-                    <div class="form-group">
                         <label for="campo-novo">Campo / Área <span class="required">*</span></label>
                         <select id="campo-novo" name="campo" class="form-control" required>
                             <option value="">Selecione o campo...</option>
@@ -210,6 +205,10 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             <?php endforeach; ?>
                         </select>
                     </div>
+                    <div class="form-group">
+                        <label for="titulo-novo">Nome da qualificação <span class="required">*</span></label>
+                        <input type="text" id="titulo-novo" name="titulo" class="form-control" maxlength="60" placeholder="Ex: Licenciatura em Engenharia Informatica" required>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <a href="#" class="btn btn-secondary">Cancelar</a>
@@ -235,15 +234,21 @@ require_once __DIR__ . '/../partials/sidebar.php';
                     <div class="modal-body">
                         <input type="hidden" name="codigo" value="<?= htmlspecialchars((string) $qualificacao->getCodigo()) ?>">
                         <div class="form-group">
-                            <label for="titulo-e">Titulo <span class="required">*</span></label>
-                            <input type="text" id="titulo-e" name="titulo" class="form-control" maxlength="60" value="<?= htmlspecialchars($qualificacao->getTitulo()) ?>" required>
-                        </div>
-                        <div class="form-group">
                             <label for="campo-e">Campo / Área <span class="required">*</span></label>
                             <select id="campo-e" name="campo" class="form-control" required>
                                 <option value="">Selecione o campo...</option>
                                 <?php foreach ($campos as $c): ?>
                                     <option value="<?= (int) $c->getCodigo() ?>"><?= htmlspecialchars($c->getNome()) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="nivel-e">Nível <span class="required">*</span></label>
+                            <select id="nivel-e" name="nivel" class="form-control" required>
+                                <option value="">Selecione o nível...</option>
+                                <?php $niveisQuali = (new Quali_NivelController())->listarNiveisDaQualificacao($qualificacao->getCodigo()); ?>
+                                <?php foreach ($niveisQuali as $n): ?>
+                                    <option value="<?= (int) $n['codigo'] ?>"><?= htmlspecialchars($n['descricao']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -257,14 +262,8 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="nivel-e">Nível <span class="required">*</span></label>
-                            <select id="nivel-e" name="nivel" class="form-control" required>
-                                <option value="">Selecione o nível...</option>
-                                <?php $niveisQuali = (new Quali_NivelController())->listarNiveisDaQualificacao($qualificacao->getCodigo()); ?>
-                                <?php foreach ($niveisQuali as $n): ?>
-                                    <option value="<?= (int) $n['codigo'] ?>"><?= htmlspecialchars($n['descricao']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                            <label for="titulo-e">Nome da qualificação <span class="required">*</span></label>
+                            <input type="text" id="titulo-e" name="titulo" class="form-control" maxlength="60" value="<?= htmlspecialchars($qualificacao->getTitulo()) ?>" required>
                         </div>
                     </div>
                     <div class="modal-footer">

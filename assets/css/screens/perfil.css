@@ -1,7 +1,3 @@
-/* Ecruns de Gestao de Perfis e Permissoes.
-   Conformes ao modelo docs/docs_markdown/IDENTIDADE_VISUAL.md (CSS puro). */
-
-/* Matriz de gestao de permissoes: recursos em linhas e acoes em colunas. */
 .permissao-matrix {
   min-width: 820px;
 }
@@ -44,7 +40,6 @@
   margin-top: 8px;
 }
 
-/* Botao de destaque (ex.: "Informacoes sobre o perfil"). */
 .btn-info {
   background-color: #6f42c1;
   color: #ffffff;
@@ -54,7 +49,6 @@
   background-color: #5a359e;
 }
 
-/* Linha de cabecalho de grupo na matriz de permissoes. */
 .permissao-matrix tr.permissao-grupo td {
   text-align: left;
   background-color: var(--navy-top);
@@ -70,7 +64,6 @@
   display: inline-block;
 }
 
-/* Vista "Informacoes sobre o perfil": matriz apenas de leitura. */
 .permissao-matrix-readonly .perm-sim {
   color: var(--color-green);
   font-weight: 700;

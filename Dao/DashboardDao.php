@@ -7,8 +7,6 @@ class DashboardDao {
         $this->db = $database->getConnection();
     }
 
-    // Contagem real de registos em cada tabela — os numeros do dashboard
-    // nunca sao fixos no codigo.
     public function contar($tabela) {
         $permitidas = [
             'Formador', 'Formando', 'Turma', 'Modulo', 'Qualificacao',

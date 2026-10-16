@@ -24,7 +24,6 @@ if ($perfil === null) {
 $recursos   = $controller->listarRecursos();
 $permissoes = $controller->listarPermissoes();
 
-// Ordem canonica de apresentacao: Criar, Consultar, Editar, Eliminar.
 $ordem = ['criar', 'consultar', 'editar', 'eliminar'];
 usort($permissoes, function ($a, $b) use ($ordem) {
     $ia = array_search($a->getNome(), $ordem, true);
@@ -32,7 +31,6 @@ usort($permissoes, function ($a, $b) use ($ordem) {
     return ($ia === false ? PHP_INT_MAX : $ia) <=> ($ib === false ? PHP_INT_MAX : $ib);
 });
 
-// Concessoes do perfil: matriz efectiva e flag de "tem registos explicitos".
 $concessoes = $controller->concessoes($perfil->getId());
 $temConcessoes = !empty($concessoes);
 
@@ -41,7 +39,6 @@ foreach ($concessoes as $c) {
     $ativadas[(int) $c['recurso_id']][(int) $c['permissao_id']] = true;
 }
 
-// Recursos agrupados por grupo (Academico, Administrativos, ...).
 $grupos = [];
 foreach ($recursos as $recurso) {
     $grupos[$recurso->getGrupo()][] = $recurso;

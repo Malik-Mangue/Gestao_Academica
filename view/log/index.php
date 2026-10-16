@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/../../services/Sessao.php';
 
-// Auditoria de logs: guarda por recurso (ver matriz de permissoes).
 Sessao::exigirLeitura(Sessao::RECURSO_LOGS, '../dashboard/index.php');
 
 require_once __DIR__ . '/../../controller/LogsController.php';

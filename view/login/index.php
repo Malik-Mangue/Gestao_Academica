@@ -7,7 +7,6 @@ require_once __DIR__ . '/../../services/Sessao.php';
 
 Sessao::iniciar();
 
-// Já autenticado: segue para a área privada
 if (Sessao::esta_logado()) {
     header('Location: ../dashboard/index.php');
     exit;
@@ -29,7 +28,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($usuario instanceof Usuario) {
             Sessao::login($usuario);
 
-            // Primeiro acesso: obriga a redefinir a senha
             if ((int) $usuario->getPrimeiroAcesso() === 1) {
                 header('Location: redefinir.php');
                 exit;
@@ -43,7 +41,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        // Mensagem genérica: não revela se o username existe
         $_SESSION['flash'] = [
             'type' => 'danger',
             'msg'  => 'Credenciais inválidas.'

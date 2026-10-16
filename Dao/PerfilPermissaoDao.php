@@ -1,14 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/conexao.php';
 
-/**
- * Persistencia das concessoes perfil <-> recurso <-> permissao.
- *
- * A tabela perfil_permissao e a fonte de verdade para perfis criados pelo
- * Administrador. Os perfis "legados" (sem qualquer linha) sao tratados pela
- * classe Sessao com uma matriz de fallback, pelo que podem continuar a
- * funcionar sem constarem aqui.
- */
 class PerfilPermissaoDao {
     private $db;
 
@@ -17,7 +9,6 @@ class PerfilPermissaoDao {
         $this->db = $database->getConnection();
     }
 
-    // Matriz de permissoes efectivas: [recurso.nome => [permissao.nome => true]].
     public function getMatrizByPerfil($idPerfil) {
         $sql = "select r.nome as recurso, p.nome as permissao
                 from perfil_permissao pp
@@ -36,7 +27,6 @@ class PerfilPermissaoDao {
         return $matriz;
     }
 
-    // Lista detalhada (para a UI de gestao de perfis).
     public function getConcessoesByPerfil($idPerfil) {
         $sql = "select pp.id, pp.recurso_id, pp.permissao_id,
                        r.nome as recurso, r.grupo, p.nome as permissao
@@ -57,9 +47,6 @@ class PerfilPermissaoDao {
         return $concessoes;
     }
 
-    // Substitui TODAS as concessoes do perfil pelo conjunto indicado.
-    // $concessoes: lista de pares ['recurso_id' => int, 'permissao_id' => int].
-    // Transaccional: ou aplica tudo, ou nao altera nada.
     public function substituir($idPerfil, array $concessoes) {
         $this->db->begin_transaction();
         try {
@@ -105,7 +92,6 @@ class PerfilPermissaoDao {
         }
     }
 
-    // Um perfil tem concessoes explicitas? (distingue perfis "novos" de "legados")
     public function temConcessoes($idPerfil) {
         $sql = "select count(*) as total from perfil_permissao where perfil_id = ?";
         $stmt = $this->db->prepare($sql);

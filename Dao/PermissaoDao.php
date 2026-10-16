@@ -2,11 +2,6 @@
 require_once __DIR__ . '/../config/conexao.php';
 require_once __DIR__ . '/../model/Permissao.php';
 
-/**
- * Acesso a tabela permissao (consultar, criar, editar, eliminar, ...).
- * Uma nova permissao e sempre um novo INSERT nesta tabela: o motor de
- * autorizacao (Sessao) aceita tanto o codigo curto como o nome da permissao.
- */
 class PermissaoDao {
     private $db;
 

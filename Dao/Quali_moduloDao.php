@@ -40,9 +40,6 @@ class Quali_moduloDao {
         return $result;
     }
 
-    // Os chamadores (ModuloController) trabalham com o codigo do Modulo, por
-    // isso a associação é feita pela coluna cod_modulo e nao pelo proprio PK
-    // da tabela Quali_modulo (codigo), que e independente.
     public function updateByModulo(Quali_modulo $quali_modulo) {
         $sql = "update Quali_modulo set cod_Quali = ?, semestre = ? where cod_modulo = ?";
         $stmt = $this->db->prepare($sql);

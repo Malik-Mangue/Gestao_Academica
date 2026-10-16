@@ -4,8 +4,6 @@ Sessao::iniciar();
 
 $active = $active_menu ?? 'dashboard';
 
-// A gestao de utilizadores so aparece para o Administrador e a auditoria
-// de logs apenas para o Auditor — os menus respeitam a politica de perfis.
 $mostrar_utilizadores = Sessao::gestaoUtilizadores();
 $mostrar_logs        = Sessao::auditoriaLogs();
 $mostrar_perfis      = Sessao::pode(Sessao::ACAO_LEITURA, Sessao::RECURSO_PERFIS);
@@ -42,14 +40,6 @@ $mostrar_perfis      = Sessao::pode(Sessao::ACAO_LEITURA, Sessao::RECURSO_PERFIS
                 <span>Formadores</span>
             </a>
         </li>
-        <!-- <li class="<?php /* echo $active === 'licao' ? 'active' : '';*/ ?>">
-            <a href="../../view/licao/index.php">
-                <span class="sidebar-icon">
-                    <img src="../../assets/icons/licao.svg" alt="Lições">
-                </span>
-                <span>Horários</span>
-            </a>
-        </li> -->
     </ul>
 
     <div class="sidebar-heading">Gestão Acadêmica</div>

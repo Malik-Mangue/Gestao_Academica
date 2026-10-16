@@ -20,8 +20,6 @@ class TurmaController {
             return false;
         }
 
-        // A view escolhe o par Qualificacao/Nivel ja definido em Quali_Nivel.
-        // Sem esse par, tenta resolver a partir da qualificacao e nivel.
         if ($qualiNivel === null) {
             if ($qualificacao === null || $nivel === null) {
                 return false;

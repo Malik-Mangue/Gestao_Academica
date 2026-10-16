@@ -14,9 +14,6 @@ class UsuarioDao {
         $this->db = $database->getConnection();
     }
 
-    // Ordem canonica do construtor Usuario:
-    // (codigo, idPerfil, nome, username, apelido, password, primeiroAcesso,
-    //  estadoCivil, genero, telefone, email, bi, perfil)
     private function montarUsuario($rs) {
         $usuario = new Usuario(
             $rs['idUser'],
@@ -37,7 +34,6 @@ class UsuarioDao {
         return $usuario;
     }
 
-    // Regista uma acao de auditoria em nome do utilizador autenticado.
     public function registarLog($acao, $descricao) {
         $usuarioLogado = Sessao::obterUtilizador();
         if ($usuarioLogado === null) {
@@ -175,8 +171,6 @@ class UsuarioDao {
         return $this->montarUsuario($rs);
     }
 
-    // Quantos utilizadores estao associados a um perfil. Usado para impedir
-    // remover um perfil ainda atribuido a alguem.
     public function contarPorPerfil($idPerfil) {
         $sql = "select count(*) as total from Usuario where idPerfil = ?";
         $stmt = $this->db->prepare($sql);
@@ -209,7 +203,6 @@ class UsuarioDao {
             return false;
         }
 
-        // A password so e reescrita quando chega preenchida (ja com hash).
         $password = ($usuario->getPassword() !== null && $usuario->getPassword() !== '')
             ? $usuario->getPassword()
             : $existente->getPassword();
@@ -262,7 +255,6 @@ class UsuarioDao {
         return $result;
     }
 
-    // Regista o login apos autenticacao bem sucedida.
     public function registarLogin(Usuario $usuario) {
         $log = new Logs(null, "LOGIN", "Utilizador " . $usuario->getUsername() . " iniciou sessão", $usuario);
         $log->setData(date('d/m/Y H:i:s'));

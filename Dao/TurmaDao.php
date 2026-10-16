@@ -93,7 +93,6 @@ class TurmaDao {
             $qualificacao = new Qualificacao($rs['cod_quali'], $rs['titulo'], null);
             $nivel = new Nivel($rs['cod_nivel'], $rs['nivel']);
 
-            // A turma liga-se a qualificacao e ao nivel atraves de Quali_Nivel.
             $qualiNivel = new Quali_Nivel($rs['id_Quali_Nivel'], $rs['cod_quali'], $rs['cod_nivel']);
             $qualiNivel->setQualificacao($qualificacao);
             $qualiNivel->setNivel($nivel);

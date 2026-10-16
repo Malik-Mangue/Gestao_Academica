@@ -66,7 +66,6 @@ class InscricaoDao {
             $formando = new Formando($rs['codigo_formando'], $rs['nome_formando'], $rs['apelido_formando'], null, null, null);
             $modulo = new Modulo($rs['codigo_modulo'], $rs['nome_modulo'], null);
 
-            // NOVO: liga a qualificação ao módulo
             if ($rs['cod_Quali'] !== null) {
                 $qualificacao = new Qualificacao($rs['cod_Quali'], $rs['titulo'], null);
                 $qualiNivel = new Quali_Nivel($rs['codigo_Quali_Nivel'], $rs['cod_Quali'], null);

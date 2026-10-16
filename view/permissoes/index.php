@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/../../services/Sessao.php';
 
-// Gestao de permissoes: restricao por recurso (exclusiva do Administrador).
 Sessao::exigirLeitura(Sessao::RECURSO_PERFIS, '../dashboard/index.php');
 
 require_once __DIR__ . '/../../controller/PerfilController.php';
@@ -12,8 +11,6 @@ $perfis    = $controller->listar();
 $recursos  = $controller->listarRecursos();
 $permissoes = $controller->listarPermissoes();
 
-// Ordem canonica de apresentacao das acoes: Criar, Consultar, Editar, Eliminar.
-// Permissoes futuras (novos INSERT em `permissao`) aparecem no fim.
 $ordem = ['criar', 'consultar', 'editar', 'eliminar'];
 usort($permissoes, function ($a, $b) use ($ordem) {
     $ia = array_search($a->getNome(), $ordem, true);
@@ -21,7 +18,6 @@ usort($permissoes, function ($a, $b) use ($ordem) {
     return ($ia === false ? PHP_INT_MAX : $ia) <=> ($ib === false ? PHP_INT_MAX : $ib);
 });
 
-// Gravacao da matriz de permissoes do perfil selecionado.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['guardar'])) {
     Sessao::exigirAcao(Sessao::ACAO_EDITAR, Sessao::RECURSO_PERFIS, '../dashboard/index.php');
 
@@ -40,8 +36,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['guardar'])) {
         }
     }
 
-    // Anti-lockout: ao alterar o proprio perfil, e obrigatorio manter a leitura
-    // do recurso `perfis`, sob pena de ninguem voltar a gerir permissoes.
     $idRecursoPerfis = 0;
     foreach ($recursos as $r) {
         if ($r->getNome() === Sessao::RECURSO_PERFIS) {
@@ -87,7 +81,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['guardar'])) {
     exit;
 }
 
-// Determina o perfil em exibicao.
 $idPerfil = filter_input(INPUT_GET, 'perfil', FILTER_VALIDATE_INT);
 if (!$idPerfil && $perfis) {
     $idPerfil = (int) $perfis[0]->getId();
@@ -99,7 +92,6 @@ if ($perfil === null) {
 }
 $perfilNome = $perfil !== null ? $perfil->getNome() : '';
 
-// Estado actual das concessoes (recurso_id => permissao_id => true).
 $ativadas = [];
 if ($idPerfil) {
     foreach ($controller->concessoes($idPerfil) as $c) {
@@ -107,7 +99,6 @@ if ($idPerfil) {
     }
 }
 
-// Recursos agrupados por grupo (Academico, Administrativos, ...).
 $grupos = [];
 foreach ($recursos as $recurso) {
     $grupos[$recurso->getGrupo()][] = $recurso;

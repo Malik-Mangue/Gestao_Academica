@@ -23,11 +23,9 @@ public function setTitulo($titulo){ $this->titulo = $titulo; }
 public function getCod_coordenador(){ return $this->cod_coordenador; }
 public function setCod_coordenador($cod_coordenador){ $this->cod_coordenador = $cod_coordenador; }
 
-// NOVO: nome do campo da qualificação (vem da tabela Classificacao/Campo)
 public function getCampo(){ return $this->campo; }
 public function setCampo($campo){ $this->campo = $campo; }
 
-// NOVO: nomes dos níveis da qualificação, separados por vírgula (vêm de Quali_Nivel/Nivel)
 public function getNiveis(){ return $this->niveis; }
 public function setNiveis($niveis){ $this->niveis = $niveis; }
 }

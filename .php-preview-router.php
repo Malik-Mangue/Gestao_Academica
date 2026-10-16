@@ -1,5 +1,4 @@
 <?php
-// Enhanced PHP Router for HTML Preview Extension
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
@@ -9,12 +8,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// Security check: Prevent directory traversal
 $requestPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $normalizedPath = str_replace('..', '', $requestPath);
 $filePath = __DIR__ . $normalizedPath;
 
-// Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $response = [
         'method' => 'POST',
@@ -27,11 +24,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit();
 }
 
-// Static file handling
 if (is_file($filePath)) {
     $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
     
-    // Set appropriate content type
     $contentTypes = [
         'html' => 'text/html',
         'php' => 'text/html',
@@ -49,15 +44,12 @@ if (is_file($filePath)) {
         header('Content-Type: ' . $contentTypes[$extension]);
     }
     
-    // Handle PHP files
     if ($extension === 'php') {
         try {
-            // Capture output and errors
             ob_start();
             include($filePath);
             $output = ob_get_clean();
             
-            // Add debug information if requested
             if (isset($_GET['debug'])) {
                 $debug = [
                     'file' => $filePath,
@@ -77,12 +69,10 @@ if (is_file($filePath)) {
         exit();
     }
     
-    // Serve static files
     readfile($filePath);
     exit();
 }
 
-// Handle 404
 http_response_code(404);
 echo '<h1>404 Not Found</h1>';
 echo '<p>The requested file "' . htmlspecialchars($requestPath) . '" was not found.</p>';

@@ -1,14 +1,12 @@
 <?php
 require_once __DIR__ . '/../../services/Sessao.php';
 
-// Gestao de perfis: restricao por recurso (exclusiva do Administrador).
 Sessao::exigirLeitura(Sessao::RECURSO_PERFIS, '../dashboard/index.php');
 
 require_once __DIR__ . '/../../controller/PerfilController.php';
 
 $controller = new PerfilController();
 
-// Criacao de perfil. O controller valida nome (vazio, tamanho e duplicado).
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['gravar'])) {
     Sessao::exigirAcao(Sessao::ACAO_CRIAR, Sessao::RECURSO_PERFIS, '../dashboard/index.php');
 

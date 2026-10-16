@@ -1,6 +1,3 @@
-/* Ecrãs públicos de autenticação (Login / Redefinir senha)
-   Conformes ao modelo docs/AutenticacaoUI — reutiliza as variáveis de :root. */
-
 body.auth-body {
   background-color: var(--color-green);
   min-height: 100vh;
@@ -78,8 +75,6 @@ body.auth-body {
   margin: 16px 0 0;
 }
 
-/* Botão do modelo: verde profundo (#02542d), largura fixa e centrada
-   Seletor composto para sobrepor .btn-success na cascata (sem !important) */
 .btn.auth-submit {
   display: block;
   width: 200px;

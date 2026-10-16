@@ -1,8 +1,11 @@
 <?php
 require_once __DIR__ . '/../Dao/MatriculaDao.php';
 require_once __DIR__ . '/../model/Matricula.php';
+require_once __DIR__ . '/Validacao.php';
 
 class MatriculaController {
+    use Validacao;
+
     private $dao;
 
     public function __construct() {

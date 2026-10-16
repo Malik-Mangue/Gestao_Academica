@@ -5,9 +5,11 @@ require_once __DIR__ . '/Diretor_turmaController.php';
 require_once __DIR__ . '/CoordenadorController.php';
 require_once __DIR__ . '/LicaoController.php';
 require_once __DIR__ . '/TurmaController.php';
-require_once __DIR__ . '/../services/Validador.php';
+require_once __DIR__ . '/Validacao.php';
 
 class FormadorController {
+    use Validacao;
+
     private $dao;
 
     public function __construct() {
@@ -15,11 +17,11 @@ class FormadorController {
     }
 
     public function cadastrarFormador($nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valor_horas, $horas_mes, $salario, $isDiretor, $isCoordenador) {
-        if (Validador::texto($nome, 40) && Validador::texto($apelido, 40)
-            && Validador::emailObrigatorio($email)
-            && Validador::inteiroPositivo($contacto)
-            && Validador::inteiroPositivo($valor_horas)
-            && Validador::inteiroPositivo($horas_mes)) {
+        if ($this->texto($nome, 40) && $this->texto($apelido, 40)
+            && $this->emailObrigatorio($email)
+            && $this->inteiroPositivo($contacto)
+            && $this->inteiroPositivo($valor_horas)
+            && $this->inteiroPositivo($horas_mes)) {
 
             $salario = (int) $valor_horas * (int) $horas_mes;
 
@@ -44,11 +46,11 @@ class FormadorController {
     }
 
     public function atualizarFormador($codigo, $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valor_horas, $horas_mes, $salario, $isDiretor, $isCoordenador) {
-        if ($codigo > 0 && Validador::texto($nome, 40) && Validador::texto($apelido, 40)
-            && Validador::emailObrigatorio($email)
-            && Validador::inteiroPositivo($contacto)
-            && Validador::inteiroPositivo($valor_horas)
-            && Validador::inteiroPositivo($horas_mes)) {
+        if ($codigo > 0 && $this->texto($nome, 40) && $this->texto($apelido, 40)
+            && $this->emailObrigatorio($email)
+            && $this->inteiroPositivo($contacto)
+            && $this->inteiroPositivo($valor_horas)
+            && $this->inteiroPositivo($horas_mes)) {
 
             $salario = (int) $valor_horas * (int) $horas_mes;
 
@@ -110,6 +112,13 @@ class FormadorController {
         }
         return false;
     }
+
+    public function listarTurmasQueDirige($codigo) {
+    return $this->dao->listarTurmasQueDirige((int) $codigo);
+}
+public function listarQualificacoesQueCoordena($codigo) {
+    return $this->dao->listarQualificacoesQueCoordena((int) $codigo);
+}
 
     public function getStatusFormador($codigo) {
         $coordenadorController = new CoordenadorController();

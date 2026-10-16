@@ -27,7 +27,7 @@ class UsuarioDao {
             $rs['genero'] ?? null,
             $rs['telefone'] ?? null,
             $rs['email'] ?? null,
-            $rs['bi'] ?? null
+            $rs['BI'] ?? null
         );
         $usuario->setPerfil(new Perfil($rs['idPerfil'], $rs['nome_perfil'] ?? null));
 

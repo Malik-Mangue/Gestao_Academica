@@ -2,8 +2,11 @@
 require_once __DIR__ . '/../Dao/UsuarioDao.php';
 require_once __DIR__ . '/../Dao/PerfilDao.php';
 require_once __DIR__ . '/../services/Sessao.php';
+require_once __DIR__ . '/Validacao.php';
 
 class UsuarioController {
+
+    use Validacao;
 
     const SENHA_PADRAO = 1234;
 

@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/../../services/Sessao.php';
 Sessao::exigirLogin('../login/index.php');
-require_once __DIR__ . '/../../services/Validador.php';
 require_once __DIR__ . '/../../controller/TurmaController.php';
 require_once __DIR__ . '/../../controller/Quali_NivelController.php';
 require_once __DIR__ . '/../../controller/CampoController.php';
@@ -55,9 +54,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($acao === 'editar' && !$codigo) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Turma inválida para atualização.'];
-        } elseif (!Validador::texto($nome, 40)) {
+        } elseif (!$controller->texto($nome, 40)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'O nome da turma é obrigatório (até 40 caracteres).'];
-        } elseif (!Validador::inteiroPositivo($anoLectivo) || strlen($anoLectivo) !== 4) {
+        } elseif (!$controller->inteiroPositivo($anoLectivo) || strlen($anoLectivo) !== 4) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'O ano lectivo deve ter 4 dígitos (ex.: 2025).'];
         } elseif (!in_array($turno, $turnos, true)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione um turno válido.'];

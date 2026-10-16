@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/../../services/Sessao.php';
 Sessao::exigirLogin('../login/index.php');
-require_once __DIR__ . '/../../services/Validador.php';
 require_once __DIR__ . '/../../controller/InscricaoController.php';
 require_once __DIR__ . '/../../controller/FormandoController.php';
 require_once __DIR__ . '/../../controller/ModuloController.php';
@@ -47,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione o módulo.'];
         } elseif (!in_array($semestre, $semestres, true)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione um semestre válido.'];
-        } elseif (!Validador::data($data)) {
+        } elseif (!$controller->data($data)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Indique uma data de inscrição válida.'];
         } else {
             $formando = new Formando($codFormando, null, null, null, null, null);

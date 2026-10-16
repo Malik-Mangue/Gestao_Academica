@@ -109,12 +109,12 @@ Pensa num restaurante:
 Gestao_Academica/
 ├── config/            # ligação à base de dados
 │   └── conexao.php
-├── services/          # serviços transversais (sessão/login, validação)
-│   ├── Sessao.php
-│   └── Validador.php
+├── services/          # serviços transversais (sessão/login)
+│   └── Sessao.php
 ├── model/             # 21 modelos (só dados + getters/setters)
 ├── Dao/               # 23 DAOs (SQL + logs)
 ├── controller/        # 21 controllers (regras + orquestração)
+│   └── Validacao.php  # trait de validação herdado pelos controllers
 ├── view/              # ecrãs (HTML+PHP) organizados por módulo
 │   ├── partials/      # header.php, sidebar.php, footer.php (partilhados)
 │   ├── login/         # index.php, redefinir.php, logout.php
@@ -210,11 +210,18 @@ class Database {
 
 ---
 
-## 6. Camada de Serviços
+## 6. Camada de Serviços e validação
 
-### 6.1 `services/Validador.php`
+### 6.1 Validação — o trait `controller/Validacao.php`
 
-Classe **estática** (não precisas de `new`) com validações reutilizáveis. Devolve `true`/`false`.
+A validação vive num **trait** (`Validacao`), integrado diretamente nas classes que a usam
+(`use Validacao;`). Já **não existe** a antiga classe de serviço `services/Validador.php`.
+
+- **No controller:** usa-se `$this->texto(...)`, `$this->data(...)`, `$this->inteiroPositivo(...)`.
+- **Na View:** usa-se `$controller->texto(...)`, `$controller->data(...)`, ... (os métodos passam a
+  fazer parte da instância do controller graças ao trait).
+
+Devolve `true`/`false`.
 
 | Método | O que valida |
 |---|---|
@@ -226,11 +233,12 @@ Classe **estática** (não precisas de `new`) com validações reutilizáveis. D
 | `data($valor)` | Formato `Y-m-d` real (ex: `2026-10-16`). |
 | `hora($valor)` | Formato `HH:MM` válido |
 
-Exemplo de uso (em controllers): `Validador::texto($nome, 40) && Validador::emailObrigatorio($email)`.
+Exemplo de uso (em controllers): `$this->texto($nome, 40) && $this->emailObrigatorio($email)`.
 
 > **Porquê validar em dois sítios?** A validação "leve" (obrigatório, tamanho) aparece também na View
-> para dar mensagens bonitas; a validação "a sério" (regras de negócio) está no Controller/Validador
-> para nunca deixar entrar dados errados na base de dados.
+> para dar mensagens bonitas; a validação "a sério" (regras de negócio) está no Controller
+> para nunca deixar entrar dados errados na base de dados. Como View e Controller usam o **mesmo
+> trait**, a regra está definida num único sítio.
 
 ### 6.2 `services/Sessao.php` — o coração da autenticação e permissões
 
@@ -449,7 +457,7 @@ class NivelController {
 ### `FormadorController` — o exemplo mais rico
 
 - `cadastrarFormador(...)`:
-  1. Valida tudo com `Validador`.
+  1. Valida tudo com o trait `Validacao` (`$this->texto(...)`, `$this->emailObrigatorio(...)`, ...).
   2. Calcula `salario = valor_horas * horas_mes`.
   3. Cria o `Formador` no banco.
   4. Se `$isDiretor` → cria também em `Diretor_Turma`; senão se `$isCoordenador` → cria em `Coordenador`.
@@ -501,7 +509,6 @@ Todos os ecrãs de listagem seguem esta ordem. **Decora este "esqueleto"**, porq
 require_once __DIR__ . '/../../services/Sessao.php';
 Sessao::exigirLogin('../login/index.php');          // 1) guarda de segurança
 
-require_once __DIR__ . '/../../services/Validador.php';
 require_once __DIR__ . '/../../controller/XController.php';
 $controller = new XController();
 
@@ -766,7 +773,7 @@ View view/formadores/index.php  (POST com name="gravar")
   └─ Sessao::exigirAcao('C','formadores','index.php')     (tem permissão?)
   └─ lê $_POST: nome, apelido, email, genero, estadoCivil, contacto, valorHora, horasMes, salario,
                 isDiretor (checkbox), isCoordenador (checkbox)   [isFormador é ignorado!]
-  └─ valida com Validador
+  └─ valida com o trait Validacao ($controller->texto(...), ...)
   └─ FormadorController::cadastrarFormador(...)
         └─ valida outra vez
         └─ salario = valor_horas * horas_mes
@@ -793,7 +800,7 @@ View view/modulo/index.php (POST gravar)
   └─ exige ação 'C' em 'modulos'
   └─ lê nome, carga_horaria, semestre, qualificacao, nivel
   └─ ModuloController::cadastrarModulo(...)
-        └─ Validador::texto + inteiroPositivo + qualificacao/nivel não nulos
+        └─ $this->texto + $this->inteiroPositivo + qualificacao/nivel não nulos
         └─ Quali_NivelController::buscarCodigo($qualificacao, $nivel)
         │      ↳ descobre o id_Quali_Nivel (ligação Qualificação+Nível)
         └─ new Modulo(null, nome, carga_horaria) + setQualiNivel(...)

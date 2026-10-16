@@ -270,6 +270,7 @@ final class Sessao
     {
         Sessao::iniciar();
         Sessao::carregarPermissoes($_SESSION['idPerfil'] ?? null, $_SESSION['perfil'] ?? '');
+        
     }
 
     private static function carregarPermissoes($idPerfil, $nomePerfil)

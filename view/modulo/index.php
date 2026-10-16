@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/../../services/Sessao.php';
 Sessao::exigirLogin('../login/index.php');
-require_once __DIR__ . '/../../services/Validador.php';
 require_once __DIR__ . '/../../controller/ModuloController.php';
 require_once __DIR__ . '/../../controller/Quali_NivelController.php';
 require_once __DIR__ . '/../../controller/CampoController.php';
@@ -47,9 +46,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $qualiNivel = $idQualiNivel ? $qualiNivelController->buscar($idQualiNivel) : null;
 
-        if (!Validador::texto($nome, 100)) {
+        if (!$controller->texto($nome, 100)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'O nome do módulo é obrigatório (até 100 caracteres).'];
-        } elseif (!Validador::inteiroPositivo($carga)) {
+        } elseif (!$controller->inteiroPositivo($carga)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'A carga horária deve ser um número positivo.'];
         } elseif ($qualiNivel === null) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione a qualificação e o nível do módulo.'];

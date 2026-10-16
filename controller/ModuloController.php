@@ -5,9 +5,11 @@ require_once __DIR__ . '/Quali_NivelController.php';
 require_once __DIR__ . '/Quali_moduloController.php';
 require_once __DIR__ . '/LicaoController.php';
 require_once __DIR__ . '/InscricaoController.php';
-require_once __DIR__ . '/../services/Validador.php';
+require_once __DIR__ . '/Validacao.php';
 
 class ModuloController {
+    use Validacao;
+
     private $dao;
 
     public function __construct() {
@@ -15,8 +17,8 @@ class ModuloController {
     }
 
     public function cadastrarModulo($nome, $carga_horaria, $semestre, $qualificacao, $nivel) {
-        if (Validador::texto($nome, 100)
-            && Validador::inteiroPositivo($carga_horaria) && $qualificacao != null && $nivel != null) {
+        if ($this->texto($nome, 100)
+            && $this->inteiroPositivo($carga_horaria) && $qualificacao != null && $nivel != null) {
 
             $modulo = new Modulo(null, $nome, $carga_horaria);
 
@@ -56,8 +58,8 @@ class ModuloController {
 
     public function atualizarModulo($nome, $carga_horaria, $codigo, $qualificacao, $nivel, $semestre) {
         if ($semestre != null && strlen($semestre) > 0 && $qualificacao != null && $nivel != null
-            && Validador::texto($nome, 100)
-            && $codigo != 0 && Validador::inteiroPositivo($carga_horaria)) {
+            && $this->texto($nome, 100)
+            && $codigo != 0 && $this->inteiroPositivo($carga_horaria)) {
 
             $modulo = new Modulo($codigo, $nome, $carga_horaria);
 

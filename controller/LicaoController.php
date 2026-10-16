@@ -1,9 +1,11 @@
 <?php
 require_once __DIR__ . '/../Dao/LicaoDao.php';
 require_once __DIR__ . '/../model/Licao.php';
-require_once __DIR__ . '/../services/Validador.php';
+require_once __DIR__ . '/Validacao.php';
 
 class LicaoController {
+    use Validacao;
+
     private $dao;
 
     public function __construct() {
@@ -32,9 +34,9 @@ class LicaoController {
 
     private function dadosValidos($modulo, $formador, $sala, $turma, $data, $hora_inicio, $hora_fim) {
         return $modulo !== null && $formador !== null && $sala !== null && $turma !== null
-            && Validador::data($data)
-            && Validador::hora($hora_inicio)
-            && Validador::hora($hora_fim)
+            && $this->data($data)
+            && $this->hora($hora_inicio)
+            && $this->hora($hora_fim)
             && $hora_fim > $hora_inicio;
     }
 

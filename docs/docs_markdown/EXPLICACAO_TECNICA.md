@@ -492,9 +492,12 @@ Nos restantes casos, `Sessao::recarregarPermissoes()` pode ser chamado manualmen
 
 ## 11. Validação de dados
 
+> Os validadores abaixo fazem parte do trait `Validacao` (`controller/Validacao.php`), usado pelos
+> controllers (`$this->...`) e invocado pelas views através do respectivo controller (`$controller->...`).
+
 ### Expressões regulares
 
-`Validador::texto()`:
+`texto()`:
 ```php
 preg_match("/^[\p{L}\p{N}][\p{L}\p{N}\p{Zs}.,'’()\-\/]*$/u", $valor)
 ```
@@ -502,12 +505,12 @@ preg_match("/^[\p{L}\p{N}][\p{L}\p{N}\p{Zs}.,'’()\-\/]*$/u", $valor)
 - O modificador **`/u`** ativa Unicode (indispensável para acentos).
 - O primeiro carácter tem de ser letra ou número (não permite começar por pontuação).
 
-`Validador::hora()`:
+`hora()`:
 ```php
 preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $valor)   // HH:MM de 00:00 a 23:59
 ```
 
-`Validador::data()`:
+`data()`:
 ```php
 $d = DateTime::createFromFormat('Y-m-d', $valor);
 return $d !== false && $d->format('Y-m-d') === $valor;
@@ -515,7 +518,7 @@ return $d !== false && $d->format('Y-m-d') === $valor;
 O `createFromFormat` sozinho aceitaria datas inválidas em alguns casos; a igualdade de formatação
 garante que é **exatamente** `Y-m-d` e uma data real.
 
-`Validador::inteiroPositivo()`:
+`inteiroPositivo()`:
 ```php
 filter_var($valor, FILTER_VALIDATE_INT) !== false && (int)$valor > 0
 ```
@@ -527,7 +530,8 @@ A mesma regra aparece em dois sítios:
 - **Controller:** validação "de verdade" (regras de negócio) — mesmo que alguém salte a View, os
   dados não entram errados.
 
-> Manter as duas sincronizadas é um ponto de manutenção. Alterar um limite deve ser feito nos dois sítios.
+> Como a View (`$controller->...`) e o Controller (`$this->...`) partilham o mesmo trait `Validacao`,
+> a regra está definida num único ficheiro: alterar um limite faz-se só em `controller/Validacao.php`.
 
 ---
 
@@ -733,7 +737,7 @@ Se houver interseção **na mesma sala, no mesmo formador e no mesmo dia** → c
 exclui-se a própria lição com `and codigo <> ?`.
 
 Complementarmente, `LicaoController::dadosValidos()` valida:
-- `Validador::data($data)`, `Validador::hora($inicio)`, `Validador::hora($fim)`;
+- `$this->data($data)`, `$this->hora($inicio)`, `$this->hora($fim)` (trait `Validacao`);
 - `$hora_fim > $hora_inicio` (comparação de strings `HH:MM` funciona lexicograficamente).
 
 ### Normalização de `TIME`
@@ -922,7 +926,7 @@ Ao alterar código, verifica:
 | RBAC / matriz de permissões | `Dao/PerfilPermissaoDao.php`, `services/Sessao.php` (`pode`, `carregarPermissoes`) |
 | Fallback de permissões | `services/Sessao.php` (`$matrizLegada`, `construirMatrizLegada`) |
 | Hashing de password | `controller/UsuarioController.php`, `Dao/UsuarioDao.php` (`autenticar`, `atualizarPassword`) |
-| Validação | `services/Validador.php` |
+| Validação | `controller/Validacao.php` (trait `Validacao`) |
 | Prepared statements (variádico) | `Dao/LicaoDao.php` (`existeConflito`) |
 | Transações | `Dao/QualificacaoDao.php` (`deleteCompleto`), `Dao/PerfilPermissaoDao.php` (`substituir`) |
 | Lista branca de tabelas | `Dao/DashboardDao.php` (`contar`) |
@@ -937,7 +941,7 @@ Ao alterar código, verifica:
 
 ## Resumo técnico numa frase
 
-> O sistema é **PHP puro com MVC+DAO**: cada página faz `require` explícito, valida com `Validador`,
+> O sistema é **PHP puro com MVC+DAO**: cada página faz `require` explícito, valida com o trait `Validacao`,
 > persiste por **prepared statements** (`mysqli`) protegidos por *listas brancas*, envolve operações
 > delicadas em **transações** e `try/catch`, guarda o acesso em **sessões** com RBAC em matriz
 > (`recurso × ação`), protege a saída com `htmlspecialchars`, e usa **PRG + flash** e **modais por CSS**

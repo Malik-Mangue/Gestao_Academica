@@ -135,10 +135,10 @@ require_once __DIR__ . '/../partials/sidebar.php';
                         </tbody>
                     </table>
                 </div>
-                <p class="note">
+                <!-- <p class="note">
                     C = Criar &middot; R = Consultar &middot; U = Editar &middot; D = Eliminar.
                     Esta vista e apenas de leitura; a edicao faz-se em "Permissoes".
-                </p>
+                </p> -->
             <?php endif; ?>
         </div>
     </div>

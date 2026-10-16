@@ -23,9 +23,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['guardar'])) {
 
     $idPerfilPost = filter_input(INPUT_POST, 'idPerfil', FILTER_VALIDATE_INT);
 
+    $idPermConsultar = 0;
+    foreach ($permissoes as $p) {
+        if ($p->getNome() === 'consultar') {
+            $idPermConsultar = (int) $p->getId();
+            break;
+        }
+    }
+
     $concessoes = [];
     foreach (($_POST['permissoes'] ?? []) as $recursoId => $lista) {
         if (!is_array($lista)) {
+            continue;
+        }
+        // Sem "consultar" o recurso nao fica visivel: retira-se por completo,
+        // ignorando as restantes permissoes marcadas para esse recurso.
+        if ($idPermConsultar > 0 && empty($lista[$idPermConsultar])) {
             continue;
         }
         foreach ($lista as $permissaoId => $valor) {
@@ -40,13 +53,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['guardar'])) {
     foreach ($recursos as $r) {
         if ($r->getNome() === Sessao::RECURSO_PERFIS) {
             $idRecursoPerfis = (int) $r->getId();
-            break;
-        }
-    }
-    $idPermConsultar = 0;
-    foreach ($permissoes as $p) {
-        if ($p->getNome() === 'consultar') {
-            $idPermConsultar = (int) $p->getId();
             break;
         }
     }
@@ -195,10 +201,10 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             </tbody>
                         </table>
                     </div>
-                    <p class="note">
+                    <!-- <p class="note">
                         C = Criar &middot; R = Consultar &middot; U = Editar &middot; D = Eliminar.
                         Perfis sem registos em perfil_permissao usam o padrao dos perfis legados.
-                    </p>
+                    </p> -->
 
                     <div class="card-footer">
                         <button type="submit" name="guardar" class="btn btn-success">Guardar</button>

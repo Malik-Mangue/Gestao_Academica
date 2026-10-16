@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/../../services/Sessao.php';
 Sessao::exigirLogin('../login/index.php');
-require_once __DIR__ . '/../../services/Validador.php';
 require_once __DIR__ . '/../../controller/QualificacaoController.php';
 require_once __DIR__ . '/../../controller/Quali_NivelController.php';
 
@@ -40,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $codCampo = filter_input(INPUT_POST, 'campo', FILTER_VALIDATE_INT);
         $niveis = $_POST['nivel'] ?? [];
 
-        if (!Validador::texto($titulo, 60)) {
+        if (!$controller->texto($titulo, 60)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'O título da qualificação é obrigatório (até 60 caracteres).'];
         } elseif (!$coordenador) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione o coordenador da qualificação.'];

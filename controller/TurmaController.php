@@ -2,12 +2,14 @@
 require_once __DIR__ . '/../Dao/TurmaDao.php';
 require_once __DIR__ . '/../model/Turma.php';
 require_once __DIR__ . '/../model/Quali_Nivel.php';
-require_once __DIR__ . '/../services/Validador.php';
+require_once __DIR__ . '/Validacao.php';
 require_once __DIR__ . '/Quali_NivelController.php';
 require_once __DIR__ . '/Diretor_turmaController.php';
 require_once __DIR__ . '/LicaoController.php';
 
 class TurmaController {
+    use Validacao;
+
     private $dao;
 
     public function __construct() {
@@ -15,7 +17,7 @@ class TurmaController {
     }
 
     public function cadastrarTurma($nome, $ano_ingresso, $turno, $diretorTurma, $qualificacao, $nivel, $qualiNivel = null) {
-        if (!Validador::texto($nome, 40) || !Validador::inteiroPositivo($ano_ingresso)
+        if (!$this->texto($nome, 40) || !$this->inteiroPositivo($ano_ingresso)
             || $turno === null || $turno === '' || $diretorTurma === null) {
             return false;
         }
@@ -61,7 +63,7 @@ class TurmaController {
     }
 
     public function atualizarTurma($codigo, $nome, $ano_ingresso, $turno, $diretorTurma, $qualificacao, $nivel, $qualiNivel = null) {
-        if (!$codigo || !Validador::texto($nome, 40) || !Validador::inteiroPositivo($ano_ingresso)
+        if (!$codigo || !$this->texto($nome, 40) || !$this->inteiroPositivo($ano_ingresso)
             || $turno === null || $turno === '' || $diretorTurma === null) {
             return false;
         }

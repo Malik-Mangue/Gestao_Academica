@@ -3,7 +3,6 @@ require_once __DIR__ . '/../../services/Sessao.php';
 
 Sessao::exigirLeitura(Sessao::RECURSO_UTILIZADORES, '../dashboard/index.php');
 
-require_once __DIR__ . '/../../services/Validador.php';
 require_once __DIR__ . '/../../controller/UsuarioController.php';
 
 $controller = new UsuarioController();
@@ -32,9 +31,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             || mb_strlen($estadoCivil) > 40 || mb_strlen($genero) > 20 || mb_strlen($telefone) > 20
             || mb_strlen($email) > 100 || mb_strlen($bi) > 20) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Não foi possível gravar o registo. Verifique os tamanhos dos campos.'];
-        } elseif (!Validador::email($email)) {
+        } elseif (!$controller->email($email)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'O e-mail indicado não é válido.'];
-        } elseif (!Validador::digitos($telefone, 20)) {
+        } elseif (!$controller->digitos($telefone, 20)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'O telefone deve conter apenas dígitos.'];
         } else {
             try {
@@ -86,9 +85,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             || mb_strlen($estadoCivil) > 40 || mb_strlen($genero) > 20 || mb_strlen($telefone) > 20
             || mb_strlen($email) > 100 || mb_strlen($bi) > 20) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Não foi possível atualizar o registo. Verifique os tamanhos dos campos.'];
-        } elseif (!Validador::email($email)) {
+        } elseif (!$controller->email($email)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'O e-mail indicado não é válido.'];
-        } elseif (!Validador::digitos($telefone, 20)) {
+        } elseif (!$controller->digitos($telefone, 20)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'O telefone deve conter apenas dígitos.'];
         } else {
             try {

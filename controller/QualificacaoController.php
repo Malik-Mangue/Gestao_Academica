@@ -10,9 +10,11 @@ require_once __DIR__ . '/LicaoController.php';
 require_once __DIR__ . '/MatriculaController.php';
 require_once __DIR__ . '/CampoController.php';
 require_once __DIR__ . '/NivelController.php';
-require_once __DIR__ . '/../services/Validador.php';
+require_once __DIR__ . '/Validacao.php';
 
 class QualificacaoController {
+    use Validacao;
+
     private $dao;
 
     public function __construct() {
@@ -33,7 +35,7 @@ class QualificacaoController {
         $codigoCampo = filter_input(INPUT_POST, 'campo', FILTER_VALIDATE_INT);
         $niveis = $_POST['nivel'] ?? [];
 
-        if (!Validador::texto($titulo, 60)) {
+        if (!$this->texto($titulo, 60)) {
             return false;
         }
         if ($coordenador == null || $coordenador == false) {
@@ -85,7 +87,7 @@ class QualificacaoController {
         $titulo = trim($_POST['titulo'] ?? '');
         $coordenador = filter_input(INPUT_POST, 'coordenador', FILTER_VALIDATE_INT);
 
-        if (!Validador::texto($titulo, 60)) {
+        if (!$this->texto($titulo, 60)) {
             return false;
         }
         if ($coordenador == null || $coordenador == false) {

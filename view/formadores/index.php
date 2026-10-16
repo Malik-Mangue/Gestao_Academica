@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/../../services/Sessao.php';
 Sessao::exigirLogin('../login/index.php');
-require_once __DIR__ . '/../../services/Validador.php';
 require_once __DIR__ . '/../../controller/FormadorController.php';
 
 $controller = new FormadorController();
@@ -25,13 +24,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $isDiretor    = isset($_POST['isDiretor']);
         $isCoordenador = isset($_POST['isCoordenador']);
 
-        if (!Validador::texto($nome, 40) || !Validador::texto($apelido, 40)) {
+        if (!$controller->texto($nome, 40) || !$controller->texto($apelido, 40)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Nome e apelido são obrigatórios (até 40 caracteres).'];
-        } elseif (!Validador::emailObrigatorio($email)) {
+        } elseif (!$controller->emailObrigatorio($email)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'O e-mail indicado não é válido.'];
-        } elseif (!Validador::inteiroPositivo($contacto)) {
+        } elseif (!$controller->inteiroPositivo($contacto)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'O contacto deve ser um número positivo.'];
-        } elseif (!Validador::inteiroPositivo($valorHora) || !Validador::inteiroPositivo($horasMes)) {
+        } elseif (!$controller->inteiroPositivo($valorHora) || !$controller->inteiroPositivo($horasMes)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Valor por hora e horas por mês devem ser positivos.'];
         } else {
             $sucesso = $controller->cadastrarFormador(
@@ -63,11 +62,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $isDiretor     = isset($_POST['isDiretor']);
         $isCoordenador = isset($_POST['isCoordenador']);
 
-        if (!$codigo || !Validador::texto($nome, 40) || !Validador::texto($apelido, 40)) {
+        if (!$codigo || !$controller->texto($nome, 40) || !$controller->texto($apelido, 40)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Dados inválidos para atualização do formador.'];
-        } elseif (!Validador::emailObrigatorio($email)) {
+        } elseif (!$controller->emailObrigatorio($email)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'O e-mail indicado não é válido.'];
-        } elseif (!Validador::inteiroPositivo($contacto)) {
+        } elseif (!$controller->inteiroPositivo($contacto)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'O contacto deve ser um número positivo.'];
         } else {
             try {

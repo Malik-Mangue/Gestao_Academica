@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/../../services/Sessao.php';
 Sessao::exigirLogin('../login/index.php');
-require_once __DIR__ . '/../../services/Validador.php';
 require_once __DIR__ . '/../../controller/MatriculaController.php';
 require_once __DIR__ . '/../../controller/FormandoController.php';
 require_once __DIR__ . '/../../controller/Quali_NivelController.php';
@@ -44,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione o formando.'];
         } elseif ($qualiNivel === null) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione a qualificação e o nível.'];
-        } elseif (!Validador::data($data)) {
+        } elseif (!$controller->data($data)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Indique uma data de matrícula válida.'];
         } else {
             $formando     = new Formando($codFormando, null, null, null, null, null);

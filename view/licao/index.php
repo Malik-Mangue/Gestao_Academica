@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/../../services/Sessao.php';
 Sessao::exigirLogin('../login/index.php');
-require_once __DIR__ . '/../../services/Validador.php';
 require_once __DIR__ . '/../../controller/LicaoController.php';
 
 $controller = new LicaoController();
@@ -38,9 +37,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (!$codModulo || !$codFormador || !$codSala || !$codTurma) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione módulo, formador, sala e turma.'];
-        } elseif (!Validador::data($data)) {
+        } elseif (!$controller->data($data)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Indique uma data válida.'];
-        } elseif (!Validador::hora($horaInicio) || !Validador::hora($horaFim)) {
+        } elseif (!$controller->hora($horaInicio) || !$controller->hora($horaFim)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Indique as horas no formato HH:MM.'];
         } elseif ($horaFim <= $horaInicio) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'A hora de fim deve ser posterior à hora de início.'];

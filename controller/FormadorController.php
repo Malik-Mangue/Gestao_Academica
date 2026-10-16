@@ -113,6 +113,13 @@ class FormadorController {
         return false;
     }
 
+    public function listarTurmasQueDirige($codigo) {
+    return $this->dao->listarTurmasQueDirige((int) $codigo);
+}
+public function listarQualificacoesQueCoordena($codigo) {
+    return $this->dao->listarQualificacoesQueCoordena((int) $codigo);
+}
+
     public function getStatusFormador($codigo) {
         $coordenadorController = new CoordenadorController();
         $diretorTurmaController = new Diretor_TurmaController();

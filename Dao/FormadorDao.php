@@ -113,6 +113,57 @@ class FormadorDao {
         return $result;
     }
 
+private function consultarLista($sql, $codigoFormador) {
+    try {
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $codigoFormador);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $lista = [];
+        while ($rs = $result->fetch_assoc()) {
+            $lista[] = $rs;
+        }
+        return $lista;
+    } catch (mysqli_sql_exception $e) {
+        return [];
+    }
+}
+
+public function listarTurmasQueDirige($codigoFormador) {
+    return $this->consultarLista(
+        "select t.nome as turma,
+                concat(q.titulo, ', ', n.nome) as qualificacao,
+                t.ano_lectivo as ano_letivo,
+                t.turno as turno
+         from Turma t
+         join Quali_Nivel qn on qn.codigo_Quali_Nivel = t.id_Quali_Nivel
+         join Qualificacao q on q.cod_Quali = qn.cod_Quali
+         join Nivel n on n.codigo = qn.cod_Nivel
+         where t.id_Diretor_Turma = ?
+         order by t.ano_lectivo desc, t.nome",
+        $codigoFormador
+    );
+}
+
+public function listarQualificacoesQueCoordena($codigoFormador) {
+    return $this->consultarLista(
+        "select q.titulo as qualificacao,
+                (select group_concat(c.nome order by c.nome separator ', ')
+                 from Classificacao cl
+                 join Campo c on c.codigo = cl.cod_Campo
+                 where cl.cod_Qualificacao = q.cod_Quali) as campo,
+                (select group_concat(n.nome order by n.nome separator ', ')
+                 from Quali_Nivel qn
+                 join Nivel n on n.codigo = qn.cod_Nivel
+                 where qn.cod_Quali = q.cod_Quali) as niveis
+         from Qualificacao q
+         where q.cod_Coordenador = ?
+         order by q.titulo",
+        $codigoFormador
+    );
+}
+
     private function registarLog($acao, $descricao) {
         $usuario = Sessao::obterUtilizador();
         if ($usuario != null) {

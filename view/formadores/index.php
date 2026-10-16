@@ -116,6 +116,9 @@ $pode_criar   = Sessao::podeCriar(Sessao::RECURSO_FORMADORES);
 $pode_editar  = Sessao::podeEditar(Sessao::RECURSO_FORMADORES);
 $pode_remover = Sessao::podeRemover(Sessao::RECURSO_FORMADORES);
 
+$modaisDetalhes = '';
+$url_turmas         = '../turma/index.php';
+$url_qualificacoes  = '../qualificacao/index.php';
 $page_title = 'Gestão de Formadores';
 $active_menu = 'professor';
 require_once __DIR__ . '/../partials/header.php';
@@ -201,6 +204,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                             <div class="table-actions table-actions-end">
                                                 <?php if ($status[0]): ?><span class="required">Diretor</span><?php endif; ?>
                                                 <?php if ($status[1]): ?><span class="required">Coordenador</span><?php endif; ?>
+                                                <a href="#modal-detalhes-<?= $formador->getCodigo() ?>" class="btn btn-sm btn-secondary">Ver detalhes</a>
                                                 <?php if ($pode_editar): ?>
                                                     <a href="#modal-editar-<?= $formador->getCodigo() ?>" class="btn btn-sm btn-edit">Editar</a>
                                                 <?php endif; ?>
@@ -211,6 +215,141 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                         </td>
                                     <?php endif; ?>
                                 </tr>
+
+                                <?php
+                                $cod = $formador->getCodigo();
+                                $esc = function ($linha, $chave) {
+                                    return htmlspecialchars((string) (($linha[$chave] ?? '') !== '' ? $linha[$chave] : '-'));
+                                };
+                                $turmasDirige = method_exists($controller, 'listarTurmasQueDirige')
+                                    ? $controller->listarTurmasQueDirige($cod) : [];
+                                $qualifsCoordena = method_exists($controller, 'listarQualificacoesQueCoordena')
+                                    ? $controller->listarQualificacoesQueCoordena($cod) : [];
+                                $modulosLeciona = method_exists($controller, 'listarModulosQueLeciona')
+                                    ? $controller->listarModulosQueLeciona($cod) : [];
+                                ob_start();
+                                ?>
+                                <div id="modal-detalhes-<?= $cod ?>" class="modal-overlay">
+                                    <div class="modal-box" style="max-width:900px;width:95%;">
+                                        <div class="modal-header">
+                                            <h3>Detalhes do Formador #<?= htmlspecialchars($cod) ?></h3>
+                                            <a href="#" class="modal-close">
+                                                <img src="../../assets/icons/close.svg" alt="Fechar">
+                                            </a>
+                                        </div>
+                                        <div class="modal-body" style="max-height:70vh;overflow-y:auto;">
+
+                                            <h4>Dados Pessoais</h4>
+                                            <div class="confirm-detail-box">
+                                                <p><strong>Nome:</strong> <?= htmlspecialchars($formador->getNome() . ' ' . $formador->getApelido()) ?></p>
+                                                <p><strong>E-mail:</strong> <?= htmlspecialchars($formador->getEmail() ?: '-') ?></p>
+                                                <p><strong>Género:</strong> <?= htmlspecialchars($formador->getGenero() ?: '-') ?></p>
+                                                <p><strong>Estado civil:</strong> <?= htmlspecialchars($formador->getEstadoCivil() ?: '-') ?></p>
+                                                <p><strong>Contacto:</strong> <?= htmlspecialchars($formador->getContacto()) ?></p>
+                                                <p><strong>Valor/Hora:</strong> <?= htmlspecialchars($formador->getValorHoras()) ?></p>
+                                                <p><strong>Horas/Mês:</strong> <?= htmlspecialchars($formador->getHorasMes()) ?></p>
+                                                <p><strong>Salário:</strong> <?= htmlspecialchars($formador->getSalario()) ?></p>
+                                                <p><strong>Funções:</strong> Formador<?= $status[0] ? ', Diretor de Turma' : '' ?><?= $status[1] ? ', Coordenador' : '' ?></p>
+                                            </div>
+
+                                            <h4>Turmas que dirige</h4>
+                                            <div class="table-responsive">
+                                                <table class="table-custom">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Turma</th>
+                                                            <th>Qualificação</th>
+                                                            <th>Ano letivo</th>
+                                                            <th>Turno</th>
+                                                            <th class="col-opcoes">Opções</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <?php if (empty($turmasDirige)): ?>
+                                                            <tr><td colspan="5" class="table-empty">Não dirige nenhuma turma.</td></tr>
+                                                        <?php else: ?>
+                                                            <?php foreach ($turmasDirige as $t): ?>
+                                                                <tr>
+                                                                    <td><strong><?= $esc($t, 'turma') ?></strong></td>
+                                                                    <td><?= $esc($t, 'qualificacao') ?></td>
+                                                                    <td><?= $esc($t, 'ano_letivo') ?></td>
+                                                                    <td><?= $esc($t, 'turno') ?></td>
+                                                                    <td class="col-opcoes">
+                                                                        <a href="<?= $url_turmas ?>?pesquisa=<?= urlencode((string) ($t['turma'] ?? '')) ?>" class="btn btn-sm btn-edit">Ver turma</a>
+                                                                    </td>
+                                                                </tr>
+                                                            <?php endforeach; ?>
+                                                        <?php endif; ?>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            <h4>Qualificações que coordena</h4>
+                                            <div class="table-responsive">
+                                                <table class="table-custom">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Qualificação</th>
+                                                            <th>Campo</th>
+                                                            <th>Nível</th>
+                                                            <th class="col-opcoes">Opções</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <?php if (empty($qualifsCoordena)): ?>
+                                                            <tr><td colspan="4" class="table-empty">Não coordena nenhuma qualificação.</td></tr>
+                                                        <?php else: ?>
+                                                            <?php foreach ($qualifsCoordena as $q): ?>
+                                                                <tr>
+                                                                    <td><strong><?= $esc($q, 'qualificacao') ?></strong></td>
+                                                                    <td><?= $esc($q, 'campo') ?></td>
+                                                                    <td><?= $esc($q, 'niveis') ?></td>
+                                                                    <td class="col-opcoes">
+                                                                        <a href="<?= $url_qualificacoes ?>?pesquisa=<?= urlencode((string) ($q['qualificacao'] ?? '')) ?>" class="btn btn-sm btn-edit">Ver qualificação</a>
+                                                                    </td>
+                                                                </tr>
+                                                            <?php endforeach; ?>
+                                                        <?php endif; ?>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            <h4>Módulos que leciona</h4>
+                                            <div class="table-responsive">
+                                                <table class="table-custom">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Módulo</th>
+                                                            <th>Qualificação</th>
+                                                            <th>Turmas</th>
+                                                            <th>Carga horária</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <?php if (empty($modulosLeciona)): ?>
+                                                            <tr><td colspan="4" class="table-empty">Não leciona nenhum módulo.</td></tr>
+                                                        <?php else: ?>
+                                                            <?php foreach ($modulosLeciona as $m): ?>
+                                                                <tr>
+                                                                    <td><strong><?= $esc($m, 'modulo') ?></strong></td>
+                                                                    <td><?= $esc($m, 'qualificacao') ?></td>
+                                                                    <td><?= $esc($m, 'turmas') ?></td>
+                                                                    <td><?= $esc($m, 'carga_horaria') ?> h</td>
+                                                                </tr>
+                                                            <?php endforeach; ?>
+                                                        <?php endif; ?>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                        </div>
+                                        <div class="modal-footer">
+                                            <a href="#" class="btn btn-secondary">Fechar</a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <?php $modaisDetalhes .= ob_get_clean(); ?>
 
                                 <?php if ($pode_editar): ?>
                                     <div id="modal-editar-<?= $formador->getCodigo() ?>" class="modal-overlay">
@@ -293,7 +432,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                         $ehCoordenador = $formador !== null && $controller->getStatusFormador($formador->getCodigo())[1];
                                                         ?>
                                                         <div class="form-actions">
-                                                            <?php 
+                                                            <?php
                                                                   ?>
                                                             <label>
                                                                 <input type="checkbox" name="isFormador" value="1" checked> Formador
@@ -359,6 +498,8 @@ require_once __DIR__ . '/../partials/sidebar.php';
             </div>
         </div>
     </div>
+
+    <?= $modaisDetalhes ?>
 
     <?php if ($pode_criar): ?>
     <div id="modal-novo" class="modal-overlay">
@@ -441,7 +582,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                         $ehCoordenador = false;
                         ?>
                         <div class="form-actions">
-                            <?php 
+                            <?php
                                   ?>
                             <label>
                                 <input type="checkbox" name="isFormador" value="1" checked> Formador

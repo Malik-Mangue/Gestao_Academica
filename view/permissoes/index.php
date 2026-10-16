@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['guardar'])) {
         }
         // Sem "consultar" o recurso nao fica visivel: retira-se por completo,
         // ignorando as restantes permissoes marcadas para esse recurso.
-        if ($idPermConsultar === 0 || empty($lista[$idPermConsultar])) {
+        if ($idPermConsultar > 0 && empty($lista[$idPermConsultar])) {
             continue;
         }
         foreach ($lista as $permissaoId => $valor) {

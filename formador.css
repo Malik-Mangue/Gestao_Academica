@@ -1,0 +1,127 @@
+ 
+.formador-ver .ver-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+ 
+.formador-ver .ver-grid {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+ 
+/* ficha lateral */
+.formador-ver .ver-ficha {
+  padding: 20px;
+}
+ 
+.formador-ver .ver-monograma {
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--navy-top);
+  color: #ffffff;
+  font-size: 26px;
+  font-weight: 700;
+  border-radius: var(--border-radius);
+  margin-bottom: 14px;
+}
+ 
+.formador-ver .ver-ficha h2 {
+  margin: 0;
+}
+ 
+.formador-ver .ver-ficha .ver-codigo {
+  margin: 2px 0 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+ 
+.formador-ver .ver-ficha dl {
+  margin: 0;
+}
+ 
+.formador-ver .ver-ficha dt {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+ 
+.formador-ver .ver-ficha dd {
+  margin: 2px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+ 
+.formador-ver .ver-ficha-acoes {
+  display: grid;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #edf0f2;
+}
+ 
+.formador-ver .ver-ficha-acoes .btn {
+  display: block;
+  text-align: center;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+ 
+/* secções à direita */
+.formador-ver .ver-secoes {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+ 
+.formador-ver .ver-secao-cab {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  background: #fafbfc;
+  border-bottom: 1px solid #edf0f2;
+}
+ 
+.formador-ver .ver-secao-cab h3 {
+  margin: 0;
+}
+ 
+.formador-ver .ver-chips span {
+  display: inline-block;
+  margin: 0 4px 4px 0;
+  padding: 1px 8px;
+  background: #f8f9fa;
+  border: 1px solid #edf0f2;
+  border-radius: var(--border-radius);
+  font-size: 13px;
+}
+ 
+.formador-ver .ver-autor {
+  color: var(--text-secondary);
+}
+ 
+/* modal de contactos */
+.formador-ver .ver-modal-acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+ 
+@media (max-width: 900px) {
+  .formador-ver .ver-grid {
+    grid-template-columns: 1fr;
+  }
+}

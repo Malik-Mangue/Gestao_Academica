@@ -3,6 +3,7 @@ class Modulo {
     private $codigo;
     private $nome;
     private $carga_horaria;
+    private $categoria = 'Genérico';
     private $quali_modulo;
     private $quali_nivel;
 
@@ -21,6 +22,9 @@ class Modulo {
 
     public function getCargaHoraria(){ return $this->carga_horaria; }
     public function setCargaHoraria($carga_horaria){ $this->carga_horaria = $carga_horaria; }
+
+    public function getCategoria(){ return $this->categoria; }
+    public function setCategoria($categoria){ $this->categoria = $categoria; }
 
     public function getQualiModulo(){ return $this->quali_modulo; }
     public function setQualiModulo($quali_modulo){ $this->quali_modulo = $quali_modulo; }

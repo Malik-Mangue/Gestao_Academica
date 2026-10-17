@@ -5,6 +5,7 @@ private $codigo;
 private $titulo;
 private $cod_coordenador;
 private $campo = null;
+private $codCampo = null;
 private $niveis = null;   
 
 public function __construct($codigo, $titulo, $cod_coordenador)
@@ -25,6 +26,9 @@ public function setCod_coordenador($cod_coordenador){ $this->cod_coordenador = $
 
 public function getCampo(){ return $this->campo; }
 public function setCampo($campo){ $this->campo = $campo; }
+
+public function getCodCampo(){ return $this->codCampo; }
+public function setCodCampo($codCampo){ $this->codCampo = $codCampo; }
 
 public function getNiveis(){ return $this->niveis; }
 public function setNiveis($niveis){ $this->niveis = $niveis; }

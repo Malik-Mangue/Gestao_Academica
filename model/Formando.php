@@ -6,6 +6,8 @@ class Formando {
     private $email;
     private $bi;
     private $contacto;
+    private $codCampo = null;
+    private $campo = null;
 
     public function __construct($codigo, $nome, $apelido, $email, $bi, $contacto)
     {
@@ -34,5 +36,11 @@ class Formando {
 
     public function getContacto(){ return $this->contacto; }
     public function setContacto($contacto){ $this->contacto = $contacto; }
+
+    public function getCodCampo(){ return $this->codCampo; }
+    public function setCodCampo($codCampo){ $this->codCampo = $codCampo; }
+
+    public function getCampo(){ return $this->campo; }
+    public function setCampo($campo){ $this->campo = $campo; }
 }
 ?>

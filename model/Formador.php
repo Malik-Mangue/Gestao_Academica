@@ -10,6 +10,8 @@ class Formador {
     private $valor_horas;
     private $horas_mes;
     private $salario;
+    private $codCampo = null;
+    private $campo = null;
 
     public function __construct($codigo, $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valor_horas, $horas_mes, $salario)
     {
@@ -54,5 +56,11 @@ class Formador {
 
     public function getSalario(){ return $this->salario; }
     public function setSalario($salario){ $this->salario = $salario; }
+
+    public function getCodCampo(){ return $this->codCampo; }
+    public function setCodCampo($codCampo){ $this->codCampo = $codCampo; }
+
+    public function getCampo(){ return $this->campo; }
+    public function setCampo($campo){ $this->campo = $campo; }
 }
 ?>

@@ -101,5 +101,30 @@ class CampoDAO {
             (new LogDao())->salvar($log);
         }
     }
+
+    /**
+     * Qualificações associadas a um campo (via Classificacao), para dropdowns.
+     */
+    public function getQualificacoes($codCampo = null) {
+        $sql = "select distinct q.cod_Quali as codigo, q.titulo as descricao
+                from Qualificacao q
+                join Classificacao cl on cl.cod_Qualificacao = q.cod_Quali";
+        if ($codCampo !== null && (int) $codCampo > 0) {
+            $sql .= " where cl.cod_Campo = ?";
+        }
+        $sql .= " order by descricao";
+
+        $stmt = $this->db->prepare($sql);
+        if ($codCampo !== null && (int) $codCampo > 0) {
+            $stmt->bind_param("i", $codCampo);
+        }
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $opcoes = [];
+        while ($rs = $result->fetch_assoc()) {
+            $opcoes[] = ['codigo' => $rs['codigo'], 'descricao' => $rs['descricao']];
+        }
+        return $opcoes;
+    }
 }
 ?>

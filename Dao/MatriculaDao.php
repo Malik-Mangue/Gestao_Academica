@@ -45,18 +45,32 @@ class MatriculaDao {
         return $result;
     }
 
-    public function getAll($nome) {
+    public function getAll($nome, $codCampo = null) {
         $sql = "select Matricula.codigo, nome_formando, apelido_formando, titulo, Nivel.nome as nivel, data,
-                       Quali_Nivel.codigo_Quali_Nivel
+                       Quali_Nivel.codigo_Quali_Nivel,
+                       (select group_concat(c.nome order by c.nome separator ', ')
+                          from Classificacao cl
+                          join Campo c on c.codigo = cl.cod_Campo
+                         where cl.cod_Qualificacao = Matricula.cod_Quali) as campo,
+                       (select min(cl.cod_Campo)
+                          from Classificacao cl
+                         where cl.cod_Qualificacao = Matricula.cod_Quali) as campo_cod
                 from Matricula
                 join Formando on codigo_formando = Matricula.cod_formando
                 join Qualificacao on Qualificacao.cod_Quali = Matricula.cod_Quali
                 left join Quali_Nivel on Quali_Nivel.codigo_Quali_Nivel = Matricula.id_Quali_Nivel
                 join Nivel on Nivel.codigo = Quali_Nivel.cod_Nivel
                 where nome_formando like ?";
+        if ($codCampo !== null && (int) $codCampo > 0) {
+            $sql .= " and Matricula.cod_Quali in (select cod_Qualificacao from Classificacao where cod_Campo = ?)";
+        }
         $stmt = $this->db->prepare($sql);
         $busca = "%" . $nome . "%";
-        $stmt->bind_param("s", $busca);
+        if ($codCampo !== null && (int) $codCampo > 0) {
+            $stmt->bind_param("si", $busca, $codCampo);
+        } else {
+            $stmt->bind_param("s", $busca);
+        }
         $stmt->execute();
         $result = $stmt->get_result();
 
@@ -64,6 +78,8 @@ class MatriculaDao {
         while ($rs = $result->fetch_assoc()) {
             $formando = new Formando(null, $rs['nome_formando'], $rs['apelido_formando'], null, null, null);
             $qualificacao = new Qualificacao(null, $rs['titulo'], null);
+            $qualificacao->setCampo($rs['campo']);
+            $qualificacao->setCodCampo($rs['campo_cod'] ?? null);
             $nivel = new Nivel(null, $rs['nivel']);
             $idQualiNivel = $rs['codigo_Quali_Nivel'] ?? null;
 

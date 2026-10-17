@@ -117,19 +117,32 @@ class Quali_NivelDAO {
         return $this->listaOpcoes("select codigo, nome as descricao from Nivel order by nome");
     }
 
-    public function getPares() {
-        return $this->listaOpcoes(
-            "select qn.codigo_Quali_Nivel as codigo,
-                    concat(ifnull(group_concat(distinct c.nome order by c.nome separator ', '), 'Sem campo'),
-                           ' — ', q.titulo, ' — ', n.nome) as descricao
-             from Quali_Nivel qn
-             join Qualificacao q on q.cod_Quali = qn.cod_Quali
-             join Nivel n on n.codigo = qn.cod_Nivel
-             left join Classificacao cl on cl.cod_Qualificacao = q.cod_Quali
-             left join Campo c on c.codigo = cl.cod_Campo
-             group by qn.codigo_Quali_Nivel, q.titulo, n.nome
-             order by q.titulo, n.nome"
-        );
+    public function getPares($codCampo = null) {
+        $sql = "select qn.codigo_Quali_Nivel as codigo,
+                       concat(ifnull(group_concat(distinct c.nome order by c.nome separator ', '), 'Sem campo'),
+                              ' — ', q.titulo, ' — ', n.nome) as descricao
+                 from Quali_Nivel qn
+                 join Qualificacao q on q.cod_Quali = qn.cod_Quali
+                 join Nivel n on n.codigo = qn.cod_Nivel
+                 left join Classificacao cl on cl.cod_Qualificacao = q.cod_Quali
+                 left join Campo c on c.codigo = cl.cod_Campo";
+        if ($codCampo !== null && (int) $codCampo > 0) {
+            $sql .= " where q.cod_Quali in (select cod_Qualificacao from Classificacao where cod_Campo = ?)";
+        }
+        $sql .= " group by qn.codigo_Quali_Nivel, q.titulo, n.nome
+                  order by q.titulo, n.nome";
+
+        $stmt = $this->db->prepare($sql);
+        if ($codCampo !== null && (int) $codCampo > 0) {
+            $stmt->bind_param("i", $codCampo);
+        }
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $opcoes = [];
+        while ($rs = $result->fetch_assoc()) {
+            $opcoes[] = ['codigo' => $rs['codigo'], 'descricao' => $rs['descricao']];
+        }
+        return $opcoes;
     }
 
     public function getNiveisDaQualificacao($codQualificacao) {

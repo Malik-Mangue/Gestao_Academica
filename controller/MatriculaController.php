@@ -20,8 +20,8 @@ class MatriculaController {
         return false;
     }
 
-    public function listarMatricula($nome) {
-        return $this->dao->getAll($nome);
+    public function listarMatricula($nome, $codCampo = null) {
+        return $this->dao->getAll($nome, $codCampo);
     }
 
     public function atualizarMatricula($codigo, $formando, $qualificacao, $nivel, $id_quali_nivel, $data_matricula) {

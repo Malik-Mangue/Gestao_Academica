@@ -38,16 +38,16 @@ class TurmaController {
         return (bool) $this->dao->create($turma);
     }
 
-    public function listarTurma($nome = '') {
-        return $this->dao->getAll($nome ?? '');
+    public function listarTurma($nome = '', $codCampo = null) {
+        return $this->dao->getAll($nome ?? '', $codCampo);
     }
 
     public function buscarTurma($codigo) {
         return $codigo ? $this->dao->getById($codigo) : null;
     }
 
-    public function listarDiretores() {
-        return $this->dao->getDiretores();
+    public function listarDiretores($codCampo = null) {
+        return $this->dao->getDiretores($codCampo);
     }
 
     public function listarQualificacoes() {
@@ -58,8 +58,8 @@ class TurmaController {
         return $this->dao->getNiveis();
     }
 
-    public function listarParesQualiNivel() {
-        return $this->dao->getParesQualiNivel();
+    public function listarParesQualiNivel($codCampo = null) {
+        return $this->dao->getParesQualiNivel($codCampo);
     }
 
     public function atualizarTurma($codigo, $nome, $ano_ingresso, $turno, $diretorTurma, $qualificacao, $nivel, $qualiNivel = null) {

@@ -16,11 +16,12 @@ class ModuloController {
         $this->dao = new ModuloDao();
     }
 
-    public function cadastrarModulo($nome, $carga_horaria, $semestre, $qualificacao, $nivel) {
+    public function cadastrarModulo($nome, $carga_horaria, $semestre, $qualificacao, $nivel, $categoria = 'Genérico') {
         if ($this->texto($nome, 100)
             && $this->inteiroPositivo($carga_horaria) && $qualificacao != null && $nivel != null) {
 
             $modulo = new Modulo(null, $nome, $carga_horaria);
+            $modulo->setCategoria($categoria);
 
             if ($qualificacao != null && $nivel != null) {
                 $qualiNivelController = new Quali_NivelController();
@@ -52,16 +53,21 @@ class ModuloController {
         return $this->dao->getModulos();
     }
 
+    public function listarModulosFiltrados($codQuali = null, $categoria = null, $semestre = null) {
+        return $this->dao->getModulosFiltrados($codQuali, $categoria, $semestre);
+    }
+
     public function buscarModulo($codigo) {
         return $codigo ? $this->dao->getById($codigo) : null;
     }
 
-    public function atualizarModulo($nome, $carga_horaria, $codigo, $qualificacao, $nivel, $semestre) {
+    public function atualizarModulo($nome, $carga_horaria, $codigo, $qualificacao, $nivel, $semestre, $categoria = 'Genérico') {
         if ($semestre != null && strlen($semestre) > 0 && $qualificacao != null && $nivel != null
             && $this->texto($nome, 100)
             && $codigo != 0 && $this->inteiroPositivo($carga_horaria)) {
 
             $modulo = new Modulo($codigo, $nome, $carga_horaria);
+            $modulo->setCategoria($categoria);
 
             if ($qualificacao != null && $nivel != null) {
                 $qualiNivelController = new Quali_NivelController();

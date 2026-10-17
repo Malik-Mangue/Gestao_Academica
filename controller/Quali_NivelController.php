@@ -21,8 +21,8 @@ class Quali_NivelController {
         return $this->dao->getNiveis();
     }
 
-    public function listarPares() {
-        return $this->dao->getPares();
+    public function listarPares($codCampo = null) {
+        return $this->dao->getPares($codCampo);
     }
 
     public function buscar($codigo) {

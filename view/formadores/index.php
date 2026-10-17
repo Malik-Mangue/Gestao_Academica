@@ -2,8 +2,11 @@
 require_once __DIR__ . '/../../services/Sessao.php';
 Sessao::exigirLogin('../login/index.php');
 require_once __DIR__ . '/../../controller/FormadorController.php';
+require_once __DIR__ . '/../../controller/CampoController.php';
 
 $controller = new FormadorController();
+$campoController = new CampoController();
+$campos = $campoController->listarCampo();
 
 $generos       = ['Masculino', 'Feminino', 'Outro'];
 $estados_civil = ['Solteiro(a)', 'Casado(a)', 'União estável', 'Divorciado(a)', 'Viúvo(a)'];
@@ -23,6 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $salario      = $_POST['salario'] ?? '';
         $isDiretor    = isset($_POST['isDiretor']);
         $isCoordenador = isset($_POST['isCoordenador']);
+        $codCampo     = filter_input(INPUT_POST, 'codCampo', FILTER_VALIDATE_INT);
 
         if (!$controller->texto($nome, 40) || !$controller->texto($apelido, 40)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Nome e apelido são obrigatórios (até 40 caracteres).'];
@@ -32,11 +36,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'O contacto deve ser um número positivo.'];
         } elseif (!$controller->inteiroPositivo($valorHora) || !$controller->inteiroPositivo($horasMes)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Valor por hora e horas por mês devem ser positivos.'];
+        } elseif (!$codCampo) {
+            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione o campo (área) do formador.'];
         } else {
             $sucesso = $controller->cadastrarFormador(
                 $nome, $apelido, $email, $genero, $estadoCivil,
                 (int) $contacto, (int) $valorHora, (int) $horasMes,
-                (int) $salario, $isDiretor, $isCoordenador
+                (int) $salario, $isDiretor, $isCoordenador, (int) $codCampo
             );
             $_SESSION['flash'] = $sucesso
                 ? ['type' => 'success', 'msg' => 'Formador cadastrado com sucesso!']
@@ -61,6 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $salario       = $_POST['salario'] ?? '';
         $isDiretor     = isset($_POST['isDiretor']);
         $isCoordenador = isset($_POST['isCoordenador']);
+        $codCampo      = filter_input(INPUT_POST, 'codCampo', FILTER_VALIDATE_INT);
 
         if (!$codigo || !$controller->texto($nome, 40) || !$controller->texto($apelido, 40)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Dados inválidos para atualização do formador.'];
@@ -68,12 +75,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'O e-mail indicado não é válido.'];
         } elseif (!$controller->inteiroPositivo($contacto)) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'O contacto deve ser um número positivo.'];
+        } elseif (!$codCampo) {
+            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione o campo (área) do formador.'];
         } else {
             try {
                 $sucesso = $controller->atualizarFormador(
                     $codigo, $nome, $apelido, $email, $genero, $estadoCivil,
                     (int) $contacto, (int) $valorHora, (int) $horasMes,
-                    (int) $salario, $isDiretor, $isCoordenador
+                    (int) $salario, $isDiretor, $isCoordenador, (int) $codCampo
                 );
                 $_SESSION['flash'] = $sucesso
                     ? ['type' => 'success', 'msg' => 'Formador atualizado com sucesso!']
@@ -166,6 +175,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             <th class="col-codigo">Código</th>
                             <th>Nome</th>
                             <th>Apelido</th>
+                            <th>Campo</th>
                             <th>E-mail</th>
                             <th>Género</th>
                             <th>Estado Civil</th>
@@ -181,7 +191,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                     <tbody>
                         <?php if (empty($formadores)): ?>
                             <tr>
-                                <td colspan="<?= $pode_editar || $pode_remover ? 11 : 10 ?>" class="table-empty">
+                                <td colspan="<?= $pode_editar || $pode_remover ? 12 : 11 ?>" class="table-empty">
                                     Nenhum formador encontrado.
                                 </td>
                             </tr>
@@ -192,6 +202,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     <td><strong>#<?= htmlspecialchars($formador->getCodigo()) ?></strong></td>
                                     <td><?= htmlspecialchars($formador->getNome()) ?></td>
                                     <td><?= htmlspecialchars($formador->getApelido()) ?></td>
+                                    <td><?= htmlspecialchars($formador->getCampo() ? $formador->getCampo()->getNome() : '-') ?></td>
                                     <td><?= htmlspecialchars($formador->getEmail() ?: '-') ?></td>
                                     <td><?= htmlspecialchars($formador->getGenero() ?: '-') ?></td>
                                     <td><?= htmlspecialchars($formador->getEstadoCivil() ?: '-') ?></td>
@@ -242,6 +253,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                             <h4>Dados Pessoais</h4>
                                             <div class="confirm-detail-box">
                                                 <p><strong>Nome:</strong> <?= htmlspecialchars($formador->getNome() . ' ' . $formador->getApelido()) ?></p>
+                                                <p><strong>Campo:</strong> <?= htmlspecialchars($formador->getCampo() ? $formador->getCampo()->getNome() : '-') ?></p>
                                                 <p><strong>E-mail:</strong> <?= htmlspecialchars($formador->getEmail() ?: '-') ?></p>
                                                 <p><strong>Género:</strong> <?= htmlspecialchars($formador->getGenero() ?: '-') ?></p>
                                                 <p><strong>Estado civil:</strong> <?= htmlspecialchars($formador->getEstadoCivil() ?: '-') ?></p>
@@ -369,6 +381,18 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                         return $formador !== null ? (string) $formador->$getter() : '';
                                                     };
                                                     ?>
+                                                    <div class="form-group">
+                                                        <label for="f-campo-<?= $sufixo ?>">Campo <span class="required">*</span></label>
+                                                        <select id="f-campo-<?= $sufixo ?>" name="codCampo" class="form-control" required>
+                                                            <option value="">-- Selecionar campo --</option>
+                                                            <?php foreach ($campos as $campo): ?>
+                                                                <option value="<?= htmlspecialchars($campo->getCodigo()) ?>"
+                                                                    <?= ($formador !== null && $formador->getCodCampo() == $campo->getCodigo()) ? 'selected' : '' ?>>
+                                                                    <?= htmlspecialchars($campo->getNome()) ?>
+                                                                </option>
+                                                            <?php endforeach; ?>
+                                                        </select>
+                                                    </div>
                                                     <div class="form-group">
                                                         <label for="f-nome-<?= $sufixo ?>">Nome <span class="required">*</span></label>
                                                         <input type="text" id="f-nome-<?= $sufixo ?>" name="nome" class="form-control"
@@ -519,6 +543,17 @@ require_once __DIR__ . '/../partials/sidebar.php';
                         return $formador !== null ? (string) $formador->$getter() : '';
                     };
                     ?>
+                    <div class="form-group">
+                        <label for="f-campo-<?= $sufixo ?>">Campo <span class="required">*</span></label>
+                        <select id="f-campo-<?= $sufixo ?>" name="codCampo" class="form-control" required>
+                            <option value="">-- Selecionar campo --</option>
+                            <?php foreach ($campos as $campo): ?>
+                                <option value="<?= htmlspecialchars($campo->getCodigo()) ?>">
+                                    <?= htmlspecialchars($campo->getNome()) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                     <div class="form-group">
                         <label for="f-nome-<?= $sufixo ?>">Nome <span class="required">*</span></label>
                         <input type="text" id="f-nome-<?= $sufixo ?>" name="nome" class="form-control"

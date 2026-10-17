@@ -66,8 +66,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $pesquisa       = trim($_GET['pesquisa'] ?? '');
 $matriculas     = $controller->listarMatricula($pesquisa);
 $formandos      = $formandoCtrl->listar();
-$pares          = (new Quali_NivelController())->listarPares();
 $campos         = (new CampoController())->listarCampo(); 
+$pares          = (new Quali_NivelController())->listarPares();
+
+// Contexto do "Carregar" (sem JavaScript): o campo filtra a qualificação/nível
+// e os formandos.
+$carregar      = isset($_GET['carregar']);
+$modalAtivo    = $_GET['modal'] ?? '';
+$ctxCampo      = filter_input(INPUT_GET, 'codCampo', FILTER_VALIDATE_INT);
+$ctxQualiNivel = filter_input(INPUT_GET, 'idQualiNivel', FILTER_VALIDATE_INT);
+$ctxFormando   = filter_input(INPUT_GET, 'codFormando', FILTER_VALIDATE_INT);
 
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
@@ -123,6 +131,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             <th class="col-codigo">Código</th>
                             <th>Formando</th>
                             <th>Qualificação</th>
+                            <th>Campo</th>
                             <th>Nível</th>
                             <th>Data</th>
                             <?php if ($pode_editar || $pode_remover): ?>
@@ -133,7 +142,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                     <tbody>
                         <?php if (empty($matriculas)): ?>
                             <tr>
-                                <td colspan="<?= $pode_editar || $pode_remover ? 6 : 5 ?>" class="table-empty">
+                                <td colspan="<?= $pode_editar || $pode_remover ? 7 : 6 ?>" class="table-empty">
                                     Nenhuma matrícula registada no momento.
                                 </td>
                             </tr>
@@ -143,6 +152,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     <td><strong>#<?= htmlspecialchars($matricula->getCodigo()) ?></strong></td>
                                     <td><?= htmlspecialchars($matricula->getFormando()->getNome() . ' ' . $matricula->getFormando()->getApelido()) ?></td>
                                     <td><?= htmlspecialchars($matricula->getQualificacao()->getTitulo()) ?></td>
+                                    <td><?= htmlspecialchars($matricula->getQualificacao()->getCampo() ?: '-') ?></td>
                                     <td><?= htmlspecialchars($matricula->getNivel() ? $matricula->getNivel()->getNome() : '-') ?></td>
                                     <td><?= htmlspecialchars($matricula->getDataMatricula()) ?></td>
                                     <?php if ($pode_editar || $pode_remover): ?>
@@ -171,24 +181,44 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                             <form method="post" action="index.php">
                                                 <div class="modal-body">
                                                     <input type="hidden" name="codigo" value="<?= htmlspecialchars($matricula->getCodigo()) ?>">
+                                                    <?php
+                                                    $sufixo = 'editar-' . $matricula->getCodigo();
+                                                    $editAtivo = $carregar && $modalAtivo === $sufixo;
+                                                    $campoReg = $matricula->getQualificacao()->getCodCampo();
+                                                    $campoEdit = $editAtivo ? (int) $ctxCampo : (int) $campoReg;
+                                                    $paresEdit = $campoEdit ? (new Quali_NivelController())->listarPares($campoEdit) : $pares;
+                                                    $formandosEdit = $campoEdit ? $formandoCtrl->listarPorCampo($campoEdit) : array_map(function ($f) {
+                                                        return ['codigo' => $f->getCodigo(), 'descricao' => $f->getNome() . ' ' . $f->getApelido()];
+                                                    }, $formandos);
+                                                    $qnSel = $editAtivo ? $ctxQualiNivel : (int) $matricula->getId_quali_nivel();
+                                                    $formandoSel = $editAtivo ? $ctxFormando : (int) $matricula->getFormando()->getCodigo();
+                                                    $dataEdit = $editAtivo ? trim($_GET['data'] ?? '') : $matricula->getDataMatricula();
+                                                    ?>
+                                                    <input type="hidden" name="modal" value="<?= htmlspecialchars($sufixo) ?>">
+                                                    <input type="hidden" name="pesquisa" value="<?= htmlspecialchars($pesquisa) ?>">
                                                     <div class="form-group">
                                                         <label for="e-c-<?= $matricula->getCodigo() ?>">Campo / Área</label>
                                                         <select id="e-c-<?= $matricula->getCodigo() ?>" name="codCampo" class="form-control">
                                                             <option value="">Selecione o campo...</option>
                                                             <?php foreach ($campos as $c): ?>
-                                                                <option value="<?= (int) $c->getCodigo() ?>">
+                                                                <option value="<?= (int) $c->getCodigo() ?>"
+                                                                    <?= $campoEdit === (int) $c->getCodigo() ? 'selected' : '' ?>>
                                                                     <?= htmlspecialchars($c->getNome()) ?>
                                                                 </option>
                                                             <?php endforeach; ?>
                                                         </select>
+                                                        <button type="submit" name="carregar" value="1"
+                                                                formmethod="get" formnovalidate
+                                                                formaction="index.php#modal-editar-<?= (int) $matricula->getCodigo() ?>"
+                                                                class="btn btn-secondary btn-sm">Carregar</button>
                                                     </div>
                                                     <div class="form-group">
                                                         <label for="e-qn-<?= $matricula->getCodigo() ?>">Qualificação / Nível <span class="required">*</span></label>
                                                         <select id="e-qn-<?= $matricula->getCodigo() ?>" name="idQualiNivel" class="form-control" required>
                                                             <option value="">Selecione a qualificação e o nível...</option>
-                                                            <?php foreach ($pares as $p): ?>
+                                                            <?php foreach ($paresEdit as $p): ?>
                                                                 <option value="<?= (int) $p['codigo'] ?>"
-                                                                    <?= (int) $matricula->getId_quali_nivel() === (int) $p['codigo'] ? 'selected' : '' ?>>
+                                                                    <?= (int) $qnSel === (int) $p['codigo'] ? 'selected' : '' ?>>
                                                                     <?= htmlspecialchars($p['descricao']) ?>
                                                                 </option>
                                                             <?php endforeach; ?>
@@ -197,15 +227,15 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                     <div class="form-group">
                                                         <label for="e-d-<?= $matricula->getCodigo() ?>">Data <span class="required">*</span></label>
                                                         <input type="date" id="e-d-<?= $matricula->getCodigo() ?>" name="data" class="form-control"
-                                                               value="<?= htmlspecialchars($matricula->getDataMatricula()) ?>" required>
+                                                               value="<?= htmlspecialchars($dataEdit) ?>" required>
                                                     </div>
                                                     <div class="form-group">
                                                         <label for="e-f-<?= $matricula->getCodigo() ?>">Formando <span class="required">*</span></label>
                                                         <select id="e-f-<?= $matricula->getCodigo() ?>" name="codFormando" class="form-control" required>
-                                                            <?php foreach ($formandos as $f): ?>
-                                                                <option value="<?= (int) $f->getCodigo() ?>"
-                                                                    <?= (int) $matricula->getFormando()->getCodigo() === (int) $f->getCodigo() ? 'selected' : '' ?>>
-                                                                    <?= htmlspecialchars($f->getNome() . ' ' . $f->getApelido()) ?>
+                                                            <?php foreach ($formandosEdit as $f): ?>
+                                                                <option value="<?= (int) $f['codigo'] ?>"
+                                                                    <?= (int) $formandoSel === (int) $f['codigo'] ? 'selected' : '' ?>>
+                                                                    <?= htmlspecialchars($f['descricao']) ?>
                                                                 </option>
                                                             <?php endforeach; ?>
                                                         </select>
@@ -271,23 +301,42 @@ require_once __DIR__ . '/../partials/sidebar.php';
                 </div>
                 <form method="post" action="index.php">
                     <div class="modal-body">
+                        <?php
+                        $novoAtivo = $carregar && $modalAtivo === 'novo';
+                        $campoNovo = $novoAtivo ? (int) $ctxCampo : 0;
+                        $paresNovo = $campoNovo ? (new Quali_NivelController())->listarPares($campoNovo) : $pares;
+                        $formandosNovo = $campoNovo ? $formandoCtrl->listarPorCampo($campoNovo) : array_map(function ($f) {
+                            return ['codigo' => $f->getCodigo(), 'descricao' => $f->getNome() . ' ' . $f->getApelido()];
+                        }, $formandos);
+                        $qnNovoSel = $novoAtivo ? $ctxQualiNivel : null;
+                        $formandoNovoSel = $novoAtivo ? $ctxFormando : null;
+                        $dataNovo = $novoAtivo ? trim($_GET['data'] ?? '') : '';
+                        ?>
+                        <input type="hidden" name="modal" value="novo">
+                        <input type="hidden" name="pesquisa" value="<?= htmlspecialchars($pesquisa) ?>">
                         <div class="form-group">
                             <label for="n-c">Campo / Área</label>
                             <select id="n-c" name="codCampo" class="form-control">
                                 <option value="">Selecione o campo...</option>
                                 <?php foreach ($campos as $c): ?>
-                                    <option value="<?= (int) $c->getCodigo() ?>">
+                                    <option value="<?= (int) $c->getCodigo() ?>"
+                                        <?= $campoNovo === (int) $c->getCodigo() ? 'selected' : '' ?>>
                                         <?= htmlspecialchars($c->getNome()) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                            <button type="submit" name="carregar" value="1"
+                                    formmethod="get" formnovalidate
+                                    formaction="index.php#modal-novo"
+                                    class="btn btn-secondary btn-sm">Carregar</button>
                         </div>
                         <div class="form-group">
                             <label for="n-qn">Qualificação / Nível <span class="required">*</span></label>
                             <select id="n-qn" name="idQualiNivel" class="form-control" required>
                                 <option value="">Selecione a qualificação e o nível...</option>
-                                <?php foreach ($pares as $p): ?>
-                                    <option value="<?= (int) $p['codigo'] ?>">
+                                <?php foreach ($paresNovo as $p): ?>
+                                    <option value="<?= (int) $p['codigo'] ?>"
+                                        <?= $qnNovoSel !== null && (int) $qnNovoSel === (int) $p['codigo'] ? 'selected' : '' ?>>
                                         <?= htmlspecialchars($p['descricao']) ?>
                                     </option>
                                 <?php endforeach; ?>
@@ -295,14 +344,16 @@ require_once __DIR__ . '/../partials/sidebar.php';
                         </div>
                         <div class="form-group">
                             <label for="n-d">Data <span class="required">*</span></label>
-                            <input type="date" id="n-d" name="data" class="form-control" required>
+                            <input type="date" id="n-d" name="data" class="form-control"
+                                   value="<?= htmlspecialchars($dataNovo) ?>" required>
                         </div>
                         <div class="form-group">
                             <label for="n-f">Formando <span class="required">*</span></label>
                             <select id="n-f" name="codFormando" class="form-control" required>
-                                <?php foreach ($formandos as $f): ?>
-                                    <option value="<?= (int) $f->getCodigo() ?>">
-                                        <?= htmlspecialchars($f->getNome() . ' ' . $f->getApelido()) ?>
+                                <?php foreach ($formandosNovo as $f): ?>
+                                    <option value="<?= (int) $f['codigo'] ?>"
+                                        <?= $formandoNovoSel !== null && (int) $formandoNovoSel === (int) $f['codigo'] ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($f['descricao']) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>

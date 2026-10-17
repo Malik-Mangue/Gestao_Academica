@@ -70,6 +70,12 @@ $coordenadores = $controller->listarCoordenadores();
 $campos        = $controller->listarCampos();
 $niveis        = $controller->listarNiveis();
 
+// Contexto do "Carregar" (sem JavaScript): o campo seleccionado filtra a
+// lista de coordenadores (apenas formadores desse campo).
+$carregar   = isset($_GET['carregar']);
+$modalAtivo = $_GET['modal'] ?? '';
+$ctxCampo   = filter_input(INPUT_GET, 'campo', FILTER_VALIDATE_INT);
+
 // Mapa código => nome do coordenador
 $mapaCoordenadores = [];
 foreach ($coordenadores as $c) {
@@ -184,20 +190,36 @@ require_once __DIR__ . '/../partials/sidebar.php';
             </div>
             <form method="post" action="index.php">
                 <div class="modal-body">
+                    <?php
+                    $novoAtivo = $carregar && $modalAtivo === 'novo';
+                    $campoNovo = $novoAtivo ? (int) $ctxCampo : 0;
+                    $coordNovo = $campoNovo ? $controller->listarCoordenadores($campoNovo) : $coordenadores;
+                    $coordNovoSel = $novoAtivo ? filter_input(INPUT_GET, 'coordenador', FILTER_VALIDATE_INT) : null;
+                    $tituloNovo = $novoAtivo ? trim($_GET['titulo'] ?? '') : '';
+                    $niveisNovoSel = $novoAtivo ? array_map('intval', (array) ($_GET['nivel'] ?? [])) : [];
+                    ?>
+                    <input type="hidden" name="modal" value="novo">
+                    <input type="hidden" name="pesquisa" value="<?= htmlspecialchars($pesquisa) ?>">
                     <div class="form-group">
                         <label for="campo-novo">Campo / Área <span class="required">*</span></label>
                         <select id="campo-novo" name="campo" class="form-control" required>
                             <option value="">Selecione o campo...</option>
                             <?php foreach ($campos as $c): ?>
-                                <option value="<?= (int) $c->getCodigo() ?>"><?= htmlspecialchars($c->getNome()) ?></option>
+                                <option value="<?= (int) $c->getCodigo() ?>"
+                                    <?= $campoNovo === (int) $c->getCodigo() ? 'selected' : '' ?>><?= htmlspecialchars($c->getNome()) ?></option>
                             <?php endforeach; ?>
                         </select>
+                        <button type="submit" name="carregar" value="1"
+                                formmethod="get" formnovalidate
+                                formaction="index.php#modal-novo"
+                                class="btn btn-secondary btn-sm">Carregar</button>
                     </div>
                     <div class="form-group">
                         <label class="required">Níveis <span class="required">*</span></label>
                         <?php foreach ($niveis as $n): ?>
                             <div class="checkbox-inline">
-                                <input type="checkbox" name="nivel[]" value="<?= (int) $n->getCodigo() ?>" id="nivel-<?= (int) $n->getCodigo() ?>">
+                                <input type="checkbox" name="nivel[]" value="<?= (int) $n->getCodigo() ?>" id="nivel-<?= (int) $n->getCodigo() ?>"
+                                    <?= in_array((int) $n->getCodigo(), $niveisNovoSel, true) ? 'checked' : '' ?>>
                                 <label for="nivel-<?= (int) $n->getCodigo() ?>"><?= htmlspecialchars($n->getNome()) ?></label>
                             </div>
                         <?php endforeach; ?>
@@ -206,14 +228,16 @@ require_once __DIR__ . '/../partials/sidebar.php';
                         <label for="coordenador-novo">Coordenador <span class="required">*</span></label>
                         <select id="coordenador-novo" name="coordenador" class="form-control" required>
                             <option value="">Selecione o coordenador...</option>
-                            <?php foreach ($coordenadores as $coordenador): ?>
-                                <option value="<?= (int) $coordenador['codigo'] ?>"><?= htmlspecialchars($coordenador['descricao']) ?></option>
+                            <?php foreach ($coordNovo as $coordenador): ?>
+                                <option value="<?= (int) $coordenador['codigo'] ?>"
+                                    <?= $coordNovoSel !== null && (int) $coordenador['codigo'] === (int) $coordNovoSel ? 'selected' : '' ?>><?= htmlspecialchars($coordenador['descricao']) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="form-group">
                         <label for="titulo-novo">Nome da qualificação <span class="required">*</span></label>
-                        <input type="text" id="titulo-novo" name="titulo" class="form-control" maxlength="60" placeholder="Ex: Licenciatura em Engenharia Informatica" required>
+                        <input type="text" id="titulo-novo" name="titulo" class="form-control" maxlength="60" placeholder="Ex: Licenciatura em Engenharia Informatica"
+                               value="<?= htmlspecialchars($tituloNovo) ?>" required>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -240,14 +264,28 @@ require_once __DIR__ . '/../partials/sidebar.php';
                 <form method="post" action="index.php">
                     <div class="modal-body">
                         <input type="hidden" name="codigo" value="<?= $cod ?>">
+                        <?php
+                        $sufixo = 'editar-' . $cod;
+                        $editAtivo = $carregar && $modalAtivo === $sufixo;
+                        $campoEdit = $editAtivo ? (int) $ctxCampo : (int) $qualificacao->getCodCampo();
+                        $coordEdit = $campoEdit ? $controller->listarCoordenadores($campoEdit) : $coordenadores;
+                        $coordEditSel = $editAtivo ? filter_input(INPUT_GET, 'coordenador', FILTER_VALIDATE_INT) : (int) $qualificacao->getCod_coordenador();
+                        $tituloEdit = $editAtivo ? trim($_GET['titulo'] ?? '') : $qualificacao->getTitulo();
+                        ?>
+                        <input type="hidden" name="modal" value="<?= htmlspecialchars($sufixo) ?>">
+                        <input type="hidden" name="pesquisa" value="<?= htmlspecialchars($pesquisa) ?>">
                         <div class="form-group">
                             <label for="campo-e-<?= $cod ?>">Campo / Área <span class="required">*</span></label>
                             <select id="campo-e-<?= $cod ?>" name="campo" class="form-control" required>
                                 <option value="">Selecione o campo...</option>
                                 <?php foreach ($campos as $c): ?>
-                                    <option value="<?= (int) $c->getCodigo() ?>" <?= $c->getNome() === $qualificacao->getCampo() ? 'selected' : '' ?>><?= htmlspecialchars($c->getNome()) ?></option>
+                                    <option value="<?= (int) $c->getCodigo() ?>" <?= $campoEdit === (int) $c->getCodigo() ? 'selected' : '' ?>><?= htmlspecialchars($c->getNome()) ?></option>
                                 <?php endforeach; ?>
                             </select>
+                            <button type="submit" name="carregar" value="1"
+                                    formmethod="get" formnovalidate
+                                    formaction="index.php#modal-editar-<?= $cod ?>"
+                                    class="btn btn-secondary btn-sm">Carregar</button>
                         </div>
                         <div class="form-group">
                             <label for="nivel-e-<?= $cod ?>">Nível <span class="required">*</span></label>
@@ -263,14 +301,14 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             <label for="coordenador-e-<?= $cod ?>">Coordenador <span class="required">*</span></label>
                             <select id="coordenador-e-<?= $cod ?>" name="coordenador" class="form-control" required>
                                 <option value="">Selecione o coordenador...</option>
-                                <?php foreach ($coordenadores as $coordenador): ?>
-                                    <option value="<?= (int) $coordenador['codigo'] ?>" <?= (int) $coordenador['codigo'] === (int) $qualificacao->getCod_coordenador() ? 'selected' : '' ?>><?= htmlspecialchars($coordenador['descricao']) ?></option>
+                                <?php foreach ($coordEdit as $coordenador): ?>
+                                    <option value="<?= (int) $coordenador['codigo'] ?>" <?= (int) $coordenador['codigo'] === (int) $coordEditSel ? 'selected' : '' ?>><?= htmlspecialchars($coordenador['descricao']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="form-group">
                             <label for="titulo-e-<?= $cod ?>">Nome da qualificação <span class="required">*</span></label>
-                            <input type="text" id="titulo-e-<?= $cod ?>" name="titulo" class="form-control" maxlength="60" value="<?= htmlspecialchars($qualificacao->getTitulo()) ?>" required>
+                            <input type="text" id="titulo-e-<?= $cod ?>" name="titulo" class="form-control" maxlength="60" value="<?= htmlspecialchars($tituloEdit) ?>" required>
                         </div>
                     </div>
                     <div class="modal-footer">

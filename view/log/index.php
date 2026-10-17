@@ -43,7 +43,9 @@ require_once __DIR__ . '/../partials/sidebar.php';
                 <div class="form-group">
                     <label for="filtro">Pesquisar registos</label>
                     <input type="text" id="filtro" name="filtro" class="form-control"
-                           maxlength="100" placeholder="Utilizador, acao ou descricao"
+                           maxlength="100"
+                           placeholder="Data, utilizador, perfil, ação ou descrição"
+                           title="Ex.: 16/10/2026, admin, Administrador, LOGIN"
                            value="<?= htmlspecialchars($filtro) ?>">
                 </div>
                 <button type="submit" class="btn btn-primary">Filtrar</button>

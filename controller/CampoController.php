@@ -22,6 +22,10 @@ class CampoController {
         return $this->dao->getAll($pesquisa);
     }
 
+    public function listarQualificacoes($codCampo = null) {
+        return $this->dao->getQualificacoes($codCampo);
+    }
+
     public function buscarCampo($codigo) {
         if ($codigo > 0) {
             return $this->dao->getById($codigo);

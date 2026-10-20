@@ -23,8 +23,8 @@ class InscricaoController {
         return false;
     }
 
-    public function listarInscricao($pesquisa = null) {
-        return $this->dao->getAll($pesquisa);
+    public function listarInscricao($pesquisa = null, $codCampo = null) {
+        return $this->dao->getAll($pesquisa, $codCampo);
     }
 
     public function atualizarInscricao($codigo, $formando, $modulo, $semestre, $data_inscricao) {

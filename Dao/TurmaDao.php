@@ -69,19 +69,34 @@ class TurmaDao {
         return $result;
     }
 
-    public function getAll($nome) {
+    public function getAll($nome, $codCampo = null) {
         $sql = "select Turma.codigo, Turma.nome, ano_lectivo, turno, Turma.id_Diretor_Turma, Turma.id_Quali_Nivel,
                        Quali_Nivel.cod_Quali as cod_quali, Quali_Nivel.cod_Nivel as cod_nivel,
-                       Formador.nome as diretor_turma, Qualificacao.titulo as titulo, Nivel.nome as nivel from Turma
+                       Formador.nome as diretor_turma, Qualificacao.titulo as titulo, Nivel.nome as nivel,
+                       (select group_concat(c.nome order by c.nome separator ', ')
+                          from Classificacao cl
+                          join Campo c on c.codigo = cl.cod_Campo
+                         where cl.cod_Qualificacao = Quali_Nivel.cod_Quali) as campo,
+                       (select min(cl.cod_Campo)
+                          from Classificacao cl
+                         where cl.cod_Qualificacao = Quali_Nivel.cod_Quali) as campo_cod
+                from Turma
                 join Diretor_Turma on cod_Formador = id_Diretor_Turma
                 join Formador on Formador.codigo = cod_Formador
                 join Quali_Nivel on id_Quali_Nivel = codigo_Quali_Nivel
                 join Nivel on cod_Nivel = Nivel.codigo
                 join Qualificacao on Qualificacao.cod_Quali = Quali_Nivel.cod_Quali
                 where Turma.nome like ?";
+        if ($codCampo !== null && (int) $codCampo > 0) {
+            $sql .= " and Quali_Nivel.cod_Quali in (select cod_Qualificacao from Classificacao where cod_Campo = ?)";
+        }
         $stmt = $this->db->prepare($sql);
         $busca = "%" . $nome . "%";
-        $stmt->bind_param("s", $busca);
+        if ($codCampo !== null && (int) $codCampo > 0) {
+            $stmt->bind_param("si", $busca, $codCampo);
+        } else {
+            $stmt->bind_param("s", $busca);
+        }
         $stmt->execute();
         $result = $stmt->get_result();
 
@@ -91,6 +106,8 @@ class TurmaDao {
             $diretorTurma = new Diretor_turma($formador);
 
             $qualificacao = new Qualificacao($rs['cod_quali'], $rs['titulo'], null);
+            $qualificacao->setCampo($rs['campo']);
+            $qualificacao->setCodCampo($rs['campo_cod'] ?? null);
             $nivel = new Nivel($rs['cod_nivel'], $rs['nivel']);
 
             $qualiNivel = new Quali_Nivel($rs['id_Quali_Nivel'], $rs['cod_quali'], $rs['cod_nivel']);
@@ -115,13 +132,26 @@ class TurmaDao {
         return $opcoes;
     }
 
-    public function getDiretores() {
-        return $this->listarOpcoes(
-            "select f.codigo as codigo, concat(f.nome, ' ', f.apelido) as descricao
-             from Diretor_Turma dt
-             join Formador f on f.codigo = dt.cod_Formador
-             order by f.nome"
-        );
+    public function getDiretores($codCampo = null) {
+        $sql = "select f.codigo as codigo, concat(f.nome, ' ', f.apelido) as descricao
+                from Diretor_Turma dt
+                join Formador f on f.codigo = dt.cod_Formador";
+        if ($codCampo !== null && (int) $codCampo > 0) {
+            $sql .= " where f.codCampo = ?";
+        }
+        $sql .= " order by f.nome";
+
+        $stmt = $this->db->prepare($sql);
+        if ($codCampo !== null && (int) $codCampo > 0) {
+            $stmt->bind_param("i", $codCampo);
+        }
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $opcoes = [];
+        while ($rs = $result->fetch_assoc()) {
+            $opcoes[] = ['codigo' => $rs['codigo'], 'descricao' => $rs['descricao']];
+        }
+        return $opcoes;
     }
 
     public function getQualificacoes() {
@@ -133,15 +163,28 @@ class TurmaDao {
     }
 
 
-    public function getParesQualiNivel() {
-        return $this->listarOpcoes(
-            "select qn.codigo_Quali_Nivel as codigo,
-                    concat(q.titulo, ' — ', n.nome) as descricao
-             from Quali_Nivel qn
-             join Qualificacao q on q.cod_Quali = qn.cod_Quali
-             join Nivel n on n.codigo = qn.cod_Nivel
-             order by q.titulo, n.nome"
-        );
+    public function getParesQualiNivel($codCampo = null) {
+        $sql = "select qn.codigo_Quali_Nivel as codigo,
+                       concat(q.titulo, ' — ', n.nome) as descricao
+                from Quali_Nivel qn
+                join Qualificacao q on q.cod_Quali = qn.cod_Quali
+                join Nivel n on n.codigo = qn.cod_Nivel";
+        if ($codCampo !== null && (int) $codCampo > 0) {
+            $sql .= " where q.cod_Quali in (select cod_Qualificacao from Classificacao where cod_Campo = ?)";
+        }
+        $sql .= " order by q.titulo, n.nome";
+
+        $stmt = $this->db->prepare($sql);
+        if ($codCampo !== null && (int) $codCampo > 0) {
+            $stmt->bind_param("i", $codCampo);
+        }
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $opcoes = [];
+        while ($rs = $result->fetch_assoc()) {
+            $opcoes[] = ['codigo' => $rs['codigo'], 'descricao' => $rs['descricao']];
+        }
+        return $opcoes;
     }
 
     public function getById($codigo) {

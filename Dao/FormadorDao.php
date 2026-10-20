@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../config/conexao.php';
 require_once __DIR__ . '/../services/Sessao.php';
 require_once __DIR__ . '/../model/Formador.php';
+require_once __DIR__ . '/../model/Campo.php';
 require_once __DIR__ . '/../model/Logs.php';
 require_once __DIR__ . '/LogDao.php';
 
@@ -14,7 +15,7 @@ class FormadorDao {
     }
 
     public function create(Formador $formador) {
-        $sql = "insert into Formador (nome, apelido, email, genero, estadoCivil, contacto, valor_hora, horas_mes, salario) values (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql = "insert into Formador (nome, apelido, email, genero, estadoCivil, contacto, valor_hora, horas_mes, salario, codCampo) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $this->db->prepare($sql);
 
         $nome = $formador->getNome();
@@ -26,8 +27,9 @@ class FormadorDao {
         $valorHoras = $formador->getValorHoras();
         $horasMes = $formador->getHorasMes();
         $salario = $formador->getSalario();
+        $codCampo = $formador->getCodCampo();
 
-        $stmt->bind_param("sssssiiid", $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valorHoras, $horasMes, $salario);
+        $stmt->bind_param("sssssiiidi", $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valorHoras, $horasMes, $salario, $codCampo);
         $result = $stmt->execute();
         if ($result) {
 
@@ -39,20 +41,33 @@ class FormadorDao {
 
     }
 
-    public function getAll($pesquisa = null) {
-        $sql = "select codigo, nome, apelido, email, genero, estadoCivil, contacto,
-                       valor_hora, horas_mes, salario
-                from Formador";
+    public function getAll($pesquisa = null, $codCampo = null) {
+        $sql = "select f.codigo, f.nome, f.apelido, f.email, f.genero, f.estadoCivil, f.contacto,
+                       f.valor_hora, f.horas_mes, f.salario, f.codCampo, c.nome as campo_nome
+                from Formador f
+                left join Campo c on c.codigo = f.codCampo";
+        $condicoes = [];
+        $tipos = "";
+        $parametros = [];
         if ($pesquisa !== null && strlen($pesquisa) > 0) {
-            $sql .= " where nome like ? or apelido like ? or email like ? or genero like ?
-                            or estadoCivil like ? or contacto like ?
-                      order by nome";
-            $stmt = $this->db->prepare($sql);
+            $condicoes[] = "(f.nome like ? or f.apelido like ? or f.email like ? or f.genero like ?
+                             or f.estadoCivil like ? or f.contacto like ?)";
             $busca = "%" . $pesquisa . "%";
-            $stmt->bind_param("ssssss", $busca, $busca, $busca, $busca, $busca, $busca);
-        } else {
-            $sql .= " order by nome";
-            $stmt = $this->db->prepare($sql);
+            $parametros = array_merge($parametros, [$busca, $busca, $busca, $busca, $busca, $busca]);
+            $tipos .= "ssssss";
+        }
+        if ($codCampo !== null && (int) $codCampo > 0) {
+            $condicoes[] = "f.codCampo = ?";
+            $parametros[] = (int) $codCampo;
+            $tipos .= "i";
+        }
+        if (!empty($condicoes)) {
+            $sql .= " where " . implode(" and ", $condicoes);
+        }
+        $sql .= " order by f.nome";
+        $stmt = $this->db->prepare($sql);
+        if (!empty($parametros)) {
+            $stmt->bind_param($tipos, ...$parametros);
         }
         $stmt->execute();
         $result = $stmt->get_result();
@@ -65,9 +80,11 @@ class FormadorDao {
     }
 
     public function getById($codigo) {
-        $sql = "select codigo, nome, apelido, email, genero, estadoCivil, contacto,
-                       valor_hora, horas_mes, salario
-                from Formador where codigo = ?";
+        $sql = "select f.codigo, f.nome, f.apelido, f.email, f.genero, f.estadoCivil, f.contacto,
+                       f.valor_hora, f.horas_mes, f.salario, f.codCampo, c.nome as campo_nome
+                from Formador f
+                left join Campo c on c.codigo = f.codCampo
+                where f.codigo = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("i", $codigo);
         $stmt->execute();
@@ -80,7 +97,7 @@ class FormadorDao {
     }
 
     public function update(Formador $formador) {
-        $sql = "update Formador set nome = ?, apelido = ?, email = ?, genero = ?, estadoCivil = ?, contacto = ?, valor_hora = ?, horas_mes = ?, salario = ? where codigo = ?";
+        $sql = "update Formador set nome = ?, apelido = ?, email = ?, genero = ?, estadoCivil = ?, contacto = ?, valor_hora = ?, horas_mes = ?, salario = ?, codCampo = ? where codigo = ?";
         $stmt = $this->db->prepare($sql);
 
         $nome = $formador->getNome();
@@ -92,9 +109,10 @@ class FormadorDao {
         $valorHoras = $formador->getValorHoras();
         $horasMes = $formador->getHorasMes();
         $salario = $formador->getSalario();
+        $codCampo = $formador->getCodCampo();
         $codigo = $formador->getCodigo();
 
-        $stmt->bind_param("sssssiiidi", $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valorHoras, $horasMes, $salario, $codigo);
+        $stmt->bind_param("sssssiiidii", $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valorHoras, $horasMes, $salario, $codCampo, $codigo);
         $result = $stmt->execute();
         if ($result) {
             $this->registarLog("UPDATE", "Formador " . $nome . " " . $apelido . " (ID: " . $codigo . ") foi atualizado");
@@ -174,7 +192,7 @@ public function listarQualificacoesQueCoordena($codigoFormador) {
     }
 
     private function montarFormador($rs) {
-        return new Formador(
+        $formador = new Formador(
             $rs['codigo'],
             $rs['nome'],
             $rs['apelido'],
@@ -186,6 +204,44 @@ public function listarQualificacoesQueCoordena($codigoFormador) {
             $rs['horas_mes'],
             $rs['salario']
         );
+        if (isset($rs['codCampo'])) {
+            $formador->setCodCampo($rs['codCampo']);
+            if (isset($rs['campo_nome'])) {
+                $formador->setCampo(new Campo($rs['codCampo'], $rs['campo_nome']));
+            }
+        }
+        return $formador;
+    }
+
+    /**
+     * Lista formadores (para dropdowns), opcionalmente filtrados por campo e/ou
+     * por função (coordenador / diretor de turma).
+     */
+    public function getFormadoresPorCampo($codCampo = null, $funcao = null) {
+        $sql = "select distinct f.codigo as codigo,
+                       concat(f.nome, ' ', f.apelido) as descricao
+                from Formador f";
+        if ($funcao === 'coordenador') {
+            $sql .= " join Coordenador co on co.cod_Formador = f.codigo";
+        } elseif ($funcao === 'diretor') {
+            $sql .= " join Diretor_Turma dt on dt.cod_Formador = f.codigo";
+        }
+        if ($codCampo !== null && (int) $codCampo > 0) {
+            $sql .= " where f.codCampo = ?";
+        }
+        $sql .= " order by descricao";
+
+        $stmt = $this->db->prepare($sql);
+        if ($codCampo !== null && (int) $codCampo > 0) {
+            $stmt->bind_param("i", $codCampo);
+        }
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $opcoes = [];
+        while ($rs = $result->fetch_assoc()) {
+            $opcoes[] = ['codigo' => $rs['codigo'], 'descricao' => $rs['descricao']];
+        }
+        return $opcoes;
     }
 }
 ?>

@@ -18,14 +18,15 @@ class ModuloDao {
     }
 
     public function create(Modulo $modulo) {
-        $sql = "insert into Modulo (nome_modulo, carga_horaria, id_Quali_Nivel) values (?, ?, ?)";
+        $sql = "insert into Modulo (nome_modulo, carga_horaria, categoria, id_Quali_Nivel) values (?, ?, ?, ?)";
         $stmt = $this->db->prepare($sql);
 
         $nome = $modulo->getNome();
         $cargaHoraria = $modulo->getCargaHoraria();
+        $categoria = $modulo->getCategoria();
         $codigoQualiNivel = $modulo->getQualiNivel()->getCodigo();
 
-        $stmt->bind_param("sii", $nome, $cargaHoraria, $codigoQualiNivel);
+        $stmt->bind_param("sisi", $nome, $cargaHoraria, $categoria, $codigoQualiNivel);
         try {
             $result = $stmt->execute();
         } catch (mysqli_sql_exception $e) {
@@ -47,15 +48,16 @@ class ModuloDao {
     }
 
     public function update(Modulo $modulo) {
-        $sql = "update Modulo set nome_modulo = ?, carga_horaria = ?, id_Quali_Nivel = ? where codigo = ?";
+        $sql = "update Modulo set nome_modulo = ?, carga_horaria = ?, categoria = ?, id_Quali_Nivel = ? where codigo = ?";
         $stmt = $this->db->prepare($sql);
 
         $nome = $modulo->getNome();
         $cargaHoraria = $modulo->getCargaHoraria();
+        $categoria = $modulo->getCategoria();
         $codigoQualiNivel = $modulo->getQualiNivel()->getCodigo();
         $codigo = $modulo->getCodigo();
 
-        $stmt->bind_param("siii", $nome, $cargaHoraria, $codigoQualiNivel, $codigo);
+        $stmt->bind_param("sisii", $nome, $cargaHoraria, $categoria, $codigoQualiNivel, $codigo);
         try {
             $result = $stmt->execute();
         } catch (mysqli_sql_exception $e) {
@@ -97,9 +99,11 @@ class ModuloDao {
     }
 
     public function getAll($nome) {
-        $sql = "select Modulo.codigo, Modulo.nome_modulo as nome, Modulo.carga_horaria,
+        $sql = "select Modulo.codigo, Modulo.nome_modulo as nome, Modulo.carga_horaria, Modulo.categoria,
                        Quali_Nivel.codigo_Quali_Nivel, Quali_Nivel.cod_Quali, Quali_Nivel.cod_Nivel,
-                       Qualificacao.titulo, Nivel.nome as nivel, Quali_modulo.semestre as semestre
+                       Qualificacao.titulo, Nivel.nome as nivel, Quali_modulo.semestre as semestre,
+                       (select min(cl.cod_Campo) from Classificacao cl
+                         where cl.cod_Qualificacao = Quali_Nivel.cod_Quali) as codCampo
                 from Modulo
                 join Quali_Nivel on Quali_Nivel.codigo_Quali_Nivel = Modulo.id_Quali_Nivel
                 join Qualificacao on Qualificacao.cod_Quali = Quali_Nivel.cod_Quali
@@ -115,8 +119,10 @@ class ModuloDao {
         $modulos = [];
         while ($rs = $result->fetch_assoc()) {
             $modulo = new Modulo($rs['codigo'], $rs['nome'], $rs['carga_horaria']);
+            $modulo->setCategoria($rs['categoria']);
 
             $qualificacao = new Qualificacao($rs['cod_Quali'], $rs['titulo'], null);
+            $qualificacao->setCodCampo($rs['codCampo'] ?? null);
             $nivel = new Nivel($rs['cod_Nivel'], $rs['nivel']);
             $qualiNivel = new Quali_Nivel($rs['codigo_Quali_Nivel'], $rs['cod_Quali'], $rs['cod_Nivel']);
             $qualiNivel->setQualificacao($qualificacao);
@@ -145,6 +151,52 @@ class ModuloDao {
 
     public function getModulos() {
         return $this->listarOpcoes("select codigo, nome_modulo as descricao from Modulo order by nome_modulo");
+    }
+
+    /**
+     * Módulos (para dropdowns), filtrados por qualificação, categoria e/ou semestre.
+     * A qualificação é resolvida via Quali_Nivel (Modulo.id_Quali_Nivel) e o
+     * semestre via Quali_modulo (Quali_modulo.cod_modulo = Modulo.codigo).
+     */
+    public function getModulosFiltrados($codQuali = null, $categoria = null, $semestre = null) {
+        $sql = "select distinct m.codigo as codigo, m.nome_modulo as descricao
+                from Modulo m
+                join Quali_Nivel qn on qn.codigo_Quali_Nivel = m.id_Quali_Nivel";
+        $condicoes = [];
+        $tipos = "";
+        $parametros = [];
+        if ($codQuali !== null && (int) $codQuali > 0) {
+            $condicoes[] = "qn.cod_Quali = ?";
+            $parametros[] = (int) $codQuali;
+            $tipos .= "i";
+        }
+        if ($categoria !== null && strlen($categoria) > 0) {
+            $condicoes[] = "m.categoria = ?";
+            $parametros[] = $categoria;
+            $tipos .= "s";
+        }
+        if ($semestre !== null && strlen($semestre) > 0) {
+            $sql .= " join Quali_modulo qm on qm.cod_modulo = m.codigo";
+            $condicoes[] = "qm.semestre = ?";
+            $parametros[] = $semestre;
+            $tipos .= "s";
+        }
+        if (!empty($condicoes)) {
+            $sql .= " where " . implode(" and ", $condicoes);
+        }
+        $sql .= " order by m.nome_modulo";
+
+        $stmt = $this->db->prepare($sql);
+        if (!empty($parametros)) {
+            $stmt->bind_param($tipos, ...$parametros);
+        }
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $opcoes = [];
+        while ($rs = $result->fetch_assoc()) {
+            $opcoes[] = ['codigo' => $rs['codigo'], 'descricao' => $rs['descricao']];
+        }
+        return $opcoes;
     }
 
     public function existeModuloEmInscricao($codigoModulo) {
@@ -210,9 +262,11 @@ class ModuloDao {
     }
 
     public function getById($codigo) {
-        $sql = "select Modulo.codigo, Modulo.nome_modulo as nome, Modulo.carga_horaria,
+        $sql = "select Modulo.codigo, Modulo.nome_modulo as nome, Modulo.carga_horaria, Modulo.categoria,
                        Quali_Nivel.codigo_Quali_Nivel, Quali_Nivel.cod_Quali, Quali_Nivel.cod_Nivel,
-                       Qualificacao.titulo, Nivel.nome as nivel, Quali_modulo.semestre as semestre
+                       Qualificacao.titulo, Nivel.nome as nivel, Quali_modulo.semestre as semestre,
+                       (select min(cl.cod_Campo) from Classificacao cl
+                         where cl.cod_Qualificacao = Quali_Nivel.cod_Quali) as codCampo
                 from Modulo
                 join Quali_Nivel on Quali_Nivel.codigo_Quali_Nivel = Modulo.id_Quali_Nivel
                 join Qualificacao on Qualificacao.cod_Quali = Quali_Nivel.cod_Quali
@@ -229,9 +283,12 @@ class ModuloDao {
         }
 
         $modulo = new Modulo($rs['codigo'], $rs['nome'], $rs['carga_horaria']);
+        $modulo->setCategoria($rs['categoria']);
 
         $qualiNivel = new Quali_Nivel($rs['codigo_Quali_Nivel'], $rs['cod_Quali'], $rs['cod_Nivel']);
-        $qualiNivel->setQualificacao(new Qualificacao($rs['cod_Quali'], $rs['titulo'], null));
+        $qualificacao = new Qualificacao($rs['cod_Quali'], $rs['titulo'], null);
+        $qualificacao->setCodCampo($rs['codCampo'] ?? null);
+        $qualiNivel->setQualificacao($qualificacao);
         $qualiNivel->setNivel(new Nivel($rs['cod_Nivel'], $rs['nivel']));
         $modulo->setQualiNivel($qualiNivel);
 

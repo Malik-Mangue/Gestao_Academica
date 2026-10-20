@@ -132,8 +132,11 @@ CREATE TABLE `Formador` (
   `salario` int NOT NULL,
   `valor_hora` int NOT NULL,
   `horas_mes` int NOT NULL,
+  `codCampo` int NOT NULL,
   PRIMARY KEY (`codigo`),
-  UNIQUE KEY `contacto_Chave_candidata` (`contacto`)
+  UNIQUE KEY `contacto_Chave_candidata` (`contacto`),
+  KEY `Formador_codCampo_fk` (`codCampo`),
+  CONSTRAINT `Formador_codCampo_fk` FOREIGN KEY (`codCampo`) REFERENCES `Campo` (`codigo`)
 ) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -143,7 +146,7 @@ CREATE TABLE `Formador` (
 
 LOCK TABLES `Formador` WRITE;
 /*!40000 ALTER TABLE `Formador` DISABLE KEYS */;
-INSERT INTO `Formador` VALUES (14,'Malik','mangue','mlktecno@gmail.com','Feminino','Divorciado(a)',934323163,1000,100,5),(16,'Allen','Dinis','Kenny@gmail.com','Masculino','Solteiro(a)',871234565,2000,20,50),(17,'Edmundo','Mapotere','fedmundo@gmail.com','Masculino','Solteiro(a)',846533794,400000,3000,7),(18,'Keany','Pessula','keanypessula@gmail.com','Masculino','Solteiro(a)',844431730,50000,600,60);
+INSERT INTO `Formador` VALUES (14,'Malik','mangue','mlktecno@gmail.com','Feminino','Divorciado(a)',934323163,1000,100,5,27),(16,'Allen','Dinis','Kenny@gmail.com','Masculino','Solteiro(a)',871234565,2000,20,50,27),(17,'Edmundo','Mapotere','fedmundo@gmail.com','Masculino','Solteiro(a)',846533794,400000,3000,7,27),(18,'Keany','Pessula','keanypessula@gmail.com','Masculino','Solteiro(a)',844431730,50000,600,60,27);
 /*!40000 ALTER TABLE `Formador` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -161,7 +164,10 @@ CREATE TABLE `Formando` (
   `contacto_formando` int DEFAULT NULL,
   `email` varchar(100) DEFAULT NULL,
   `BI` varchar(20) NOT NULL,
-  PRIMARY KEY (`codigo_formando`)
+  `codCampo` int NOT NULL,
+  PRIMARY KEY (`codigo_formando`),
+  KEY `Formando_codCampo_fk` (`codCampo`),
+  CONSTRAINT `Formando_codCampo_fk` FOREIGN KEY (`codCampo`) REFERENCES `Campo` (`codigo`)
 ) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -171,7 +177,7 @@ CREATE TABLE `Formando` (
 
 LOCK TABLES `Formando` WRITE;
 /*!40000 ALTER TABLE `Formando` DISABLE KEYS */;
-INSERT INTO `Formando` VALUES (9,'malik','malik',0,'11111','mlktecno@gmail.com');
+INSERT INTO `Formando` VALUES (9,'malik','malik',0,'11111','mlktecno@gmail.com',27);
 /*!40000 ALTER TABLE `Formando` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -314,6 +320,7 @@ CREATE TABLE `Modulo` (
   `codigo` int NOT NULL AUTO_INCREMENT,
   `nome_modulo` varchar(100) NOT NULL,
   `carga_horaria` int NOT NULL,
+  `categoria` varchar(20) NOT NULL DEFAULT 'Genérico',
   `id_Quali_Nivel` int NOT NULL,
   PRIMARY KEY (`codigo`),
   KEY `id_Quali_Nivel` (`id_Quali_Nivel`),
@@ -327,7 +334,7 @@ CREATE TABLE `Modulo` (
 
 LOCK TABLES `Modulo` WRITE;
 /*!40000 ALTER TABLE `Modulo` DISABLE KEYS */;
-INSERT INTO `Modulo` VALUES (6,'SUBDS',120,11);
+INSERT INTO `Modulo` VALUES (6,'SUBDS',120,'Genérico',11);
 /*!40000 ALTER TABLE `Modulo` ENABLE KEYS */;
 UNLOCK TABLES;
 

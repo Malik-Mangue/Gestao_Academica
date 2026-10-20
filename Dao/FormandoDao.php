@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../config/conexao.php';
 require_once __DIR__ . '/../services/Sessao.php';
 require_once __DIR__ . '/../model/Formando.php';
+require_once __DIR__ . '/../model/Campo.php';
 require_once __DIR__ . '/../model/Logs.php';
 require_once __DIR__ . '/LogDao.php';
 
@@ -14,7 +15,7 @@ class FormandoDAO {
     }
 
     private function montarFormando($rs) {
-        return new Formando(
+        $formando = new Formando(
             $rs['codigo_formando'],
             $rs['nome_formando'],
             $rs['apelido_formando'],
@@ -22,21 +23,45 @@ class FormandoDAO {
             $rs['BI'],
             $rs['contacto_formando']
         );
+        if (isset($rs['codCampo'])) {
+            $formando->setCodCampo($rs['codCampo']);
+            if (isset($rs['campo_nome'])) {
+                $formando->setCampo(new Campo($rs['codCampo'], $rs['campo_nome']));
+            }
+        }
+        return $formando;
     }
 
-    public function getAll($pesquisa = null) {
-        $sql = "select codigo_formando, nome_formando, apelido_formando, contacto_formando, email, BI
-                from Formando";
+    public function getAll($pesquisa = null, $codCampo = null) {
+        $sql = "select f.codigo_formando, f.nome_formando, f.apelido_formando,
+                       f.contacto_formando, f.email, f.BI, f.codCampo,
+                       c.nome as campo_nome
+                from Formando f
+                left join Campo c on c.codigo = f.codCampo";
+
+        $condicoes = [];
+        $tipos = "";
+        $parametros = [];
         if ($pesquisa !== null && strlen($pesquisa) > 0) {
-            $sql .= " where nome_formando like ? or apelido_formando like ? or email like ?
-                            or BI like ? or contacto_formando like ?
-                      order by nome_formando, apelido_formando";
-            $stmt = $this->db->prepare($sql);
+            $condicoes[] = "(f.nome_formando like ? or f.apelido_formando like ? or f.email like ?
+                             or f.BI like ? or f.contacto_formando like ?)";
             $busca = "%" . $pesquisa . "%";
-            $stmt->bind_param("sssss", $busca, $busca, $busca, $busca, $busca);
-        } else {
-            $sql .= " order by nome_formando, apelido_formando";
-            $stmt = $this->db->prepare($sql);
+            $parametros = array_merge($parametros, [$busca, $busca, $busca, $busca, $busca]);
+            $tipos .= "sssss";
+        }
+        if ($codCampo !== null && (int) $codCampo > 0) {
+            $condicoes[] = "f.codCampo = ?";
+            $parametros[] = (int) $codCampo;
+            $tipos .= "i";
+        }
+        if (!empty($condicoes)) {
+            $sql .= " where " . implode(" and ", $condicoes);
+        }
+        $sql .= " order by f.nome_formando, f.apelido_formando";
+
+        $stmt = $this->db->prepare($sql);
+        if (!empty($parametros)) {
+            $stmt->bind_param($tipos, ...$parametros);
         }
         $stmt->execute();
         $result = $stmt->get_result();
@@ -48,8 +73,12 @@ class FormandoDAO {
     }
 
     public function getById($codigo) {
-        $sql = "select codigo_formando, nome_formando, apelido_formando, contacto_formando, email, BI
-                from Formando where codigo_formando = ?";
+        $sql = "select f.codigo_formando, f.nome_formando, f.apelido_formando,
+                       f.contacto_formando, f.email, f.BI, f.codCampo,
+                       c.nome as campo_nome
+                from Formando f
+                left join Campo c on c.codigo = f.codCampo
+                where f.codigo_formando = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("i", $codigo);
         $stmt->execute();
@@ -62,14 +91,15 @@ class FormandoDAO {
     }
 
     public function create(Formando $formando) {
-        $sql = "insert into Formando (nome_formando, apelido_formando, contacto_formando, email, BI) values (?, ?, ?, ?, ?)";
+        $sql = "insert into Formando (nome_formando, apelido_formando, contacto_formando, email, BI, codCampo) values (?, ?, ?, ?, ?, ?)";
         $stmt = $this->db->prepare($sql);
         $nome = $formando->getNome();
         $apelido = $formando->getApelido();
         $contacto = $formando->getContacto();
         $email = $formando->getEmail();
         $bi = $formando->getBi();
-        $stmt->bind_param("ssiss", $nome, $apelido, $contacto, $email, $bi);
+        $codCampo = $formando->getCodCampo();
+        $stmt->bind_param("ssissi", $nome, $apelido, $contacto, $email, $bi, $codCampo);
         try {
             $result = $stmt->execute();
             if ($result) {
@@ -82,15 +112,16 @@ class FormandoDAO {
     }
 
     public function update(Formando $formando) {
-        $sql = "update Formando set nome_formando = ?, apelido_formando = ?, contacto_formando = ?, email = ?, BI = ? where codigo_formando = ?";
+        $sql = "update Formando set nome_formando = ?, apelido_formando = ?, contacto_formando = ?, email = ?, BI = ?, codCampo = ? where codigo_formando = ?";
         $stmt = $this->db->prepare($sql);
         $nome = $formando->getNome();
         $apelido = $formando->getApelido();
         $contacto = $formando->getContacto();
         $email = $formando->getEmail();
         $bi = $formando->getBi();
+        $codCampo = $formando->getCodCampo();
         $codigo = $formando->getCodigo();
-        $stmt->bind_param("ssissi", $nome, $apelido, $contacto, $email, $bi, $codigo);
+        $stmt->bind_param("ssissii", $nome, $apelido, $contacto, $email, $bi, $codCampo, $codigo);
         try {
             $result = $stmt->execute();
             if ($result) {
@@ -115,6 +146,27 @@ class FormandoDAO {
         } catch (mysqli_sql_exception $e) {
             return false;
         }
+    }
+
+    public function getFormandosPorCampo($codCampo = null) {
+        $sql = "select codigo_formando as codigo,
+                       concat(nome_formando, ' ', apelido_formando) as descricao
+                from Formando";
+        if ($codCampo !== null && (int) $codCampo > 0) {
+            $sql .= " where codCampo = ?";
+        }
+        $sql .= " order by nome_formando, apelido_formando";
+        $stmt = $this->db->prepare($sql);
+        if ($codCampo !== null && (int) $codCampo > 0) {
+            $stmt->bind_param("i", $codCampo);
+        }
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $opcoes = [];
+        while ($rs = $result->fetch_assoc()) {
+            $opcoes[] = ['codigo' => $rs['codigo'], 'descricao' => $rs['descricao']];
+        }
+        return $opcoes;
     }
 
     private function registarLog($acao, $descricao) {

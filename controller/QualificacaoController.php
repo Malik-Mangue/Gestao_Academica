@@ -125,8 +125,8 @@ class QualificacaoController {
     }
 
 
-    public function listarCoordenadores() {
-        return $this->dao->getCoordenadores();
+    public function listarCoordenadores($codCampo = null) {
+        return $this->dao->getCoordenadores($codCampo);
     }
 
     public function listarCampos() {

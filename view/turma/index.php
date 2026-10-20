@@ -92,7 +92,14 @@ $pesquisa = trim($_GET['pesquisa'] ?? '');
 $turmas        = $controller->listarTurma($pesquisa);
 $diretores     = $controller->listarDiretores();
 $pares         = (new Quali_NivelController())->listarPares();
-$campos        = (new CampoController())->listarCampo(); 
+$campos        = (new CampoController())->listarCampo();
+
+
+$carregar      = isset($_GET['carregar']);
+$modalAtivo    = $_GET['modal'] ?? '';
+$ctxCampo      = filter_input(INPUT_GET, 'codCampo', FILTER_VALIDATE_INT);
+$ctxQualiNivel = filter_input(INPUT_GET, 'idQualiNivel', FILTER_VALIDATE_INT);
+$ctxDiretor    = filter_input(INPUT_GET, 'codDiretor', FILTER_VALIDATE_INT);
 
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
@@ -151,6 +158,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             <th>Turno</th>
                             <th>Diretor de Turma</th>
                             <th>Qualificação</th>
+                            <th>Campo</th>
                             <th>Nível</th>
                             <?php if ($pode_editar || $pode_remover): ?>
                                 <th class="col-opcoes">Opções</th>
@@ -160,7 +168,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                     <tbody>
                         <?php if (empty($turmas)): ?>
                             <tr>
-                                <td colspan="<?= $pode_editar || $pode_remover ? 8 : 7 ?>" class="table-empty">
+                                <td colspan="<?= $pode_editar || $pode_remover ? 9 : 8 ?>" class="table-empty">
                                     Nenhuma turma cadastrada no momento.
                                 </td>
                             </tr>
@@ -182,6 +190,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     <td><?= htmlspecialchars($turma->getTurno()) ?></td>
                                     <td><?= htmlspecialchars((string) $nomeDiretor) ?></td>
                                     <td><?= htmlspecialchars((string) $tituloQuali) ?></td>
+                                    <td><?= htmlspecialchars(($qn !== null && $qn->getQualificacao() !== null && $qn->getQualificacao()->getCampo() !== null) ? $qn->getQualificacao()->getCampo() : '-') ?></td>
                                     <td><?= htmlspecialchars((string) $nomeNivel) ?></td>
                                     <?php if ($pode_editar || $pode_remover): ?>
                                         <td class="col-opcoes">
@@ -212,25 +221,40 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                     <?php
                                                     $sufixo = 'editar-' . $turma->getCodigo();
                                                     $qnTurma = $turma->getQualiNivel();
+                                                    $editAtivo = $carregar && $modalAtivo === $sufixo;
+                                                    $campoReg = ($qnTurma !== null && $qnTurma->getQualificacao() !== null)
+                                                        ? $qnTurma->getQualificacao()->getCodCampo() : null;
+                                                    $campoEdit = $editAtivo ? (int) $ctxCampo : (int) $campoReg;
+                                                    $paresEdit = $campoEdit ? (new Quali_NivelController())->listarPares($campoEdit) : $pares;
+                                                    $diretoresEdit = $campoEdit ? $controller->listarDiretores($campoEdit) : $diretores;
+                                                    $qnSel = $editAtivo ? $ctxQualiNivel : ($qnTurma !== null ? (int) $qnTurma->getCodigo() : null);
+                                                    $dirSel = $editAtivo ? $ctxDiretor : (int) $turma->getDiretorTurma()->getFormador()->getCodigo();
                                                     ?>
+                                                    <input type="hidden" name="modal" value="<?= htmlspecialchars($sufixo) ?>">
+                                                    <input type="hidden" name="pesquisa" value="<?= htmlspecialchars($pesquisa) ?>">
                                                     <div class="form-group">
                                                         <label for="t-campo-<?= $sufixo ?>">Campo / Área</label>
                                                         <select id="t-campo-<?= $sufixo ?>" name="codCampo" class="form-control">
                                                             <option value="">Selecione o campo...</option>
                                                             <?php foreach ($campos as $c): ?>
-                                                                <option value="<?= (int) $c->getCodigo() ?>">
+                                                                <option value="<?= (int) $c->getCodigo() ?>"
+                                                                    <?= $campoEdit === (int) $c->getCodigo() ? 'selected' : '' ?>>
                                                                     <?= htmlspecialchars($c->getNome()) ?>
                                                                 </option>
                                                             <?php endforeach; ?>
                                                         </select>
+                                                        <button type="submit" name="carregar" value="1"
+                                                                formmethod="get" formnovalidate
+                                                                formaction="index.php#modal-editar-<?= (int) $turma->getCodigo() ?>"
+                                                                class="btn btn-secondary btn-sm">Carregar</button>
                                                     </div>
                                                     <div class="form-group">
                                                         <label for="t-qn-<?= $sufixo ?>">Qualificação / Nível <span class="required">*</span></label>
                                                         <select id="t-qn-<?= $sufixo ?>" name="idQualiNivel" class="form-control" required>
                                                             <option value="">Selecione...</option>
-                                                            <?php foreach ($pares as $p): ?>
+                                                            <?php foreach ($paresEdit as $p): ?>
                                                                 <option value="<?= (int) $p['codigo'] ?>"
-                                                                    <?= $qnTurma !== null && (int) $qnTurma->getCodigo() === (int) $p['codigo'] ? 'selected' : '' ?>>
+                                                                    <?= (int) $qnSel === (int) $p['codigo'] ? 'selected' : '' ?>>
                                                                     <?= htmlspecialchars($p['descricao']) ?>
                                                                 </option>
                                                             <?php endforeach; ?>
@@ -240,9 +264,9 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                         <label for="t-diretor-<?= $sufixo ?>">Diretor de Turma <span class="required">*</span></label>
                                                         <select id="t-diretor-<?= $sufixo ?>" name="codDiretor" class="form-control" required>
                                                             <option value="">Selecione...</option>
-                                                            <?php foreach ($diretores as $d): ?>
+                                                            <?php foreach ($diretoresEdit as $d): ?>
                                                                 <option value="<?= (int) $d['codigo'] ?>"
-                                                                    <?= (int) $turma->getDiretorTurma()->getFormador()->getCodigo() === (int) $d['codigo'] ? 'selected' : '' ?>>
+                                                                    <?= (int) $dirSel === (int) $d['codigo'] ? 'selected' : '' ?>>
                                                                     <?= htmlspecialchars($d['descricao']) ?>
                                                                 </option>
                                                             <?php endforeach; ?>
@@ -333,21 +357,40 @@ require_once __DIR__ . '/../partials/sidebar.php';
                 </div>
                 <form method="post" action="index.php">
                     <div class="modal-body">
+                        <?php
+                        $novoAtivo = $carregar && $modalAtivo === 'novo';
+                        $campoNovo = $novoAtivo ? (int) $ctxCampo : 0;
+                        $paresNovo = $campoNovo ? (new Quali_NivelController())->listarPares($campoNovo) : $pares;
+                        $diretoresNovo = $campoNovo ? $controller->listarDiretores($campoNovo) : $diretores;
+                        $qnNovoSel = $novoAtivo ? $ctxQualiNivel : null;
+                        $dirNovoSel = $novoAtivo ? $ctxDiretor : null;
+                        $turnoNovoSel = $novoAtivo ? trim($_GET['turno'] ?? '') : '';
+                        $anoNovo = $novoAtivo ? trim($_GET['ano_lectivo'] ?? '') : '';
+                        $nomeNovo = $novoAtivo ? trim($_GET['nome'] ?? '') : '';
+                        ?>
+                        <input type="hidden" name="modal" value="novo">
+                        <input type="hidden" name="pesquisa" value="<?= htmlspecialchars($pesquisa) ?>">
                         <div class="form-group">
                             <label for="t-campo-novo">Campo / Área</label>
                             <select id="t-campo-novo" name="codCampo" class="form-control">
                                 <option value="">Selecione o campo...</option>
                                 <?php foreach ($campos as $c): ?>
-                                    <option value="<?= (int) $c->getCodigo() ?>"><?= htmlspecialchars($c->getNome()) ?></option>
+                                    <option value="<?= (int) $c->getCodigo() ?>"
+                                        <?= $campoNovo === (int) $c->getCodigo() ? 'selected' : '' ?>><?= htmlspecialchars($c->getNome()) ?></option>
                                 <?php endforeach; ?>
                             </select>
+                            <button type="submit" name="carregar" value="1"
+                                    formmethod="get" formnovalidate
+                                    formaction="index.php#modal-novo"
+                                    class="btn btn-secondary btn-sm">Carregar</button>
                         </div>
                         <div class="form-group">
                             <label for="t-qn-novo">Qualificação / Nível <span class="required">*</span></label>
                             <select id="t-qn-novo" name="idQualiNivel" class="form-control" required>
                                 <option value="">Selecione...</option>
-                                <?php foreach ($pares as $p): ?>
-                                    <option value="<?= (int) $p['codigo'] ?>"><?= htmlspecialchars($p['descricao']) ?></option>
+                                <?php foreach ($paresNovo as $p): ?>
+                                    <option value="<?= (int) $p['codigo'] ?>"
+                                        <?= $qnNovoSel !== null && (int) $qnNovoSel === (int) $p['codigo'] ? 'selected' : '' ?>><?= htmlspecialchars($p['descricao']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -355,8 +398,9 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             <label for="t-diretor-novo">Diretor de Turma <span class="required">*</span></label>
                             <select id="t-diretor-novo" name="codDiretor" class="form-control" required>
                                 <option value="">Selecione...</option>
-                                <?php foreach ($diretores as $d): ?>
-                                    <option value="<?= (int) $d['codigo'] ?>"><?= htmlspecialchars($d['descricao']) ?></option>
+                                <?php foreach ($diretoresNovo as $d): ?>
+                                    <option value="<?= (int) $d['codigo'] ?>"
+                                        <?= $dirNovoSel !== null && (int) $dirNovoSel === (int) $d['codigo'] ? 'selected' : '' ?>><?= htmlspecialchars($d['descricao']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -365,19 +409,22 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             <select id="t-turno-novo" name="turno" class="form-control" required>
                                 <option value="">Selecione...</option>
                                 <?php foreach ($turnos as $t): ?>
-                                    <option value="<?= htmlspecialchars($t) ?>"><?= htmlspecialchars($t) ?></option>
+                                    <option value="<?= htmlspecialchars($t) ?>"
+                                        <?= $turnoNovoSel === $t ? 'selected' : '' ?>><?= htmlspecialchars($t) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="form-group">
                             <label for="t-ano-novo">Ano lectivo <span class="required">*</span></label>
                             <input type="number" id="t-ano-novo" name="ano_lectivo" class="form-control"
-                                   min="1000" max="9999" step="1" placeholder="Ex: 2025" required>
+                                   min="1000" max="9999" step="1" placeholder="Ex: 2025"
+                                   value="<?= htmlspecialchars((string) $anoNovo) ?>" required>
                         </div>
                         <div class="form-group">
                             <label for="t-nome-novo">Nome da turma <span class="required">*</span></label>
                             <input type="text" id="t-nome-novo" name="nome" class="form-control"
-                                   placeholder="Ex: TI-2025-A" maxlength="40" required>
+                                   placeholder="Ex: TI-2025-A" maxlength="40"
+                                   value="<?= htmlspecialchars($nomeNovo) ?>" required>
                         </div>
                     </div>
                     <div class="modal-footer">

@@ -1,10 +1,13 @@
 <?php
 require_once __DIR__ . '/../../services/Sessao.php';
 require_once __DIR__ . '/../../controller/FormandoController.php';
+require_once __DIR__ . '/../../controller/CampoController.php';
 
 Sessao::exigirLogin('../login/index.php');
 
 $controller = new FormandoController();
+$campoController = new CampoController();
+$campos = $campoController->listarCampo();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['gravar'])) {
@@ -15,10 +18,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $contacto = trim($_POST['contacto'] ?? '');
         $email = trim($_POST['email'] ?? '');
         $bi = trim($_POST['bi'] ?? '');
+        $codCampo = filter_input(INPUT_POST, 'codCampo', FILTER_VALIDATE_INT);
         if (empty($nome) || empty($apelido) || empty($bi)) {
             $_SESSION['flash'] = [
                 'type' => 'danger',
                 'msg' => 'Os campos nome, apelido e nº do BI não podem estar vazios.'
+            ];
+        } elseif (!$codCampo) {
+            $_SESSION['flash'] = [
+                'type' => 'danger',
+                'msg' => 'Selecione o campo (área) do formando.'
             ];
         } elseif (strlen($nome) > 100 || strlen($apelido) > 100 || strlen($email) > 100 || strlen($bi) > 20) {
             $_SESSION['flash'] = [
@@ -54,10 +63,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $contacto = trim($_POST['contacto'] ?? '');
         $email = trim($_POST['email'] ?? '');
         $bi = trim($_POST['bi'] ?? '');
+        $codCampo = filter_input(INPUT_POST, 'codCampo', FILTER_VALIDATE_INT);
         if (!$codigo || empty($nome) || empty($apelido) || empty($bi)) {
             $_SESSION['flash'] = [
                 'type' => 'danger',
                 'msg' => 'Dados inválidos para atualização do formando.'
+            ];
+        } elseif (!$codCampo) {
+            $_SESSION['flash'] = [
+                'type' => 'danger',
+                'msg' => 'Selecione o campo (área) do formando.'
             ];
         } elseif (strlen($nome) > 100 || strlen($apelido) > 100 || strlen($email) > 100 || strlen($bi) > 20) {
             $_SESSION['flash'] = [
@@ -165,6 +180,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             <th class="col-codigo">Código</th>
                             <th>Nome</th>
                             <th>Apelido</th>
+                            <th>Campo</th>
                             <th>Contacto</th>
                             <th>E-mail</th>
                             <th>Nº do BI</th>
@@ -174,7 +190,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                     <tbody>
                         <?php if (empty($formandos)): ?>
                             <tr>
-                                <td colspan="7" class="table-empty">
+                                <td colspan="8" class="table-empty">
                                     Nenhum formando encontrado.
                                 </td>
                             </tr>
@@ -184,6 +200,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     <td><strong>#<?= htmlspecialchars($formando->getCodigo()) ?></strong></td>
                                     <td><?= htmlspecialchars($formando->getNome()) ?></td>
                                     <td><?= htmlspecialchars($formando->getApelido()) ?></td>
+                                    <td><?= htmlspecialchars($formando->getCampo() ? $formando->getCampo()->getNome() : '-') ?></td>
                                     <td><?= htmlspecialchars($formando->getContacto() ?? '-') ?></td>
                                     <td><?= htmlspecialchars($formando->getEmail() ?? '-') ?></td>
                                     <td><?= htmlspecialchars($formando->getBi()) ?></td>
@@ -207,6 +224,18 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                         <form method="post" action="index.php">
                                             <div class="modal-body">
                                                 <input type="hidden" name="codigo" value="<?= htmlspecialchars($formando->getCodigo()) ?>">
+                                                <div class="form-group">
+                                                    <label for="campo-<?= $formando->getCodigo() ?>">Campo <span class="required">*</span></label>
+                                                    <select id="campo-<?= $formando->getCodigo() ?>" name="codCampo" class="form-control" required>
+                                                        <option value="">-- Selecionar campo --</option>
+                                                        <?php foreach ($campos as $campo): ?>
+                                                            <option value="<?= htmlspecialchars($campo->getCodigo()) ?>"
+                                                                <?= $formando->getCodCampo() == $campo->getCodigo() ? 'selected' : '' ?>>
+                                                                <?= htmlspecialchars($campo->getNome()) ?>
+                                                            </option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+                                                </div>
                                                 <div class="form-group">
                                                     <label for="nome-<?= $formando->getCodigo() ?>">Nome <span class="required">*</span></label>
                                                     <input type="text" id="nome-<?= $formando->getCodigo() ?>" name="nome" class="form-control" value="<?= htmlspecialchars($formando->getNome()) ?>" maxlength="100" required>
@@ -297,6 +326,17 @@ require_once __DIR__ . '/../partials/sidebar.php';
             </div>
             <form method="post" action="index.php">
                 <div class="modal-body">
+                    <div class="form-group">
+                        <label for="novo-campo">Campo <span class="required">*</span></label>
+                        <select id="novo-campo" name="codCampo" class="form-control" required>
+                            <option value="">-- Selecionar campo --</option>
+                            <?php foreach ($campos as $campo): ?>
+                                <option value="<?= htmlspecialchars($campo->getCodigo()) ?>">
+                                    <?= htmlspecialchars($campo->getNome()) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                     <div class="form-group">
                         <label for="novo-nome">Nome <span class="required">*</span></label>
                         <input type="text" id="novo-nome" name="nome" class="form-control" placeholder="Ex: João" maxlength="100" required>

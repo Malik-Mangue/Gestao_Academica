@@ -16,16 +16,18 @@ class FormadorController {
         $this->dao = new FormadorDao();
     }
 
-    public function cadastrarFormador($nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valor_horas, $horas_mes, $salario, $isDiretor, $isCoordenador) {
+    public function cadastrarFormador($nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valor_horas, $horas_mes, $salario, $isDiretor, $isCoordenador, $codCampo = null) {
         if ($this->texto($nome, 40) && $this->texto($apelido, 40)
             && $this->emailObrigatorio($email)
             && $this->inteiroPositivo($contacto)
             && $this->inteiroPositivo($valor_horas)
-            && $this->inteiroPositivo($horas_mes)) {
+            && $this->inteiroPositivo($horas_mes)
+            && $codCampo != null && (int) $codCampo > 0) {
 
             $salario = (int) $valor_horas * (int) $horas_mes;
 
             $formador = new Formador(null, $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valor_horas, $horas_mes, $salario);
+            $formador->setCodCampo((int) $codCampo);
             $this->dao->create($formador);
 
             if ($isDiretor) {
@@ -41,20 +43,22 @@ class FormadorController {
         return false;
     }
 
-    public function listar($pesquisa = null) {
-        return $this->dao->getAll($pesquisa);
+    public function listar($pesquisa = null, $codCampo = null) {
+        return $this->dao->getAll($pesquisa, $codCampo);
     }
 
-    public function atualizarFormador($codigo, $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valor_horas, $horas_mes, $salario, $isDiretor, $isCoordenador) {
+    public function atualizarFormador($codigo, $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valor_horas, $horas_mes, $salario, $isDiretor, $isCoordenador, $codCampo = null) {
         if ($codigo > 0 && $this->texto($nome, 40) && $this->texto($apelido, 40)
             && $this->emailObrigatorio($email)
             && $this->inteiroPositivo($contacto)
             && $this->inteiroPositivo($valor_horas)
-            && $this->inteiroPositivo($horas_mes)) {
+            && $this->inteiroPositivo($horas_mes)
+            && $codCampo != null && (int) $codCampo > 0) {
 
             $salario = (int) $valor_horas * (int) $horas_mes;
 
             $formador = new Formador($codigo, $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valor_horas, $horas_mes, $salario);
+            $formador->setCodCampo((int) $codCampo);
             $this->dao->update($formador);
 
             $diretorTurmaController = new Diretor_TurmaController();

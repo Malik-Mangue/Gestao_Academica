@@ -18,8 +18,21 @@ class TurmaDao {
         $this->db = $database->getConnection();
     }
 
+    // Número de formandos (matrículas) já associados a uma turma
+    private function contarInscritos($codTurma) {
+        $stmt = $this->db->prepare("select count(*) as total from Turma_Formando where cod_Turma = ?");
+        $stmt->bind_param("i", $codTurma);
+        $stmt->execute();
+        return (int) $stmt->get_result()->fetch_assoc()['total'];
+    }
+
     public function create(Turma $turma) {
-        $sql = "insert into Turma (nome, ano_lectivo, turno, id_Diretor_Turma, id_Quali_Nivel) values (?, ?, ?, ?, ?)";
+        $capacidade = (int) $turma->getCapacidadeMaxima();
+        if ($capacidade < 1) {
+            throw new Exception("A capacidade máxima tem de ser um número inteiro maior que zero.");
+        }
+
+        $sql = "insert into Turma (nome, ano_lectivo, turno, id_Diretor_Turma, id_Quali_Nivel, capacidade_maxima) values (?, ?, ?, ?, ?, ?)";
         $stmt = $this->db->prepare($sql);
 
         $nome = $turma->getNome();
@@ -28,7 +41,7 @@ class TurmaDao {
         $codigoFormador = $turma->getDiretorTurma()->getFormador()->getCodigo();
         $codigoQualiNivel = $turma->getQualiNivel()->getCodigo();
 
-        $stmt->bind_param("sisii", $nome, $anoIngresso, $turno, $codigoFormador, $codigoQualiNivel);
+        $stmt->bind_param("sisiii", $nome, $anoIngresso, $turno, $codigoFormador, $codigoQualiNivel, $capacidade);
         $result = $stmt->execute();
 
         if ($result) {
@@ -44,17 +57,41 @@ class TurmaDao {
     }
 
     public function update(Turma $turma) {
-        $sql = "update Turma set nome = ?, ano_lectivo = ?, turno = ?, id_Diretor_Turma = ?, id_Quali_Nivel = ? where codigo = ?";
+        $codigo = $turma->getCodigo();
+        $capacidade = (int) $turma->getCapacidadeMaxima();
+        $codigoQualiNivel = (int) $turma->getQualiNivel()->getCodigo();
+
+        if ($capacidade < 1) {
+            throw new Exception("A capacidade máxima tem de ser um número inteiro maior que zero.");
+        }
+
+        // Não deixa reduzir a capacidade abaixo dos formandos já inscritos
+        $inscritos = $this->contarInscritos($codigo);
+        if ($capacidade < $inscritos) {
+            throw new Exception("A capacidade máxima não pode ser inferior ao número de formandos inscritos ($inscritos).");
+        }
+
+        // Não deixa mudar a qualificação/nível se já há formandos inscritos,
+        // porque as matrículas deixariam de ser compatíveis com a turma
+        if ($inscritos > 0) {
+            $stmtQn = $this->db->prepare("select id_Quali_Nivel from Turma where codigo = ?");
+            $stmtQn->bind_param("i", $codigo);
+            $stmtQn->execute();
+            $atual = $stmtQn->get_result()->fetch_assoc();
+            if ($atual !== null && (int) $atual['id_Quali_Nivel'] !== $codigoQualiNivel) {
+                throw new Exception("Não é possível alterar a qualificação/nível de uma turma que já tem formandos inscritos.");
+            }
+        }
+
+        $sql = "update Turma set nome = ?, ano_lectivo = ?, turno = ?, id_Diretor_Turma = ?, id_Quali_Nivel = ?, capacidade_maxima = ? where codigo = ?";
         $stmt = $this->db->prepare($sql);
 
         $nome = $turma->getNome();
         $anoIngresso = $turma->getAnoIngresso();
         $turno = $turma->getTurno();
         $codigoFormador = $turma->getDiretorTurma()->getFormador()->getCodigo();
-        $codigoQualiNivel = $turma->getQualiNivel()->getCodigo();
-        $codigo = $turma->getCodigo();
 
-        $stmt->bind_param("sisiii", $nome, $anoIngresso, $turno, $codigoFormador, $codigoQualiNivel, $codigo);
+        $stmt->bind_param("sisiiii", $nome, $anoIngresso, $turno, $codigoFormador, $codigoQualiNivel, $capacidade, $codigo);
         $result = $stmt->execute();
 
         if ($result) {
@@ -70,7 +107,8 @@ class TurmaDao {
     }
 
     public function getAll($nome, $codCampo = null) {
-        $sql = "select Turma.codigo, Turma.nome, ano_lectivo, turno, Turma.id_Diretor_Turma, Turma.id_Quali_Nivel,
+        $sql = "select Turma.codigo, Turma.nome, ano_lectivo, turno, Turma.capacidade_maxima,
+                       Turma.id_Diretor_Turma, Turma.id_Quali_Nivel,
                        Quali_Nivel.cod_Quali as cod_quali, Quali_Nivel.cod_Nivel as cod_nivel,
                        Formador.nome as diretor_turma, Qualificacao.titulo as titulo, Nivel.nome as nivel,
                        (select group_concat(c.nome order by c.nome separator ', ')
@@ -79,7 +117,8 @@ class TurmaDao {
                          where cl.cod_Qualificacao = Quali_Nivel.cod_Quali) as campo,
                        (select min(cl.cod_Campo)
                           from Classificacao cl
-                         where cl.cod_Qualificacao = Quali_Nivel.cod_Quali) as campo_cod
+                         where cl.cod_Qualificacao = Quali_Nivel.cod_Quali) as campo_cod,
+                       (select count(*) from Turma_Formando tf where tf.cod_Turma = Turma.codigo) as inscritos
                 from Turma
                 join Diretor_Turma on cod_Formador = id_Diretor_Turma
                 join Formador on Formador.codigo = cod_Formador
@@ -114,11 +153,10 @@ class TurmaDao {
             $qualiNivel->setQualificacao($qualificacao);
             $qualiNivel->setNivel($nivel);
 
-            $turmas[] = new Turma($rs['codigo'], $rs['nome'], $rs['ano_lectivo'], $rs['turno'], $diretorTurma, $qualificacao, $qualiNivel);
+            $turmas[] = new Turma($rs['codigo'], $rs['nome'], $rs['ano_lectivo'], $rs['turno'], $diretorTurma, $qualificacao, $qualiNivel, (int) $rs['capacidade_maxima']);
         }
         return $turmas;
     }
-
 
     public function listarOpcoes($sql) {
         $stmt = $this->db->prepare($sql);
@@ -162,7 +200,6 @@ class TurmaDao {
         return $this->listarOpcoes("select codigo, nome as descricao from Nivel order by nome");
     }
 
-
     public function getParesQualiNivel($codCampo = null) {
         $sql = "select qn.codigo_Quali_Nivel as codigo,
                        concat(q.titulo, ' — ', n.nome) as descricao
@@ -188,7 +225,7 @@ class TurmaDao {
     }
 
     public function getById($codigo) {
-        $sql = "select Turma.codigo, Turma.nome, ano_lectivo, turno,
+        $sql = "select Turma.codigo, Turma.nome, ano_lectivo, turno, Turma.capacidade_maxima,
                        Turma.id_Diretor_Turma, Turma.id_Quali_Nivel,
                        Quali_Nivel.cod_Quali as cod_quali, Quali_Nivel.cod_Nivel as cod_nivel,
                        Formador.nome as diretor_turma, Qualificacao.titulo as titulo, Nivel.nome as nivel
@@ -223,11 +260,17 @@ class TurmaDao {
             $rs['turno'],
             new Diretor_turma($formador),
             $qualificacao,
-            $qualiNivel
+            $qualiNivel,
+            (int) $rs['capacidade_maxima']
         );
     }
 
     public function delete($codigo) {
+        // Não deixa eliminar uma turma que ainda tem formandos associados
+        if ($this->contarInscritos($codigo) > 0) {
+            throw new Exception("Remova primeiro os formandos desta turma antes de a eliminar.");
+        }
+
         $sql = "delete from Turma where codigo = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->bind_param("i", $codigo);

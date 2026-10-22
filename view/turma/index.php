@@ -49,6 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $turno        = trim($_POST['turno'] ?? '');
         $codDiretor   = filter_input(INPUT_POST, 'codDiretor', FILTER_VALIDATE_INT);
         $idQualiNivel = filter_input(INPUT_POST, 'idQualiNivel', FILTER_VALIDATE_INT);
+        $capacidade   = trim($_POST['capacidade_maxima'] ?? '');
 
         $qualiNivel = $idQualiNivel ? (new Quali_NivelController())->buscar($idQualiNivel) : null;
 
@@ -64,6 +65,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione o diretor de turma.'];
         } elseif ($qualiNivel === null) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione a qualificação e o nível da turma.'];
+        } elseif (!$controller->inteiroPositivo($capacidade) || (int) $capacidade > 200) {
+            $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'A capacidade máxima deve ser um número entre 1 e 200.'];
         } else {
             $formador     = new Formador($codDiretor, null, null, null, null, null, null, null, null, null);
             $diretor      = new Diretor_turma($formador);
@@ -72,8 +75,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             try {
                 $sucesso = $acao === 'gravar'
-                    ? $controller->cadastrarTurma($nome, (int) $anoLectivo, $turno, $diretor, $qualificacao, $nivel, $qualiNivel)
-                    : $controller->atualizarTurma($codigo, $nome, (int) $anoLectivo, $turno, $diretor, $qualificacao, $nivel, $qualiNivel);
+                    ? $controller->cadastrarTurma($nome, (int) $anoLectivo, $turno, $diretor, $qualificacao, $nivel, $qualiNivel, (int) $capacidade)
+                    : $controller->atualizarTurma($codigo, $nome, (int) $anoLectivo, $turno, $diretor, $qualificacao, $nivel, $qualiNivel, (int) $capacidade);
 
                 $_SESSION['flash'] = $sucesso
                     ? ['type' => 'success', 'msg' => $acao === 'gravar' ? 'Turma cadastrada com sucesso!' : 'Turma atualizada com sucesso!']
@@ -92,10 +95,9 @@ $pesquisa = trim($_GET['pesquisa'] ?? '');
 $turmas        = $controller->listarTurma($pesquisa);
 $diretores     = $controller->listarDiretores();
 $pares         = (new Quali_NivelController())->listarPares();
-$campos        = (new CampoController())->listarCampo(); 
+$campos        = (new CampoController())->listarCampo();
 
-// Contexto do "Carregar" (sem JavaScript): o campo selecionado filtra a
-// qualificação/nível e o diretor de turma.
+
 $carregar      = isset($_GET['carregar']);
 $modalAtivo    = $_GET['modal'] ?? '';
 $ctxCampo      = filter_input(INPUT_GET, 'codCampo', FILTER_VALIDATE_INT);
@@ -157,6 +159,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             <th>Nome</th>
                             <th>Ano Lectivo</th>
                             <th>Turno</th>
+                            <th>Capacidade</th>
                             <th>Diretor de Turma</th>
                             <th>Qualificação</th>
                             <th>Campo</th>
@@ -169,7 +172,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                     <tbody>
                         <?php if (empty($turmas)): ?>
                             <tr>
-                                <td colspan="<?= $pode_editar || $pode_remover ? 9 : 8 ?>" class="table-empty">
+                                <td colspan="<?= $pode_editar || $pode_remover ? 10 : 9 ?>" class="table-empty">
                                     Nenhuma turma cadastrada no momento.
                                 </td>
                             </tr>
@@ -179,16 +182,16 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                 $nomeDiretor = ($turma->getDiretorTurma() !== null && $turma->getDiretorTurma()->getFormador() !== null)
                                     ? $turma->getDiretorTurma()->getFormador()->getNome() : '-';
 
-
-                                    $qn = $turma->getQualiNivel();
-                                    $tituloQuali = ($qn !== null && $qn->getQualificacao() !== null) ? $qn->getQualificacao()->getTitulo() : '-';
-                                    $nomeNivel = ($qn !== null && $qn->getNivel() !== null) ? $qn->getNivel()->getNome() : '-';
+                                $qn = $turma->getQualiNivel();
+                                $tituloQuali = ($qn !== null && $qn->getQualificacao() !== null) ? $qn->getQualificacao()->getTitulo() : '-';
+                                $nomeNivel = ($qn !== null && $qn->getNivel() !== null) ? $qn->getNivel()->getNome() : '-';
                                 ?>
                                 <tr>
                                     <td><strong>#<?= htmlspecialchars((string) $turma->getCodigo()) ?></strong></td>
                                     <td><?= htmlspecialchars($turma->getNome()) ?></td>
                                     <td><?= htmlspecialchars((string) $turma->getAnoIngresso()) ?></td>
                                     <td><?= htmlspecialchars($turma->getTurno()) ?></td>
+                                    <td><?= (int) $turma->getCapacidadeMaxima() ?></td>
                                     <td><?= htmlspecialchars((string) $nomeDiretor) ?></td>
                                     <td><?= htmlspecialchars((string) $tituloQuali) ?></td>
                                     <td><?= htmlspecialchars(($qn !== null && $qn->getQualificacao() !== null && $qn->getQualificacao()->getCampo() !== null) ? $qn->getQualificacao()->getCampo() : '-') ?></td>
@@ -291,6 +294,12 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                                value="<?= htmlspecialchars((string) $turma->getAnoIngresso()) ?>" required>
                                                     </div>
                                                     <div class="form-group">
+                                                        <label for="t-cap-<?= $sufixo ?>">Capacidade máxima <span class="required">*</span></label>
+                                                        <input type="number" id="t-cap-<?= $sufixo ?>" name="capacidade_maxima" class="form-control"
+                                                               min="1" max="200" step="1" placeholder="Ex: 30"
+                                                               value="<?= (int) $turma->getCapacidadeMaxima() ?>" required>
+                                                    </div>
+                                                    <div class="form-group">
                                                         <label for="t-nome-<?= $sufixo ?>">Nome da turma <span class="required">*</span></label>
                                                         <input type="text" id="t-nome-<?= $sufixo ?>" name="nome" class="form-control"
                                                                placeholder="Ex: TI-2025-A" maxlength="40"
@@ -326,6 +335,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                         <p><strong>Nome:</strong> <?= htmlspecialchars($turma->getNome()) ?></p>
                                                         <p><strong>Ano lectivo:</strong> <?= htmlspecialchars((string) $turma->getAnoIngresso()) ?></p>
                                                         <p><strong>Turno:</strong> <?= htmlspecialchars($turma->getTurno()) ?></p>
+                                                        <p><strong>Capacidade máxima:</strong> <?= (int) $turma->getCapacidadeMaxima() ?></p>
                                                     </div>
                                                     <p class="confirm-warning">
                                                         Atenção: esta ação não poderá ser desfeita.
@@ -368,6 +378,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                         $turnoNovoSel = $novoAtivo ? trim($_GET['turno'] ?? '') : '';
                         $anoNovo = $novoAtivo ? trim($_GET['ano_lectivo'] ?? '') : '';
                         $nomeNovo = $novoAtivo ? trim($_GET['nome'] ?? '') : '';
+                        $capNovo = $novoAtivo ? trim($_GET['capacidade_maxima'] ?? '') : '';
                         ?>
                         <input type="hidden" name="modal" value="novo">
                         <input type="hidden" name="pesquisa" value="<?= htmlspecialchars($pesquisa) ?>">
@@ -420,6 +431,12 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             <input type="number" id="t-ano-novo" name="ano_lectivo" class="form-control"
                                    min="1000" max="9999" step="1" placeholder="Ex: 2025"
                                    value="<?= htmlspecialchars((string) $anoNovo) ?>" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="t-cap-novo">Capacidade máxima <span class="required">*</span></label>
+                            <input type="number" id="t-cap-novo" name="capacidade_maxima" class="form-control"
+                                   min="1" max="200" step="1" placeholder="Ex: 30"
+                                   value="<?= htmlspecialchars($capNovo) ?>" required>
                         </div>
                         <div class="form-group">
                             <label for="t-nome-novo">Nome da turma <span class="required">*</span></label>

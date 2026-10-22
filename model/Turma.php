@@ -7,8 +7,9 @@ class Turma {
     private $diretor_turma;
     private $qualificacao;
     private $quali_nivel;
+    private $capacidade_maxima;
 
-    public function __construct($codigo, $nome, $ano_ingresso, $turno, $diretor_turma = null, $qualificacao = null, $quali_nivel = null)
+    public function __construct($codigo, $nome, $ano_ingresso, $turno, $diretor_turma = null, $qualificacao = null, $quali_nivel = null, $capacidade_maxima = 30)
     {
         $this->codigo = $codigo;
         $this->nome = $nome;
@@ -17,6 +18,7 @@ class Turma {
         $this->diretor_turma = $diretor_turma;
         $this->qualificacao = $qualificacao;
         $this->quali_nivel = $quali_nivel;
+        $this->capacidade_maxima = $capacidade_maxima;
     }
 
     public function getCodigo(){ return $this->codigo; }
@@ -39,5 +41,8 @@ class Turma {
 
     public function getQualiNivel(){ return $this->quali_nivel; }
     public function setQualiNivel($quali_nivel){ $this->quali_nivel = $quali_nivel; }
+
+    public function getCapacidadeMaxima(){ return $this->capacidade_maxima; }
+    public function setCapacidadeMaxima($capacidade_maxima){ $this->capacidade_maxima = $capacidade_maxima; }
 }
 ?>

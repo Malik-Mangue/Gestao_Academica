@@ -6,8 +6,10 @@ class Matricula {
     private $nivel;
     private $id_quali_nivel;
     private $data_matricula;
+    private $codTurma;
+    private $nomeTurma;
 
-    public function __construct($codigo, $formando, $qualificacao, $nivel, $id_quali_nivel, $data_matricula)
+    public function __construct($codigo, $formando, $qualificacao, $nivel, $id_quali_nivel, $data_matricula, $codTurma = null, $nomeTurma = null)
     {
         $this->codigo = $codigo;
         $this->formando = $formando;
@@ -15,6 +17,8 @@ class Matricula {
         $this->nivel = $nivel;
         $this->id_quali_nivel = $id_quali_nivel;
         $this->data_matricula = $data_matricula;
+        $this->codTurma = $codTurma;
+        $this->nomeTurma = $nomeTurma;
     }
 
     public function getCodigo(){ return $this->codigo; }
@@ -34,5 +38,11 @@ class Matricula {
 
     public function getDataMatricula(){ return $this->data_matricula; }
     public function setDataMatricula($data_matricula){ $this->data_matricula = $data_matricula; }
+
+    public function getCodTurma(){ return $this->codTurma; }
+    public function setCodTurma($codTurma){ $this->codTurma = $codTurma; }
+
+    public function getNomeTurma(){ return $this->nomeTurma; }
+    public function setNomeTurma($nomeTurma){ $this->nomeTurma = $nomeTurma; }
 }
 ?>

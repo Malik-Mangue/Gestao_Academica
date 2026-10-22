@@ -98,5 +98,9 @@ class TurmaController {
     public function existeTurmaComDiretor($codigoFormador) {
         return $this->dao->existeTurmaComDiretor($codigoFormador);
     }
+
+    public function getByQualiNivel($codigoQualiNivel) {
+        return $this->dao->getByQualiNivel($codigoQualiNivel);
+    }
 }
 ?>

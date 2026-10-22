@@ -154,12 +154,25 @@ class ModuloDao {
     }
 
     /**
-     * Módulos (para dropdowns), filtrados por qualificação, categoria e/ou semestre.
+     * Módulos filtrados por qualificação, categoria, semestre, nome, par
+     * qualificação/nível e/ou formando.
+     *
      * A qualificação é resolvida via Quali_Nivel (Modulo.id_Quali_Nivel) e o
      * semestre via Quali_modulo (Quali_modulo.cod_modulo = Modulo.codigo).
+     * Quando $codigoFormando é indicado, são excluídos os módulos em que o
+     * formando já possui inscrição.
      */
-    public function getModulosFiltrados($codQuali = null, $categoria = null, $semestre = null) {
-        $sql = "select distinct m.codigo as codigo, m.nome_modulo as descricao
+    public function getModulosFiltrados($codQuali = null, $categoria = null, $semestre = null,
+                                       $pesquisa = null, $idQualiNivel = null, $codigoFormando = null) {
+        $sql = "select m.codigo as codigo,
+                       m.nome_modulo as descricao,
+                       m.nome_modulo as nome,
+                       m.categoria,
+                       m.carga_horaria,
+                       m.id_Quali_Nivel,
+                       (select min(qm.semestre)
+                          from Quali_modulo qm
+                         where qm.cod_modulo = m.codigo) as semestre
                 from Modulo m
                 join Quali_Nivel qn on qn.codigo_Quali_Nivel = m.id_Quali_Nivel";
         $condicoes = [];
@@ -176,10 +189,30 @@ class ModuloDao {
             $tipos .= "s";
         }
         if ($semestre !== null && strlen($semestre) > 0) {
-            $sql .= " join Quali_modulo qm on qm.cod_modulo = m.codigo";
-            $condicoes[] = "qm.semestre = ?";
+            $condicoes[] = "exists (select 1
+                                      from Quali_modulo qm_semestre
+                                     where qm_semestre.cod_modulo = m.codigo
+                                       and qm_semestre.semestre = ?)";
             $parametros[] = $semestre;
             $tipos .= "s";
+        }
+        if ($pesquisa !== null && strlen($pesquisa) > 0) {
+            $condicoes[] = "m.nome_modulo like ?";
+            $parametros[] = "%" . $pesquisa . "%";
+            $tipos .= "s";
+        }
+        if ($idQualiNivel !== null && (int) $idQualiNivel > 0) {
+            $condicoes[] = "m.id_Quali_Nivel = ?";
+            $parametros[] = (int) $idQualiNivel;
+            $tipos .= "i";
+        }
+        if ($codigoFormando !== null && (int) $codigoFormando > 0) {
+            $condicoes[] = "not exists (select 1
+                                           from Inscricao i
+                                          where i.codigo_modulo = m.codigo
+                                            and i.codigo_formando = ?)";
+            $parametros[] = (int) $codigoFormando;
+            $tipos .= "i";
         }
         if (!empty($condicoes)) {
             $sql .= " where " . implode(" and ", $condicoes);
@@ -194,7 +227,15 @@ class ModuloDao {
         $result = $stmt->get_result();
         $opcoes = [];
         while ($rs = $result->fetch_assoc()) {
-            $opcoes[] = ['codigo' => $rs['codigo'], 'descricao' => $rs['descricao']];
+            $opcoes[] = [
+                'codigo' => $rs['codigo'],
+                'descricao' => $rs['descricao'],
+                'nome' => $rs['nome'],
+                'categoria' => $rs['categoria'],
+                'carga_horaria' => $rs['carga_horaria'],
+                'idQualiNivel' => $rs['id_Quali_Nivel'],
+                'semestre' => $rs['semestre'],
+            ];
         }
         return $opcoes;
     }

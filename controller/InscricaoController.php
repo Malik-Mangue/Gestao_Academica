@@ -16,11 +16,61 @@ class InscricaoController {
         if ($formando != null && $modulo != null && $semestre != null && strlen($semestre) > 0
             && $data_inscricao != null && strlen($data_inscricao) > 0) {
 
+            if ($this->dao->existeInscricaoPorFormandoModulo($formando->getCodigo(), $modulo->getCodigo())) {
+                return false;
+            }
+
             $inscricao = new Inscricao(null, $formando, $modulo, $semestre, $data_inscricao);
-            $this->dao->create($inscricao);
-            return true;
+            return $this->dao->create($inscricao);
         }
         return false;
+    }
+
+    /**
+     * Regista vários módulos numa única transação.
+     *
+     * Quando $semestre é null, o semestre de cada módulo é obtido a partir da
+     * respetiva associação Quali_modulo, permitindo selecionar módulos de
+     * semestres diferentes no mesmo pedido.
+     */
+    public function cadastrarInscricoes($formando, $modulos, $semestre, $data_inscricao) {
+        if ($formando == null || !is_array($modulos) || empty($modulos)
+            || $data_inscricao == null || strlen($data_inscricao) === 0) {
+            return false;
+        }
+        if ($semestre !== null && strlen($semestre) === 0) {
+            return false;
+        }
+
+        $inscricoes = [];
+        $modulosVistos = [];
+        foreach ($modulos as $modulo) {
+            if ($modulo == null) {
+                return false;
+            }
+
+            $codigoModulo = (int) $modulo->getCodigo();
+            if ($codigoModulo <= 0 || isset($modulosVistos[$codigoModulo])) {
+                return false;
+            }
+            if ($this->dao->existeInscricaoPorFormandoModulo($formando->getCodigo(), $codigoModulo)) {
+                return false;
+            }
+
+            $semestreModulo = $semestre;
+            if ($semestreModulo === null) {
+                $qualiModulo = $modulo->getQualiModulo();
+                $semestreModulo = $qualiModulo !== null ? $qualiModulo->getSemestre() : null;
+            }
+            if ($semestreModulo === null || strlen((string) $semestreModulo) === 0) {
+                return false;
+            }
+
+            $modulosVistos[$codigoModulo] = true;
+            $inscricoes[] = new Inscricao(null, $formando, $modulo, $semestreModulo, $data_inscricao);
+        }
+
+        return $this->dao->createMany($inscricoes);
     }
 
     public function listarInscricao($pesquisa = null, $codCampo = null) {
@@ -52,6 +102,10 @@ class InscricaoController {
 
     public function existeInscricaoPorModulo($codigoModulo) {
         return $this->dao->existeInscricaoPorModulo($codigoModulo);
+    }
+
+    public function existeInscricaoPorFormandoModulo($codigoFormando, $codigoModulo) {
+        return $this->dao->existeInscricaoPorFormandoModulo($codigoFormando, $codigoModulo);
     }
 }
 ?>

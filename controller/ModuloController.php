@@ -53,8 +53,16 @@ class ModuloController {
         return $this->dao->getModulos();
     }
 
-    public function listarModulosFiltrados($codQuali = null, $categoria = null, $semestre = null) {
-        return $this->dao->getModulosFiltrados($codQuali, $categoria, $semestre);
+    public function listarModulosFiltrados($codQuali = null, $categoria = null, $semestre = null,
+                                           $pesquisa = null, $idQualiNivel = null, $codigoFormando = null) {
+        return $this->dao->getModulosFiltrados(
+            $codQuali,
+            $categoria,
+            $semestre,
+            $pesquisa,
+            $idQualiNivel,
+            $codigoFormando
+        );
     }
 
     public function buscarModulo($codigo) {

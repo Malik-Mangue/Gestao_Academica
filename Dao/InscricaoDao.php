@@ -40,6 +40,29 @@ class InscricaoDao {
         return $result;
     }
 
+    /**
+     * Regista várias inscrições numa única transação (tudo ou nada).
+     */
+    public function createMany(array $inscricoes) {
+        if (empty($inscricoes)) {
+            return false;
+        }
+
+        $this->db->begin_transaction();
+        try {
+            foreach ($inscricoes as $inscricao) {
+                if (!$this->create($inscricao)) {
+                    throw new mysqli_sql_exception("Falha ao registar uma inscrição.");
+                }
+            }
+            $this->db->commit();
+            return true;
+        } catch (mysqli_sql_exception $e) {
+            $this->db->rollback();
+            return false;
+        }
+    }
+
     public function getAll($pesquisa = null, $codCampo = null) {
         $sql = "select i.codigo_inscricao, i.codigo_formando, i.codigo_modulo, i.semestre, i.data_inscricao,
                        f.nome_formando, f.apelido_formando, m.nome_modulo,
@@ -165,6 +188,15 @@ class InscricaoDao {
         $stmt->execute();
         $rs = $stmt->get_result()->fetch_assoc();
         return $rs['total'] > 0;
+    }
+
+    public function existeInscricaoPorFormandoModulo($codigoFormando, $codigoModulo) {
+        $sql = "select count(*) as total from Inscricao where codigo_formando = ? and codigo_modulo = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("ii", $codigoFormando, $codigoModulo);
+        $stmt->execute();
+        $rs = $stmt->get_result()->fetch_assoc();
+        return (int) $rs['total'] > 0;
     }
 }
 ?>

@@ -253,5 +253,40 @@ class TurmaDao {
         $rs = $stmt->get_result()->fetch_assoc();
         return $rs['total'] > 0;
     }
+
+    public function getByQualiNivel($codigoQualiNivel) {
+        $sql = "select Turma.codigo, Turma.nome, ano_lectivo, turno,
+                       Turma.id_Diretor_Turma, Turma.id_Quali_Nivel,
+                       Quali_Nivel.cod_Quali as cod_quali, Quali_Nivel.cod_Nivel as cod_nivel,
+                       Formador.nome as diretor_turma, Qualificacao.titulo as titulo, Nivel.nome as nivel
+                from Turma
+                join Diretor_Turma on cod_Formador = id_Diretor_Turma
+                join Formador on Formador.codigo = cod_Formador
+                join Quali_Nivel on id_Quali_Nivel = codigo_Quali_Nivel
+                join Nivel on cod_Nivel = Nivel.codigo
+                join Qualificacao on Qualificacao.cod_Quali = Quali_Nivel.cod_Quali
+                where Turma.id_Quali_Nivel = ?
+                order by Turma.nome";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $codigoQualiNivel);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $turmas = [];
+        while ($rs = $result->fetch_assoc()) {
+            $formador = new Formador($rs['id_Diretor_Turma'], $rs['diretor_turma'], null, null, null, null, null, null, null, null);
+            $diretorTurma = new Diretor_turma($formador);
+
+            $qualificacao = new Qualificacao($rs['cod_quali'], $rs['titulo'], null);
+            $nivel = new Nivel($rs['cod_nivel'], $rs['nivel']);
+
+            $qualiNivel = new Quali_Nivel($rs['id_Quali_Nivel'], $rs['cod_quali'], $rs['cod_nivel']);
+            $qualiNivel->setQualificacao($qualificacao);
+            $qualiNivel->setNivel($nivel);
+
+            $turmas[] = new Turma($rs['codigo'], $rs['nome'], $rs['ano_lectivo'], $rs['turno'], $diretorTurma, $qualificacao, $qualiNivel);
+        }
+        return $turmas;
+    }
 }
 ?>

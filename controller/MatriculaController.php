@@ -12,9 +12,9 @@ class MatriculaController {
         $this->dao = new MatriculaDao();
     }
 
-    public function cadastrarMatricula($formando, $qualificacao, $nivel, $id_quali_nivel, $data_matricula) {
+    public function cadastrarMatricula($formando, $qualificacao, $nivel, $id_quali_nivel, $data_matricula, $cod_turma = null) {
         if ($formando != null && $qualificacao != null && $nivel != null && $id_quali_nivel > 0 && strlen($data_matricula) > 0) {
-            $matricula = new Matricula(null, $formando, $qualificacao, $nivel, $id_quali_nivel, $data_matricula);
+            $matricula = new Matricula(null, $formando, $qualificacao, $nivel, $id_quali_nivel, $data_matricula, $cod_turma);
             return $this->dao->create($matricula);
         }
         return false;
@@ -24,9 +24,9 @@ class MatriculaController {
         return $this->dao->getAll($nome, $codCampo);
     }
 
-    public function atualizarMatricula($codigo, $formando, $qualificacao, $nivel, $id_quali_nivel, $data_matricula) {
+    public function atualizarMatricula($codigo, $formando, $qualificacao, $nivel, $id_quali_nivel, $data_matricula, $cod_turma = null) {
         if ($codigo > 0 && $formando != null && $qualificacao != null && $nivel != null && $id_quali_nivel > 0 && strlen($data_matricula) > 0) {
-            $matricula = new Matricula($codigo, $formando, $qualificacao, $nivel, $id_quali_nivel, $data_matricula);
+            $matricula = new Matricula($codigo, $formando, $qualificacao, $nivel, $id_quali_nivel, $data_matricula, $cod_turma);
             return $this->dao->update($matricula);
         }
         return false;

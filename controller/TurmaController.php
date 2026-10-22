@@ -16,9 +16,10 @@ class TurmaController {
         $this->dao = new TurmaDao();
     }
 
-    public function cadastrarTurma($nome, $ano_ingresso, $turno, $diretorTurma, $qualificacao, $nivel, $qualiNivel = null) {
+    public function cadastrarTurma($nome, $ano_ingresso, $turno, $diretorTurma, $qualificacao, $nivel, $qualiNivel = null, $capacidade_maxima = 30) {
         if (!$this->texto($nome, 40) || !$this->inteiroPositivo($ano_ingresso)
-            || $turno === null || $turno === '' || $diretorTurma === null) {
+            || $turno === null || $turno === '' || $diretorTurma === null
+            || !$this->inteiroPositivo($capacidade_maxima)) {
             return false;
         }
 
@@ -33,7 +34,7 @@ class TurmaController {
             $qualiNivel = new Quali_Nivel($codigo, null, null);
         }
 
-        $turma = new Turma(null, $nome, (int) $ano_ingresso, $turno, $diretorTurma, $qualificacao, $qualiNivel);
+        $turma = new Turma(null, $nome, (int) $ano_ingresso, $turno, $diretorTurma, $qualificacao, $qualiNivel, (int) $capacidade_maxima);
 
         return (bool) $this->dao->create($turma);
     }
@@ -62,9 +63,10 @@ class TurmaController {
         return $this->dao->getParesQualiNivel($codCampo);
     }
 
-    public function atualizarTurma($codigo, $nome, $ano_ingresso, $turno, $diretorTurma, $qualificacao, $nivel, $qualiNivel = null) {
+    public function atualizarTurma($codigo, $nome, $ano_ingresso, $turno, $diretorTurma, $qualificacao, $nivel, $qualiNivel = null, $capacidade_maxima = 30) {
         if (!$codigo || !$this->texto($nome, 40) || !$this->inteiroPositivo($ano_ingresso)
-            || $turno === null || $turno === '' || $diretorTurma === null) {
+            || $turno === null || $turno === '' || $diretorTurma === null
+            || !$this->inteiroPositivo($capacidade_maxima)) {
             return false;
         }
 
@@ -79,7 +81,7 @@ class TurmaController {
             $qualiNivel = new Quali_Nivel($codigoQualiNivel, null, null);
         }
 
-        $turma = new Turma($codigo, $nome, (int) $ano_ingresso, $turno, $diretorTurma, $qualificacao, $qualiNivel);
+        $turma = new Turma($codigo, $nome, (int) $ano_ingresso, $turno, $diretorTurma, $qualificacao, $qualiNivel, (int) $capacidade_maxima);
 
         return (bool) $this->dao->update($turma);
     }

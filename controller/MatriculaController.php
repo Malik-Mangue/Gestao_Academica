@@ -46,5 +46,9 @@ class MatriculaController {
     public function existeMatriculaPorQualificacao($codigoQualificacao) {
         return $this->dao->existeMatriculaPorQualificacao($codigoQualificacao);
     }
+
+    public function getByFormando($codigoFormando) {
+        return $this->dao->getByFormando($codigoFormando);
+    }
 }
 ?>

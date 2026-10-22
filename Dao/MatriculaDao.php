@@ -160,5 +160,32 @@ class MatriculaDao {
         $rs = $stmt->get_result()->fetch_assoc();
         return $rs['total'] > 0;
     }
+
+    public function getByFormando($codigoFormando) {
+        $sql = "select Matricula.codigo, Matricula.cod_formando, Matricula.cod_Quali, Matricula.id_Quali_Nivel, Matricula.data,
+                       Qualificacao.titulo, Nivel.nome as nivel
+                from Matricula
+                join Qualificacao on Qualificacao.cod_Quali = Matricula.cod_Quali
+                left join Quali_Nivel on Quali_Nivel.codigo_Quali_Nivel = Matricula.id_Quali_Nivel
+                left join Nivel on Nivel.codigo = Quali_Nivel.cod_Nivel
+                where Matricula.cod_formando = ?
+                order by Matricula.codigo desc
+                limit 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $codigoFormando);
+        $stmt->execute();
+        $rs = $stmt->get_result()->fetch_assoc();
+
+        if ($rs === null) {
+            return null;
+        }
+
+        $formando = new Formando($rs['cod_formando'], null, null, null, null, null);
+        $qualificacao = new Qualificacao($rs['cod_Quali'], $rs['titulo'], null);
+        $nivel = new Nivel(null, $rs['nivel']);
+        $idQualiNivel = $rs['id_Quali_Nivel'] ?? null;
+
+        return new Matricula($rs['codigo'], $formando, $qualificacao, $nivel, $idQualiNivel, $rs['data']);
+    }
 }
 ?>

@@ -158,68 +158,6 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                         </div>
                                     </td>
                                 </tr>
-
-                                <?php if ($pode_editar): ?>
-                                <div id="modal-editar-<?= $nivel->getCodigo() ?>" class="modal-overlay">
-                                    <div class="modal-box">
-                                        <div class="modal-header">
-                                            <h3>Editar Nível #<?= htmlspecialchars($nivel->getCodigo()) ?></h3>
-                                            <a href="#" class="modal-close">
-                                                <img src="../../assets/icons/close.svg" alt="Fechar">
-                                            </a>
-                                        </div>
-                                <?php endif; ?>
-                                        <form method="post" action="index.php">
-                                            <div class="modal-body">
-                                                <input type="hidden" name="codigo" value="<?= htmlspecialchars($nivel->getCodigo()) ?>">
-                                                <div class="form-group">
-                                                    <label for="nome-<?= $nivel->getCodigo() ?>">Nome do Nível <span class="required">*</span></label>
-                                                    <input type="text" id="nome-<?= $nivel->getCodigo() ?>" name="nome" class="form-control" value="<?= htmlspecialchars($nivel->getNome()) ?>" maxlength="60" required>
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <a href="#" class="btn btn-secondary">Cancelar</a>
-                                                <button type="submit" name="editar" class="btn btn-success">Salvar Alterações</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-
-                                <?php if ($pode_remover): ?>
-                                <div id="modal-deletar-<?= $nivel->getCodigo() ?>" class="modal-overlay">
-                                    <div class="modal-box">
-                                        <div class="modal-header modal-header-danger">
-                                            <h3>Confirmar Exclusão de Registro</h3>
-                                            <a href="#" class="modal-close">
-                                                <img src="../../assets/icons/close.svg" alt="Fechar">
-                                            </a>
-                                        </div>
-                                <?php endif; ?>
-                                        <form method="post" action="index.php">
-                                            <div class="modal-body">
-                                                <input type="hidden" name="codigo" value="<?= htmlspecialchars($nivel->getCodigo()) ?>">
-                                                <p class="confirm-question">
-                                                    Tem certeza que deseja eliminar permanentemente este registro?
-                                                </p>
-                                                <div class="confirm-detail-box">
-                                                    <p>
-                                                        <strong>Código:</strong> #<?= htmlspecialchars($nivel->getCodigo()) ?>
-                                                    </p>
-                                                    <p>
-                                                        <strong>Nome do Nível:</strong> <?= htmlspecialchars($nivel->getNome()) ?>
-                                                    </p>
-                                                </div>
-                                                <p class="confirm-warning">
-                                                    Atenção: Esta ação não poderá ser desfeita e pode afetar qualificações associadas a este nível.
-                                                </p>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <a href="#" class="btn btn-secondary">Cancelar</a>
-                                                <button type="submit" name="deletar" class="btn btn-delete">Sim, Deletar</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </tbody>
@@ -228,6 +166,75 @@ require_once __DIR__ . '/../partials/sidebar.php';
         </div>
     </div>
 
+    <?php if (!empty($niveis)): ?>
+        <?php foreach ($niveis as $nivel): ?>
+
+            <?php if ($pode_editar): ?>
+            <div id="modal-editar-<?= $nivel->getCodigo() ?>" class="modal-overlay">
+                <div class="modal-box">
+                    <div class="modal-header">
+                        <h3>Editar Nível #<?= htmlspecialchars($nivel->getCodigo()) ?></h3>
+                        <a href="#" class="modal-close">
+                            <img src="../../assets/icons/close.svg" alt="Fechar">
+                        </a>
+                    </div>
+                    <form method="post" action="index.php">
+                        <div class="modal-body">
+                            <input type="hidden" name="codigo" value="<?= htmlspecialchars($nivel->getCodigo()) ?>">
+                            <div class="form-group">
+                                <label for="nome-<?= $nivel->getCodigo() ?>">Nome do Nível <span class="required">*</span></label>
+                                <input type="text" id="nome-<?= $nivel->getCodigo() ?>" name="nome" class="form-control" value="<?= htmlspecialchars($nivel->getNome()) ?>" maxlength="60" required>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <a href="#" class="btn btn-secondary">Cancelar</a>
+                            <button type="submit" name="editar" class="btn btn-success">Salvar Alterações</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php if ($pode_remover): ?>
+            <div id="modal-deletar-<?= $nivel->getCodigo() ?>" class="modal-overlay">
+                <div class="modal-box">
+                    <div class="modal-header modal-header-danger">
+                        <h3>Confirmar Exclusão de Registro</h3>
+                        <a href="#" class="modal-close">
+                            <img src="../../assets/icons/close.svg" alt="Fechar">
+                        </a>
+                    </div>
+                    <form method="post" action="index.php">
+                        <div class="modal-body">
+                            <input type="hidden" name="codigo" value="<?= htmlspecialchars($nivel->getCodigo()) ?>">
+                            <p class="confirm-question">
+                                Tem certeza que deseja eliminar permanentemente este registro?
+                            </p>
+                            <div class="confirm-detail-box">
+                                <p>
+                                    <strong>Código:</strong> #<?= htmlspecialchars($nivel->getCodigo()) ?>
+                                </p>
+                                <p>
+                                    <strong>Nome do Nível:</strong> <?= htmlspecialchars($nivel->getNome()) ?>
+                                </p>
+                            </div>
+                            <p class="confirm-warning">
+                                Atenção: Esta ação não poderá ser desfeita e pode afetar qualificações associadas a este nível.
+                            </p>
+                        </div>
+                        <div class="modal-footer">
+                            <a href="#" class="btn btn-secondary">Cancelar</a>
+                            <button type="submit" name="deletar" class="btn btn-delete">Sim, Deletar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <?php endif; ?>
+
+        <?php endforeach; ?>
+    <?php endif; ?>
+
+    <?php if ($pode_criar): ?>
     <div id="modal-novo" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-header">
@@ -251,6 +258,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
             </form>
         </div>
     </div>
+    <?php endif; ?>
 </main>
 
 <?php require_once __DIR__ . '/../partials/footer.php'; ?>

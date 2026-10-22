@@ -1,9 +1,10 @@
 <?php
 class Database {
-    private $host = "localhost:3306";
+    private $host = "127.0.0.1";
     private $db_name = "GestaoProfessor";
     private $user_name = "root";
-    private $password = "Malikdb123!";
+    private $password = "846533793";
+
 
 
 

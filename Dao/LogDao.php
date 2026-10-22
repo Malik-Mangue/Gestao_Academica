@@ -36,10 +36,10 @@ class LogDao {
     }
 
     public function listarLogs() {
-        $sql = "select Usuario.username, Perfil.nome, acao, descricao, data from Log
-                join Usuario on id_Usuario = idUser
-                join Perfil on idPerfil = id
-                order by codigo desc";
+        $sql = "select Usuario.username, Perfil.nome, Log.acao, Log.descricao, Log.data from Log
+                join Usuario on Log.id_Usuario = Usuario.idUser
+                join Perfil on Usuario.idPerfil = Perfil.id
+                order by Log.codigo desc";
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -52,18 +52,20 @@ class LogDao {
     }
 
     public function listarLogsComFiltro($filtro) {
-        $sql = "select Usuario.username, Perfil.nome, acao, descricao, data from Log
-                join Usuario on id_Usuario = idUser
-                join Perfil on idPerfil = id
+        $sql = "select Usuario.username, Perfil.nome, Log.acao, Log.descricao, Log.data from Log
+                join Usuario on Log.id_Usuario = Usuario.idUser
+                join Perfil on Usuario.idPerfil = Perfil.id
                 where Usuario.username like ?
-                or Perfil.nome like ?
-                or acao like ?
-                or descricao like ?
-                or data like ?
-                order by codigo desc";
+                   or Perfil.nome like ?
+                   or Log.acao like ?
+                   or Log.descricao like ?
+                   or Log.data like ?
+                   or date_format(Log.data, '%d/%m/%Y') like ?
+                   or date_format(Log.data, '%d/%m/%Y %H:%i') like ?
+                order by Log.codigo desc";
         $stmt = $this->db->prepare($sql);
         $termo = "%" . $filtro . "%";
-        $stmt->bind_param("sssss", $termo, $termo, $termo, $termo, $termo);
+        $stmt->bind_param("sssssss", $termo, $termo, $termo, $termo, $termo, $termo, $termo);
         $stmt->execute();
         $result = $stmt->get_result();
 

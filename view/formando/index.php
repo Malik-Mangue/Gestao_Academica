@@ -129,8 +129,8 @@ $formandos = $controller->listar($pesquisa !== '' ? $pesquisa : null);
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
 
-$pode_criar   = Sessao::podeCriar(Sessao::RECURSO_FORMANDOS);
-$pode_editar  = Sessao::podeEditar(Sessao::RECURSO_FORMANDOS);
+$pode_criar = Sessao::podeCriar(Sessao::RECURSO_FORMANDOS);
+$pode_editar = Sessao::podeEditar(Sessao::RECURSO_FORMANDOS);
 $pode_remover = Sessao::podeRemover(Sessao::RECURSO_FORMANDOS);
 
 $page_title = 'Gestão de Formandos';
@@ -200,7 +200,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     <td><strong>#<?= htmlspecialchars($formando->getCodigo()) ?></strong></td>
                                     <td><?= htmlspecialchars($formando->getNome()) ?></td>
                                     <td><?= htmlspecialchars($formando->getApelido()) ?></td>
-                                    <td><?= htmlspecialchars($formando->getCampo() ? $formando->getCampo()->getNome() : '-') ?></td>
+                                    <td><?= htmlspecialchars($formando->getCampoNome() ?? '-') ?></td>
                                     <td><?= htmlspecialchars($formando->getContacto() ?? '-') ?></td>
                                     <td><?= htmlspecialchars($formando->getEmail() ?? '-') ?></td>
                                     <td><?= htmlspecialchars($formando->getBi()) ?></td>
@@ -216,20 +216,18 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                 <div id="modal-editar-<?= $formando->getCodigo() ?>" class="modal-overlay">
                                     <div class="modal-box">
                                         <div class="modal-header">
-                                            <h3>Editar Formando #<?= htmlspecialchars($formando->getCodigo()) ?></h3>
-                                            <a href="#" class="modal-close">
-                                                <img src="../../assets/icons/close.svg" alt="Fechar">
-                                            </a>
+                                            <h3>Editar Formando #<?= $formando->getCodigo() ?></h3>
+                                            <a href="#" class="modal-close"><img src="../../assets/icons/close.svg" alt="Fechar"></a>
                                         </div>
                                         <form method="post" action="index.php">
                                             <div class="modal-body">
-                                                <input type="hidden" name="codigo" value="<?= htmlspecialchars($formando->getCodigo()) ?>">
+                                                <input type="hidden" name="codigo" value="<?= $formando->getCodigo() ?>">
                                                 <div class="form-group">
                                                     <label for="campo-<?= $formando->getCodigo() ?>">Campo <span class="required">*</span></label>
                                                     <select id="campo-<?= $formando->getCodigo() ?>" name="codCampo" class="form-control" required>
                                                         <option value="">-- Selecionar campo --</option>
                                                         <?php foreach ($campos as $campo): ?>
-                                                            <option value="<?= htmlspecialchars($campo->getCodigo()) ?>"
+                                                            <option value="<?= $campo->getCodigo() ?>"
                                                                 <?= $formando->getCodCampo() == $campo->getCodigo() ? 'selected' : '' ?>>
                                                                 <?= htmlspecialchars($campo->getNome()) ?>
                                                             </option>
@@ -291,6 +289,9 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                     </p>
                                                     <p>
                                                         <strong>Apelido:</strong> <?= htmlspecialchars($formando->getApelido()) ?>
+                                                    </p>
+                                                    <p>
+                                                        <strong>Campo:</strong> <?= htmlspecialchars($formando->getCampoNome() ?? '-') ?>
                                                     </p>
                                                     <p>
                                                         <strong>Nº do BI:</strong> <?= htmlspecialchars($formando->getBi()) ?>

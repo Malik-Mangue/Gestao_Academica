@@ -93,17 +93,18 @@ class FormandoDAO {
     public function create(Formando $formando) {
         $sql = "insert into Formando (nome_formando, apelido_formando, contacto_formando, email, BI, codCampo) values (?, ?, ?, ?, ?, ?)";
         $stmt = $this->db->prepare($sql);
-        $nome = $formando->getNome();
-        $apelido = $formando->getApelido();
-        $contacto = $formando->getContacto();
-        $email = $formando->getEmail();
-        $bi = $formando->getBi();
-        $codCampo = $formando->getCodCampo();
-        $stmt->bind_param("ssissi", $nome, $apelido, $contacto, $email, $bi, $codCampo);
+        $stmt->bind_param("ssissi",
+            $formando->getNome(),
+            $formando->getApelido(),
+            $formando->getContacto(),
+            $formando->getEmail(),
+            $formando->getBi(),
+            $formando->getCodCampo()
+        );
         try {
             $result = $stmt->execute();
             if ($result) {
-                $this->registarLog("INSERT", "Formando " . $nome . " " . $apelido . " foi cadastrado");
+                $this->registarLog("INSERT", "Formando " . $formando->getNome() . " " . $formando->getApelido() . " foi cadastrado");
             }
             return $result;
         } catch (mysqli_sql_exception $e) {
@@ -114,18 +115,19 @@ class FormandoDAO {
     public function update(Formando $formando) {
         $sql = "update Formando set nome_formando = ?, apelido_formando = ?, contacto_formando = ?, email = ?, BI = ?, codCampo = ? where codigo_formando = ?";
         $stmt = $this->db->prepare($sql);
-        $nome = $formando->getNome();
-        $apelido = $formando->getApelido();
-        $contacto = $formando->getContacto();
-        $email = $formando->getEmail();
-        $bi = $formando->getBi();
-        $codCampo = $formando->getCodCampo();
-        $codigo = $formando->getCodigo();
-        $stmt->bind_param("ssissii", $nome, $apelido, $contacto, $email, $bi, $codCampo, $codigo);
+        $stmt->bind_param("ssissii",
+            $formando->getNome(),
+            $formando->getApelido(),
+            $formando->getContacto(),
+            $formando->getEmail(),
+            $formando->getBi(),
+            $formando->getCodCampo(),
+            $formando->getCodigo()
+        );
         try {
             $result = $stmt->execute();
             if ($result) {
-                $this->registarLog("UPDATE", "Formando " . $nome . " " . $apelido . " (ID: " . $codigo . ") foi atualizado");
+                $this->registarLog("UPDATE", "Formando " . $formando->getNome() . " " . $formando->getApelido() . " (ID: " . $formando->getCodigo() . ") foi atualizado");
             }
             return $result;
         } catch (mysqli_sql_exception $e) {

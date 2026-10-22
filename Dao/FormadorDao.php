@@ -18,27 +18,24 @@ class FormadorDao {
         $sql = "insert into Formador (nome, apelido, email, genero, estadoCivil, contacto, valor_hora, horas_mes, salario, codCampo) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $this->db->prepare($sql);
 
-        $nome = $formador->getNome();
-        $apelido = $formador->getApelido();
-        $email = $formador->getEmail();
-        $genero = $formador->getGenero();
-        $estadoCivil = $formador->getEstadoCivil();
-        $contacto = $formador->getContacto();
-        $valorHoras = $formador->getValorHoras();
-        $horasMes = $formador->getHorasMes();
-        $salario = $formador->getSalario();
-        $codCampo = $formador->getCodCampo();
-
-        $stmt->bind_param("sssssiiidi", $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valorHoras, $horasMes, $salario, $codCampo);
+        $stmt->bind_param("sssssiiidi",
+            $formador->getNome(),
+            $formador->getApelido(),
+            $formador->getEmail(),
+            $formador->getGenero(),
+            $formador->getEstadoCivil(),
+            $formador->getContacto(),
+            $formador->getValorHoras(),
+            $formador->getHorasMes(),
+            $formador->getSalario(),
+            $formador->getCodCampo()
+        );
         $result = $stmt->execute();
         if ($result) {
-
             $formador->setCodigo($this->db->insert_id);
-
-            $this->registarLog("INSERT", "Formador " . $nome . " " . $apelido . " foi cadastrado");
+            $this->registarLog("INSERT", "Formador " . $formador->getNome() . " " . $formador->getApelido() . " foi cadastrado");
         }
         return $result;
-
     }
 
     public function getAll($pesquisa = null, $codCampo = null) {
@@ -100,22 +97,22 @@ class FormadorDao {
         $sql = "update Formador set nome = ?, apelido = ?, email = ?, genero = ?, estadoCivil = ?, contacto = ?, valor_hora = ?, horas_mes = ?, salario = ?, codCampo = ? where codigo = ?";
         $stmt = $this->db->prepare($sql);
 
-        $nome = $formador->getNome();
-        $apelido = $formador->getApelido();
-        $email = $formador->getEmail();
-        $genero = $formador->getGenero();
-        $estadoCivil = $formador->getEstadoCivil();
-        $contacto = $formador->getContacto();
-        $valorHoras = $formador->getValorHoras();
-        $horasMes = $formador->getHorasMes();
-        $salario = $formador->getSalario();
-        $codCampo = $formador->getCodCampo();
-        $codigo = $formador->getCodigo();
-
-        $stmt->bind_param("sssssiiidii", $nome, $apelido, $email, $genero, $estadoCivil, $contacto, $valorHoras, $horasMes, $salario, $codCampo, $codigo);
+        $stmt->bind_param("sssssiiidii",
+            $formador->getNome(),
+            $formador->getApelido(),
+            $formador->getEmail(),
+            $formador->getGenero(),
+            $formador->getEstadoCivil(),
+            $formador->getContacto(),
+            $formador->getValorHoras(),
+            $formador->getHorasMes(),
+            $formador->getSalario(),
+            $formador->getCodCampo(),
+            $formador->getCodigo()
+        );
         $result = $stmt->execute();
         if ($result) {
-            $this->registarLog("UPDATE", "Formador " . $nome . " " . $apelido . " (ID: " . $codigo . ") foi atualizado");
+            $this->registarLog("UPDATE", "Formador " . $formador->getNome() . " " . $formador->getApelido() . " (ID: " . $formador->getCodigo() . ") foi atualizado");
         }
         return $result;
     }

@@ -202,7 +202,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     <td><strong>#<?= htmlspecialchars($formador->getCodigo()) ?></strong></td>
                                     <td><?= htmlspecialchars($formador->getNome()) ?></td>
                                     <td><?= htmlspecialchars($formador->getApelido()) ?></td>
-                                    <td><?= htmlspecialchars($formador->getCampo() ? $formador->getCampo()->getNome() : '-') ?></td>
+                                    <td><?= htmlspecialchars($formador->getCampoNome() ?? '-') ?></td>
                                     <td><?= htmlspecialchars($formador->getEmail() ?: '-') ?></td>
                                     <td><?= htmlspecialchars($formador->getGenero() ?: '-') ?></td>
                                     <td><?= htmlspecialchars($formador->getEstadoCivil() ?: '-') ?></td>
@@ -226,295 +226,6 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                         </td>
                                     <?php endif; ?>
                                 </tr>
-
-                                <?php
-                                $cod = $formador->getCodigo();
-                                $esc = function ($linha, $chave) {
-                                    return htmlspecialchars((string) (($linha[$chave] ?? '') !== '' ? $linha[$chave] : '-'));
-                                };
-                                $turmasDirige = method_exists($controller, 'listarTurmasQueDirige')
-                                    ? $controller->listarTurmasQueDirige($cod) : [];
-                                $qualifsCoordena = method_exists($controller, 'listarQualificacoesQueCoordena')
-                                    ? $controller->listarQualificacoesQueCoordena($cod) : [];
-                                $modulosLeciona = method_exists($controller, 'listarModulosQueLeciona')
-                                    ? $controller->listarModulosQueLeciona($cod) : [];
-                                ob_start();
-                                ?>
-                                <div id="modal-detalhes-<?= $cod ?>" class="modal-overlay">
-                                    <div class="modal-box" style="max-width:900px;width:95%;">
-                                        <div class="modal-header">
-                                            <h3>Detalhes do Formador #<?= htmlspecialchars($cod) ?></h3>
-                                            <a href="#" class="modal-close">
-                                                <img src="../../assets/icons/close.svg" alt="Fechar">
-                                            </a>
-                                        </div>
-                                        <div class="modal-body" style="max-height:70vh;overflow-y:auto;">
-
-                                            <h4>Dados Pessoais</h4>
-                                            <div class="confirm-detail-box">
-                                                <p><strong>Nome:</strong> <?= htmlspecialchars($formador->getNome() . ' ' . $formador->getApelido()) ?></p>
-                                                <p><strong>Campo:</strong> <?= htmlspecialchars($formador->getCampo() ? $formador->getCampo()->getNome() : '-') ?></p>
-                                                <p><strong>E-mail:</strong> <?= htmlspecialchars($formador->getEmail() ?: '-') ?></p>
-                                                <p><strong>Género:</strong> <?= htmlspecialchars($formador->getGenero() ?: '-') ?></p>
-                                                <p><strong>Estado civil:</strong> <?= htmlspecialchars($formador->getEstadoCivil() ?: '-') ?></p>
-                                                <p><strong>Contacto:</strong> <?= htmlspecialchars($formador->getContacto()) ?></p>
-                                                <p><strong>Valor/Hora:</strong> <?= htmlspecialchars($formador->getValorHoras()) ?></p>
-                                                <p><strong>Horas/Mês:</strong> <?= htmlspecialchars($formador->getHorasMes()) ?></p>
-                                                <p><strong>Salário:</strong> <?= htmlspecialchars($formador->getSalario()) ?></p>
-                                                <p><strong>Funções:</strong> Formador<?= $status[0] ? ', Diretor de Turma' : '' ?><?= $status[1] ? ', Coordenador' : '' ?></p>
-                                            </div>
-
-                                            <h4>Turmas que dirige</h4>
-                                            <div class="table-responsive">
-                                                <table class="table-custom">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Turma</th>
-                                                            <th>Qualificação</th>
-                                                            <th>Ano letivo</th>
-                                                            <th>Turno</th>
-                                                            <th class="col-opcoes">Opções</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <?php if (empty($turmasDirige)): ?>
-                                                            <tr><td colspan="5" class="table-empty">Não dirige nenhuma turma.</td></tr>
-                                                        <?php else: ?>
-                                                            <?php foreach ($turmasDirige as $t): ?>
-                                                                <tr>
-                                                                    <td><strong><?= $esc($t, 'turma') ?></strong></td>
-                                                                    <td><?= $esc($t, 'qualificacao') ?></td>
-                                                                    <td><?= $esc($t, 'ano_letivo') ?></td>
-                                                                    <td><?= $esc($t, 'turno') ?></td>
-                                                                    <td class="col-opcoes">
-                                                                        <a href="<?= $url_turmas ?>?pesquisa=<?= urlencode((string) ($t['turma'] ?? '')) ?>" class="btn btn-sm btn-edit">Ver turma</a>
-                                                                    </td>
-                                                                </tr>
-                                                            <?php endforeach; ?>
-                                                        <?php endif; ?>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-
-                                            <h4>Qualificações que coordena</h4>
-                                            <div class="table-responsive">
-                                                <table class="table-custom">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Qualificação</th>
-                                                            <th>Campo</th>
-                                                            <th>Nível</th>
-                                                            <th class="col-opcoes">Opções</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <?php if (empty($qualifsCoordena)): ?>
-                                                            <tr><td colspan="4" class="table-empty">Não coordena nenhuma qualificação.</td></tr>
-                                                        <?php else: ?>
-                                                            <?php foreach ($qualifsCoordena as $q): ?>
-                                                                <tr>
-                                                                    <td><strong><?= $esc($q, 'qualificacao') ?></strong></td>
-                                                                    <td><?= $esc($q, 'campo') ?></td>
-                                                                    <td><?= $esc($q, 'niveis') ?></td>
-                                                                    <td class="col-opcoes">
-                                                                        <a href="<?= $url_qualificacoes ?>?pesquisa=<?= urlencode((string) ($q['qualificacao'] ?? '')) ?>" class="btn btn-sm btn-edit">Ver qualificação</a>
-                                                                    </td>
-                                                                </tr>
-                                                            <?php endforeach; ?>
-                                                        <?php endif; ?>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-
-                                            <h4>Módulos que leciona</h4>
-                                            <div class="table-responsive">
-                                                <table class="table-custom">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Módulo</th>
-                                                            <th>Qualificação</th>
-                                                            <th>Turmas</th>
-                                                            <th>Carga horária</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <?php if (empty($modulosLeciona)): ?>
-                                                            <tr><td colspan="4" class="table-empty">Não leciona nenhum módulo.</td></tr>
-                                                        <?php else: ?>
-                                                            <?php foreach ($modulosLeciona as $m): ?>
-                                                                <tr>
-                                                                    <td><strong><?= $esc($m, 'modulo') ?></strong></td>
-                                                                    <td><?= $esc($m, 'qualificacao') ?></td>
-                                                                    <td><?= $esc($m, 'turmas') ?></td>
-                                                                    <td><?= $esc($m, 'carga_horaria') ?> h</td>
-                                                                </tr>
-                                                            <?php endforeach; ?>
-                                                        <?php endif; ?>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-
-                                        </div>
-                                        <div class="modal-footer">
-                                            <a href="#" class="btn btn-secondary">Fechar</a>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <?php $modaisDetalhes .= ob_get_clean(); ?>
-
-                                <?php if ($pode_editar): ?>
-                                    <div id="modal-editar-<?= $formador->getCodigo() ?>" class="modal-overlay">
-                                        <div class="modal-box">
-                                            <div class="modal-header">
-                                                <h3>Editar Formador #<?= htmlspecialchars($formador->getCodigo()) ?></h3>
-                                                <a href="#" class="modal-close">
-                                                    <img src="../../assets/icons/close.svg" alt="Fechar">
-                                                </a>
-                                            </div>
-                                            <form method="post" action="index.php">
-                                                <div class="modal-body">
-                                                    <input type="hidden" name="codigo" value="<?= htmlspecialchars($formador->getCodigo()) ?>">
-                                                    <?php
-                                                    $sufixo  = 'editar-' . $formador->getCodigo();
-                                                    $v = function ($getter) use ($formador) {
-                                                        return $formador !== null ? (string) $formador->$getter() : '';
-                                                    };
-                                                    ?>
-                                                    <div class="form-group">
-                                                        <label for="f-campo-<?= $sufixo ?>">Campo <span class="required">*</span></label>
-                                                        <select id="f-campo-<?= $sufixo ?>" name="codCampo" class="form-control" required>
-                                                            <option value="">-- Selecionar campo --</option>
-                                                            <?php foreach ($campos as $campo): ?>
-                                                                <option value="<?= htmlspecialchars($campo->getCodigo()) ?>"
-                                                                    <?= ($formador !== null && $formador->getCodCampo() == $campo->getCodigo()) ? 'selected' : '' ?>>
-                                                                    <?= htmlspecialchars($campo->getNome()) ?>
-                                                                </option>
-                                                            <?php endforeach; ?>
-                                                        </select>
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label for="f-nome-<?= $sufixo ?>">Nome <span class="required">*</span></label>
-                                                        <input type="text" id="f-nome-<?= $sufixo ?>" name="nome" class="form-control"
-                                                               placeholder="Ex: João" maxlength="40"
-                                                               value="<?= htmlspecialchars($v('getNome')) ?>" required>
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label for="f-apelido-<?= $sufixo ?>">Apelido <span class="required">*</span></label>
-                                                        <input type="text" id="f-apelido-<?= $sufixo ?>" name="apelido" class="form-control"
-                                                               placeholder="Ex: Silva" maxlength="40"
-                                                               value="<?= htmlspecialchars($v('getApelido')) ?>" required>
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label for="f-email-<?= $sufixo ?>">E-mail <span class="required">*</span></label>
-                                                        <input type="email" id="f-email-<?= $sufixo ?>" name="email" class="form-control"
-                                                               placeholder="Ex: joao.silva@email.com" maxlength="100"
-                                                               value="<?= htmlspecialchars($v('getEmail')) ?>" required>
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label for="f-genero-<?= $sufixo ?>">Género</label>
-                                                        <select id="f-genero-<?= $sufixo ?>" name="genero" class="form-control">
-                                                            <?php foreach ($generos as $genero): ?>
-                                                                <option value="<?= htmlspecialchars($genero) ?>"
-                                                                    <?= ($formador !== null && $formador->getGenero() === $genero) ? 'selected' : '' ?>>
-                                                                    <?= htmlspecialchars($genero) ?>
-                                                                </option>
-                                                            <?php endforeach; ?>
-                                                        </select>
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label for="f-estadoCivil-<?= $sufixo ?>">Estado Civil</label>
-                                                        <select id="f-estadoCivil-<?= $sufixo ?>" name="estadoCivil" class="form-control">
-                                                            <?php foreach ($estados_civil as $estado): ?>
-                                                                <option value="<?= htmlspecialchars($estado) ?>"
-                                                                    <?= ($formador !== null && $formador->getEstadoCivil() === $estado) ? 'selected' : '' ?>>
-                                                                    <?= htmlspecialchars($estado) ?>
-                                                                </option>
-                                                            <?php endforeach; ?>
-                                                        </select>
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label for="f-contacto-<?= $sufixo ?>">Contacto <span class="required">*</span></label>
-                                                        <input type="number" id="f-contacto-<?= $sufixo ?>" name="contacto" class="form-control"
-                                                               min="1" placeholder="Ex: 912345678"
-                                                               value="<?= htmlspecialchars($v('getContacto')) ?>" required>
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label for="f-valorHora-<?= $sufixo ?>">Valor por hora <span class="required">*</span></label>
-                                                        <input type="number" id="f-valorHora-<?= $sufixo ?>" name="valorHora" class="form-control"
-                                                               min="1" value="<?= htmlspecialchars($v('getValorHoras')) ?>" required>
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label for="f-horasMes-<?= $sufixo ?>">Horas por mês <span class="required">*</span></label>
-                                                        <input type="number" id="f-horasMes-<?= $sufixo ?>" name="horasMes" class="form-control"
-                                                               min="1" value="<?= htmlspecialchars($v('getHorasMes')) ?>" required>
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label for="f-funcao-<?= $sufixo ?>">Função</label>
-                                                        <?php
-                                                        $ehDiretor     = $formador !== null && $controller->getStatusFormador($formador->getCodigo())[0];
-                                                        $ehCoordenador = $formador !== null && $controller->getStatusFormador($formador->getCodigo())[1];
-                                                        ?>
-                                                        <div class="form-actions">
-                                                            <?php
-                                                                  ?>
-                                                            <label>
-                                                                <input type="checkbox" name="isFormador" value="1" checked> Formador
-                                                            </label>
-                                                            <label>
-                                                                <input type="checkbox" name="isDiretor" value="1"
-                                                                    <?= $ehDiretor ? 'checked' : '' ?>> Diretor de Turma
-                                                            </label>
-                                                            <label>
-                                                                <input type="checkbox" name="isCoordenador" value="1"
-                                                                    <?= $ehCoordenador ? 'checked' : '' ?>> Coordenador
-                                                            </label>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <a href="#" class="btn btn-secondary">Cancelar</a>
-                                                    <button type="submit" name="editar" class="btn btn-success">Salvar Alterações</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                <?php endif; ?>
-
-
-                                <?php if ($pode_remover): ?>
-                                    <div id="modal-deletar-<?= $formador->getCodigo() ?>" class="modal-overlay">
-                                        <div class="modal-box">
-                                            <div class="modal-header modal-header-danger">
-                                                <h3>Confirmar Exclusão de Registro</h3>
-                                                <a href="#" class="modal-close">
-                                                    <img src="../../assets/icons/close.svg" alt="Fechar">
-                                                </a>
-                                            </div>
-                                            <form method="post" action="index.php">
-                                                <div class="modal-body">
-                                                    <input type="hidden" name="codigo" value="<?= htmlspecialchars($formador->getCodigo()) ?>">
-                                                    <p class="confirm-question">
-                                                        Tem certeza que deseja eliminar permanentemente este registro?
-                                                    </p>
-                                                    <div class="confirm-detail-box">
-                                                        <p><strong>Código:</strong> #<?= htmlspecialchars($formador->getCodigo()) ?></p>
-                                                        <p><strong>Nome:</strong> <?= htmlspecialchars($formador->getNome()) ?></p>
-                                                        <p><strong>Apelido:</strong> <?= htmlspecialchars($formador->getApelido()) ?></p>
-                                                        <p><strong>Contacto:</strong> <?= htmlspecialchars($formador->getContacto()) ?></p>
-                                                    </div>
-                                                    <p class="confirm-warning">
-                                                        Atenção: esta ação não poderá ser desfeita.
-                                                    </p>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <a href="#" class="btn btn-secondary">Cancelar</a>
-                                                    <button type="submit" name="deletar" class="btn btn-delete">Sim, Deletar</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                <?php endif; ?>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </tbody>
@@ -523,124 +234,371 @@ require_once __DIR__ . '/../partials/sidebar.php';
         </div>
     </div>
 
-    <?= $modaisDetalhes ?>
+    <?php foreach ($formadores as $formador): ?>
+        <?php
+        $cod = $formador->getCodigo();
+        $status = $controller->getStatusFormador($cod);
+        $turmasDirige = $controller->listarTurmasQueDirige($cod);
+        $qualifsCoordena = $controller->listarQualificacoesQueCoordena($cod);
+        $modulosLeciona = method_exists($controller, 'listarModulosQueLeciona')
+            ? $controller->listarModulosQueLeciona($cod) : [];
+        ?>
+        <div id="modal-detalhes-<?= $cod ?>" class="modal-overlay">
+            <div class="modal-box" style="max-width:900px;width:95%;">
+                <div class="modal-header">
+                    <h3>Detalhes do Formador #<?= $cod ?></h3>
+                    <a href="#" class="modal-close"><img src="../../assets/icons/close.svg" alt="Fechar"></a>
+                </div>
+                <div class="modal-body" style="max-height:70vh;overflow-y:auto;">
+
+                    <h4>Dados Pessoais</h4>
+                    <div class="confirm-detail-box">
+                        <p><strong>Nome:</strong> <?= htmlspecialchars($formador->getNome() . ' ' . $formador->getApelido()) ?></p>
+                        <p><strong>Campo:</strong> <?= htmlspecialchars($formador->getCampoNome() ?? '-') ?></p>
+                        <p><strong>E-mail:</strong> <?= htmlspecialchars($formador->getEmail() ?: '-') ?></p>
+                        <p><strong>Género:</strong> <?= htmlspecialchars($formador->getGenero() ?: '-') ?></p>
+                        <p><strong>Estado civil:</strong> <?= htmlspecialchars($formador->getEstadoCivil() ?: '-') ?></p>
+                        <p><strong>Contacto:</strong> <?= htmlspecialchars($formador->getContacto()) ?></p>
+                        <p><strong>Valor/Hora:</strong> <?= htmlspecialchars($formador->getValorHoras()) ?></p>
+                        <p><strong>Horas/Mês:</strong> <?= htmlspecialchars($formador->getHorasMes()) ?></p>
+                        <p><strong>Salário:</strong> <?= htmlspecialchars($formador->getSalario()) ?></p>
+                        <p><strong>Funções:</strong> Formador<?= $status[0] ? ', Diretor de Turma' : '' ?><?= $status[1] ? ', Coordenador' : '' ?></p>
+                    </div>
+
+                    <h4>Turmas que dirige</h4>
+                    <div class="table-responsive">
+                        <table class="table-custom">
+                            <thead>
+                                <tr>
+                                    <th>Turma</th>
+                                    <th>Qualificação</th>
+                                    <th>Ano letivo</th>
+                                    <th>Turno</th>
+                                    <th class="col-opcoes">Opções</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($turmasDirige)): ?>
+                                    <tr><td colspan="5" class="table-empty">Não dirige nenhuma turma.</td></tr>
+                                <?php else: ?>
+                                    <?php foreach ($turmasDirige as $t): ?>
+                                        <tr>
+                                            <td><strong><?= htmlspecialchars($t['turma'] ?? '-') ?></strong></td>
+                                            <td><?= htmlspecialchars($t['qualificacao'] ?? '-') ?></td>
+                                            <td><?= htmlspecialchars($t['ano_letivo'] ?? '-') ?></td>
+                                            <td><?= htmlspecialchars($t['turno'] ?? '-') ?></td>
+                                            <td class="col-opcoes">
+                                                <a href="<?= $url_turmas ?>?pesquisa=<?= urlencode($t['turma'] ?? '') ?>" class="btn btn-sm btn-edit">Ver turma</a>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h4>Qualificações que coordena</h4>
+                    <div class="table-responsive">
+                        <table class="table-custom">
+                            <thead>
+                                <tr>
+                                    <th>Qualificação</th>
+                                    <th>Campo</th>
+                                    <th>Nível</th>
+                                    <th class="col-opcoes">Opções</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($qualifsCoordena)): ?>
+                                    <tr><td colspan="4" class="table-empty">Não coordena nenhuma qualificação.</td></tr>
+                                <?php else: ?>
+                                    <?php foreach ($qualifsCoordena as $q): ?>
+                                        <tr>
+                                            <td><strong><?= htmlspecialchars($q['qualificacao'] ?? '-') ?></strong></td>
+                                            <td><?= htmlspecialchars($q['campo'] ?? '-') ?></td>
+                                            <td><?= htmlspecialchars($q['niveis'] ?? '-') ?></td>
+                                            <td class="col-opcoes">
+                                                <a href="<?= $url_qualificacoes ?>?pesquisa=<?= urlencode($q['qualificacao'] ?? '') ?>" class="btn btn-sm btn-edit">Ver qualificação</a>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h4>Módulos que leciona</h4>
+                    <div class="table-responsive">
+                        <table class="table-custom">
+                            <thead>
+                                <tr>
+                                    <th>Módulo</th>
+                                    <th>Qualificação</th>
+                                    <th>Turmas</th>
+                                    <th>Carga horária</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($modulosLeciona)): ?>
+                                    <tr><td colspan="4" class="table-empty">Não leciona nenhum módulo.</td></tr>
+                                <?php else: ?>
+                                    <?php foreach ($modulosLeciona as $m): ?>
+                                        <tr>
+                                            <td><strong><?= htmlspecialchars($m['modulo'] ?? '-') ?></strong></td>
+                                            <td><?= htmlspecialchars($m['qualificacao'] ?? '-') ?></td>
+                                            <td><?= htmlspecialchars($m['turmas'] ?? '-') ?></td>
+                                            <td><?= htmlspecialchars($m['carga_horaria'] ?? '-') ?> h</td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <a href="#" class="btn btn-secondary">Fechar</a>
+                </div>
+            </div>
+        </div>
+
+        <?php if ($pode_editar): ?>
+            <div id="modal-editar-<?= $formador->getCodigo() ?>" class="modal-overlay">
+                <div class="modal-box">
+                    <div class="modal-header">
+                        <h3>Editar Formador #<?= $formador->getCodigo() ?></h3>
+                        <a href="#" class="modal-close"><img src="../../assets/icons/close.svg" alt="Fechar"></a>
+                    </div>
+                    <form method="post" action="index.php">
+                        <div class="modal-body">
+                            <input type="hidden" name="codigo" value="<?= $formador->getCodigo() ?>">
+                            <?php
+                            $id = $formador->getCodigo();
+                            $ehDiretor = $controller->getStatusFormador($id)[0];
+                            $ehCoordenador = $controller->getStatusFormador($id)[1];
+                            ?>
+                            <div class="form-group">
+                                <label for="f-campo-<?= $id ?>">Campo <span class="required">*</span></label>
+                                <select id="f-campo-<?= $id ?>" name="codCampo" class="form-control" required>
+                                    <option value="">-- Selecionar campo --</option>
+                                    <?php foreach ($campos as $campo): ?>
+                                        <option value="<?= $campo->getCodigo() ?>"
+                                            <?= $formador->getCodCampo() == $campo->getCodigo() ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($campo->getNome()) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="f-nome-<?= $id ?>">Nome <span class="required">*</span></label>
+                                <input type="text" id="f-nome-<?= $id ?>" name="nome" class="form-control"
+                                       placeholder="Ex: João" maxlength="40"
+                                       value="<?= htmlspecialchars($formador->getNome()) ?>" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="f-apelido-<?= $id ?>">Apelido <span class="required">*</span></label>
+                                <input type="text" id="f-apelido-<?= $id ?>" name="apelido" class="form-control"
+                                       placeholder="Ex: Silva" maxlength="40"
+                                       value="<?= htmlspecialchars($formador->getApelido()) ?>" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="f-email-<?= $id ?>">E-mail <span class="required">*</span></label>
+                                <input type="email" id="f-email-<?= $id ?>" name="email" class="form-control"
+                                       placeholder="Ex: joao.silva@email.com" maxlength="100"
+                                       value="<?= htmlspecialchars($formador->getEmail()) ?>" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="f-genero-<?= $id ?>">Género</label>
+                                <select id="f-genero-<?= $id ?>" name="genero" class="form-control">
+                                    <?php foreach ($generos as $genero): ?>
+                                        <option value="<?= htmlspecialchars($genero) ?>"
+                                            <?= $formador->getGenero() === $genero ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($genero) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="f-estadoCivil-<?= $id ?>">Estado Civil</label>
+                                <select id="f-estadoCivil-<?= $id ?>" name="estadoCivil" class="form-control">
+                                    <?php foreach ($estados_civil as $estado): ?>
+                                        <option value="<?= htmlspecialchars($estado) ?>"
+                                            <?= $formador->getEstadoCivil() === $estado ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($estado) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="f-contacto-<?= $id ?>">Contacto <span class="required">*</span></label>
+                                <input type="number" id="f-contacto-<?= $id ?>" name="contacto" class="form-control"
+                                       min="1" placeholder="Ex: 912345678"
+                                       value="<?= htmlspecialchars($formador->getContacto()) ?>" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="f-valorHora-<?= $id ?>">Valor por hora <span class="required">*</span></label>
+                                <input type="number" id="f-valorHora-<?= $id ?>" name="valorHora" class="form-control"
+                                       min="1" value="<?= htmlspecialchars($formador->getValorHoras()) ?>" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="f-horasMes-<?= $id ?>">Horas por mês <span class="required">*</span></label>
+                                <input type="number" id="f-horasMes-<?= $id ?>" name="horasMes" class="form-control"
+                                       min="1" value="<?= htmlspecialchars($formador->getHorasMes()) ?>" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="f-funcao-<?= $id ?>">Função</label>
+                                <div class="form-actions">
+                                    <label>
+                                        <input type="checkbox" name="isFormador" value="1" checked> Formador
+                                    </label>
+                                    <label>
+                                        <input type="checkbox" name="isDiretor" value="1"
+                                            <?= $ehDiretor ? 'checked' : '' ?>> Diretor de Turma
+                                    </label>
+                                    <label>
+                                        <input type="checkbox" name="isCoordenador" value="1"
+                                            <?= $ehCoordenador ? 'checked' : '' ?>> Coordenador
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <a href="#" class="btn btn-secondary">Cancelar</a>
+                            <button type="submit" name="editar" class="btn btn-success">Salvar Alterações</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        <?php endif; ?>
+
+
+        <?php if ($pode_remover): ?>
+            <div id="modal-deletar-<?= $formador->getCodigo() ?>" class="modal-overlay">
+                <div class="modal-box">
+                    <div class="modal-header modal-header-danger">
+                        <h3>Confirmar Exclusão de Registro</h3>
+                        <a href="#" class="modal-close"><img src="../../assets/icons/close.svg" alt="Fechar"></a>
+                    </div>
+                    <form method="post" action="index.php">
+                        <div class="modal-body">
+                            <input type="hidden" name="codigo" value="<?= htmlspecialchars($formador->getCodigo()) ?>">
+                            <p class="confirm-question">
+                                Tem certeza que deseja eliminar permanentemente este registro?
+                            </p>
+                            <div class="confirm-detail-box">
+                                <p><strong>Código:</strong> #<?= htmlspecialchars($formador->getCodigo()) ?></p>
+                                <p><strong>Nome:</strong> <?= htmlspecialchars($formador->getNome()) ?></p>
+                                <p><strong>Apelido:</strong> <?= htmlspecialchars($formador->getApelido()) ?></p>
+                                <p><strong>Campo:</strong> <?= htmlspecialchars($formador->getCampoNome() ?? '-') ?></p>
+                                <p><strong>Contacto:</strong> <?= htmlspecialchars($formador->getContacto()) ?></p>
+                            </div>
+                            <p class="confirm-warning">
+                                Atenção: esta ação não poderá ser desfeita.
+                            </p>
+                        </div>
+                        <div class="modal-footer">
+                            <a href="#" class="btn btn-secondary">Cancelar</a>
+                            <button type="submit" name="deletar" class="btn btn-delete">Sim, Deletar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        <?php endif; ?>
+    <?php endforeach; ?>
 
     <?php if ($pode_criar): ?>
     <div id="modal-novo" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-header">
                 <h3>Cadastrar Novo Formador</h3>
-                <a href="#" class="modal-close">
-                    <img src="../../assets/icons/close.svg" alt="Fechar">
-                </a>
+                <a href="#" class="modal-close"><img src="../../assets/icons/close.svg" alt="Fechar"></a>
             </div>
             <form method="post" action="index.php">
                 <div class="modal-body">
-                    <?php
-                    $formador = null;
-                    $sufixo = 'novo';
-                    $v = function ($getter) use ($formador) {
-                        return $formador !== null ? (string) $formador->$getter() : '';
-                    };
-                    ?>
                     <div class="form-group">
-                        <label for="f-campo-<?= $sufixo ?>">Campo <span class="required">*</span></label>
-                        <select id="f-campo-<?= $sufixo ?>" name="codCampo" class="form-control" required>
+                        <label for="f-campo-novo">Campo <span class="required">*</span></label>
+                        <select id="f-campo-novo" name="codCampo" class="form-control" required>
                             <option value="">-- Selecionar campo --</option>
                             <?php foreach ($campos as $campo): ?>
-                                <option value="<?= htmlspecialchars($campo->getCodigo()) ?>">
+                                <option value="<?= $campo->getCodigo() ?>">
                                     <?= htmlspecialchars($campo->getNome()) ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="f-nome-<?= $sufixo ?>">Nome <span class="required">*</span></label>
-                        <input type="text" id="f-nome-<?= $sufixo ?>" name="nome" class="form-control"
-                               placeholder="Ex: João" maxlength="40"
-                               value="<?= htmlspecialchars($v('getNome')) ?>" required>
+                        <label for="f-nome-novo">Nome <span class="required">*</span></label>
+                        <input type="text" id="f-nome-novo" name="nome" class="form-control"
+                               placeholder="Ex: João" maxlength="40" required>
                     </div>
                     <div class="form-group">
-                        <label for="f-apelido-<?= $sufixo ?>">Apelido <span class="required">*</span></label>
-                        <input type="text" id="f-apelido-<?= $sufixo ?>" name="apelido" class="form-control"
-                               placeholder="Ex: Silva" maxlength="40"
-                               value="<?= htmlspecialchars($v('getApelido')) ?>" required>
+                        <label for="f-apelido-novo">Apelido <span class="required">*</span></label>
+                        <input type="text" id="f-apelido-novo" name="apelido" class="form-control"
+                               placeholder="Ex: Silva" maxlength="40" required>
                     </div>
                     <div class="form-group">
-                        <label for="f-email-<?= $sufixo ?>">E-mail <span class="required">*</span></label>
-                        <input type="email" id="f-email-<?= $sufixo ?>" name="email" class="form-control"
-                               placeholder="Ex: joao.silva@email.com" maxlength="100"
-                               value="<?= htmlspecialchars($v('getEmail')) ?>" required>
+                        <label for="f-email-novo">E-mail <span class="required">*</span></label>
+                        <input type="email" id="f-email-novo" name="email" class="form-control"
+                               placeholder="Ex: joao.silva@email.com" maxlength="100" required>
                     </div>
                     <div class="form-group">
-                        <label for="f-genero-<?= $sufixo ?>">Género</label>
-                        <select id="f-genero-<?= $sufixo ?>" name="genero" class="form-control">
+                        <label for="f-genero-novo">Género</label>
+                        <select id="f-genero-novo" name="genero" class="form-control">
                             <?php foreach ($generos as $genero): ?>
-                                <option value="<?= htmlspecialchars($genero) ?>"
-                                    <?= ($formador !== null && $formador->getGenero() === $genero) ? 'selected' : '' ?>>
+                                <option value="<?= htmlspecialchars($genero) ?>">
                                     <?= htmlspecialchars($genero) ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="f-estadoCivil-<?= $sufixo ?>">Estado Civil</label>
-                        <select id="f-estadoCivil-<?= $sufixo ?>" name="estadoCivil" class="form-control">
+                        <label for="f-estadoCivil-novo">Estado Civil</label>
+                        <select id="f-estadoCivil-novo" name="estadoCivil" class="form-control">
                             <?php foreach ($estados_civil as $estado): ?>
-                                <option value="<?= htmlspecialchars($estado) ?>"
-                                    <?= ($formador !== null && $formador->getEstadoCivil() === $estado) ? 'selected' : '' ?>>
+                                <option value="<?= htmlspecialchars($estado) ?>">
                                     <?= htmlspecialchars($estado) ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="f-contacto-<?= $sufixo ?>">Contacto <span class="required">*</span></label>
-                        <input type="number" id="f-contacto-<?= $sufixo ?>" name="contacto" class="form-control"
-                               min="1" placeholder="Ex: 912345678"
-                               value="<?= htmlspecialchars($v('getContacto')) ?>" required>
+                        <label for="f-contacto-novo">Contacto <span class="required">*</span></label>
+                        <input type="number" id="f-contacto-novo" name="contacto" class="form-control"
+                               min="1" placeholder="Ex: 912345678" required>
                     </div>
                     <div class="form-group">
-                        <label for="f-valorHora-<?= $sufixo ?>">Valor por hora <span class="required">*</span></label>
-                        <input type="number" id="f-valorHora-<?= $sufixo ?>" name="valorHora" class="form-control"
-                               min="1" value="<?= htmlspecialchars($v('getValorHoras')) ?>" required>
+                        <label for="f-valorHora-novo">Valor por hora <span class="required">*</span></label>
+                        <input type="number" id="f-valorHora-novo" name="valorHora" class="form-control"
+                               min="1" required>
                     </div>
                     <div class="form-group">
-                        <label for="f-horasMes-<?= $sufixo ?>">Horas por mês <span class="required">*</span></label>
-                        <input type="number" id="f-horasMes-<?= $sufixo ?>" name="horasMes" class="form-control"
-                               min="1" value="<?= htmlspecialchars($v('getHorasMes')) ?>" required>
+                        <label for="f-horasMes-novo">Horas por mês <span class="required">*</span></label>
+                        <input type="number" id="f-horasMes-novo" name="horasMes" class="form-control"
+                               min="1" required>
                     </div>
                     <div class="form-group">
-                        <label for="f-funcao-<?= $sufixo ?>">Função</label>
-                        <?php
-                        $ehDiretor     = false;
-                        $ehCoordenador = false;
-                        ?>
+                        <label for="f-funcao-novo">Função</label>
                         <div class="form-actions">
-                            <?php
-                                  ?>
                             <label>
                                 <input type="checkbox" name="isFormador" value="1" checked> Formador
                             </label>
                             <label>
-                                <input type="checkbox" name="isDiretor" value="1"
-                                    <?= $ehDiretor ? 'checked' : '' ?>> Diretor de Turma
+                                <input type="checkbox" name="isDiretor" value="1"> Diretor de Turma
                             </label>
                             <label>
-                                <input type="checkbox" name="isCoordenador" value="1"
-                                    <?= $ehCoordenador ? 'checked' : '' ?>> Coordenador
+                                <input type="checkbox" name="isCoordenador" value="1"> Coordenador
                             </label>
                         </div>
                     </div>
                 </div>
-                    <div class="modal-footer">
-                        <a href="#" class="btn btn-secondary">Cancelar</a>
-                        <button type="reset" class="btn btn-reset">Limpar</button>
-                        <button type="submit" name="gravar" class="btn btn-success">Salvar Formador</button>
-                    </div>
-                </form>
-            </div>
+                <div class="modal-footer">
+                    <a href="#" class="btn btn-secondary">Cancelar</a>
+                    <button type="reset" class="btn btn-reset">Limpar</button>
+                    <button type="submit" name="gravar" class="btn btn-success">Salvar Formador</button>
+                </div>
+            </form>
         </div>
+    </div>
     <?php endif; ?>
 </main>
 

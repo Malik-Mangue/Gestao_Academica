@@ -27,40 +27,42 @@ class Formador {
         $this->salario = $salario;
     }
 
-    public function getCodigo(){ return $this->codigo; }
-    public function setCodigo($codigo){ $this->codigo = $codigo; }
+    public function getCodigo() { return $this->codigo; }
+    public function setCodigo($codigo) { $this->codigo = $codigo; }
 
-    public function getNome(){ return $this->nome; }
-    public function setNome($nome){ $this->nome = $nome; }
+    public function getNome() { return $this->nome; }
+    public function setNome($nome) { $this->nome = $nome; }
 
-    public function getApelido(){ return $this->apelido; }
-    public function setApelido($apelido){ $this->apelido = $apelido; }
+    public function getApelido() { return $this->apelido; }
+    public function setApelido($apelido) { $this->apelido = $apelido; }
 
-    public function getEmail(){ return $this->email; }
-    public function setEmail($email){ $this->email = $email; }
+    public function getEmail() { return $this->email; }
+    public function setEmail($email) { $this->email = $email; }
 
-    public function getGenero(){ return $this->genero; }
-    public function setGenero($genero){ $this->genero = $genero; }
+    public function getGenero() { return $this->genero; }
+    public function setGenero($genero) { $this->genero = $genero; }
 
-    public function getEstadoCivil(){ return $this->estadoCivil; }
-    public function setEstadoCivil($estadoCivil){ $this->estadoCivil = $estadoCivil; }
+    public function getEstadoCivil() { return $this->estadoCivil; }
+    public function setEstadoCivil($estadoCivil) { $this->estadoCivil = $estadoCivil; }
 
-    public function getContacto(){ return $this->contacto; }
-    public function setContacto($contacto){ $this->contacto = $contacto; }
+    public function getContacto() { return $this->contacto; }
+    public function setContacto($contacto) { $this->contacto = $contacto; }
 
-    public function getValorHoras(){ return $this->valor_horas; }
-    public function setValorHoras($valor_horas){ $this->valor_horas = $valor_horas; }
+    public function getValorHoras() { return $this->valor_horas; }
+    public function setValorHoras($valor_horas) { $this->valor_horas = $valor_horas; }
 
-    public function getHorasMes(){ return $this->horas_mes; }
-    public function setHorasMes($horas_mes){ $this->horas_mes = $horas_mes; }
+    public function getHorasMes() { return $this->horas_mes; }
+    public function setHorasMes($horas_mes) { $this->horas_mes = $horas_mes; }
 
-    public function getSalario(){ return $this->salario; }
-    public function setSalario($salario){ $this->salario = $salario; }
+    public function getSalario() { return $this->salario; }
+    public function setSalario($salario) { $this->salario = $salario; }
 
-    public function getCodCampo(){ return $this->codCampo; }
-    public function setCodCampo($codCampo){ $this->codCampo = $codCampo; }
+    public function getCodCampo() { return $this->codCampo; }
+    public function setCodCampo($codCampo) { $this->codCampo = $codCampo; }
 
-    public function getCampo(){ return $this->campo; }
-    public function setCampo($campo){ $this->campo = $campo; }
+    public function getCampo() { return $this->campo; }
+    public function setCampo($campo) { $this->campo = $campo; }
+
+    public function getCampoNome() { return $this->campo ? $this->campo->getNome() : null; }
 }
 ?>

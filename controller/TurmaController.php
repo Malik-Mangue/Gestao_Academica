@@ -47,6 +47,10 @@ class TurmaController {
         return $codigo ? $this->dao->getById($codigo) : null;
     }
 
+    public function listarFormandosPorTurma($codigo) {
+        return $codigo ? $this->dao->listarFormandos((int) $codigo) : [];
+    }
+
     public function listarDiretores($codCampo = null) {
         return $this->dao->getDiretores($codCampo);
     }

@@ -164,15 +164,13 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             <th>Qualificação</th>
                             <th>Campo</th>
                             <th>Nível</th>
-                            <?php if ($pode_editar || $pode_remover): ?>
-                                <th class="col-opcoes">Opções</th>
-                            <?php endif; ?>
+                            <th class="col-opcoes">Opções</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (empty($turmas)): ?>
                             <tr>
-                                <td colspan="<?= $pode_editar || $pode_remover ? 10 : 9 ?>" class="table-empty">
+                                <td colspan="10" class="table-empty">
                                     Nenhuma turma cadastrada no momento.
                                 </td>
                             </tr>
@@ -196,18 +194,17 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     <td><?= htmlspecialchars((string) $tituloQuali) ?></td>
                                     <td><?= htmlspecialchars(($qn !== null && $qn->getQualificacao() !== null && $qn->getQualificacao()->getCampo() !== null) ? $qn->getQualificacao()->getCampo() : '-') ?></td>
                                     <td><?= htmlspecialchars((string) $nomeNivel) ?></td>
-                                    <?php if ($pode_editar || $pode_remover): ?>
-                                        <td class="col-opcoes">
-                                            <div class="table-actions table-actions-end">
-                                                <?php if ($pode_editar): ?>
-                                                    <a href="#modal-editar-<?= $turma->getCodigo() ?>" class="btn btn-sm btn-edit">Editar</a>
-                                                <?php endif; ?>
-                                                <?php if ($pode_remover): ?>
-                                                    <a href="#modal-deletar-<?= $turma->getCodigo() ?>" class="btn btn-sm btn-delete">Remover</a>
-                                                <?php endif; ?>
-                                            </div>
-                                        </td>
-                                    <?php endif; ?>
+                                    <td class="col-opcoes">
+                                        <div class="table-actions table-actions-end">
+                                            <a href="detalhes.php?codigo=<?= (int) $turma->getCodigo() ?>" class="btn btn-sm btn-secondary">Ver detalhes</a>
+                                            <?php if ($pode_editar): ?>
+                                                <a href="#modal-editar-<?= $turma->getCodigo() ?>" class="btn btn-sm btn-edit">Editar</a>
+                                            <?php endif; ?>
+                                            <?php if ($pode_remover): ?>
+                                                <a href="#modal-deletar-<?= $turma->getCodigo() ?>" class="btn btn-sm btn-delete">Remover</a>
+                                            <?php endif; ?>
+                                        </div>
+                                    </td>
                                 </tr>
 
                                 <?php if ($pode_editar): ?>

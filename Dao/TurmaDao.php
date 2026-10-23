@@ -265,6 +265,26 @@ class TurmaDao {
         );
     }
 
+    public function listarFormandos($codigoTurma) {
+        $sql = "select f.codigo_formando, f.nome_formando, f.apelido_formando,
+                       group_concat(m.data separator ', ') as datas_matricula
+                from Matricula m
+                join Formando f on f.codigo_formando = m.cod_formando
+                where m.cod_Turma = ?
+                group by f.codigo_formando, f.nome_formando, f.apelido_formando
+                order by f.nome_formando, f.apelido_formando";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $codigoTurma);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $formandos = [];
+        while ($rs = $result->fetch_assoc()) {
+            $formandos[] = $rs;
+        }
+        return $formandos;
+    }
+
     public function delete($codigo) {
         // Não deixa eliminar uma turma que ainda tem formandos associados
         if ($this->contarInscritos($codigo) > 0) {

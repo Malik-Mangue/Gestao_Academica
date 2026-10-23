@@ -14,26 +14,51 @@ class FormadorDao {
         $this->db = $database->getConnection();
     }
 
+    public function existeContacto($contacto, $ignorarCodigo = 0) {
+        $contacto = (int) $contacto;
+        $ignorarCodigo = (int) $ignorarCodigo;
+        $stmt = $this->db->prepare("select count(*) as total from Formador where contacto = ? and codigo <> ?");
+        $stmt->bind_param("ii", $contacto, $ignorarCodigo);
+        $stmt->execute();
+        return (int) $stmt->get_result()->fetch_assoc()['total'] > 0;
+    }
+
     public function create(Formador $formador) {
+        $nome        = $formador->getNome();
+        $apelido     = $formador->getApelido();
+        $email       = $formador->getEmail();
+        $genero      = $formador->getGenero();
+        $estadoCivil = $formador->getEstadoCivil();
+        $contacto    = (int) $formador->getContacto();
+        $valorHora   = (int) $formador->getValorHoras();
+        $horasMes    = (int) $formador->getHorasMes();
+        $salario     = $formador->getSalario();
+        $codCampo    = (int) $formador->getCodCampo();
+
+        if ($this->existeContacto($contacto)) {
+            throw new Exception("Já existe um formador com o contacto " . $contacto . ".");
+        }
+
         $sql = "insert into Formador (nome, apelido, email, genero, estadoCivil, contacto, valor_hora, horas_mes, salario, codCampo) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $this->db->prepare($sql);
-
         $stmt->bind_param("sssssiiidi",
-            $formador->getNome(),
-            $formador->getApelido(),
-            $formador->getEmail(),
-            $formador->getGenero(),
-            $formador->getEstadoCivil(),
-            $formador->getContacto(),
-            $formador->getValorHoras(),
-            $formador->getHorasMes(),
-            $formador->getSalario(),
-            $formador->getCodCampo()
+            $nome, $apelido, $email, $genero, $estadoCivil,
+            $contacto, $valorHora, $horasMes, $salario, $codCampo
         );
-        $result = $stmt->execute();
+
+        try {
+            $result = $stmt->execute();
+        } catch (mysqli_sql_exception $e) {
+            // Segurança extra: dois pedidos em simultâneo com o mesmo contacto
+            if ($e->getCode() == 1062) {
+                throw new Exception("Já existe um formador com o contacto " . $contacto . ".");
+            }
+            throw $e;
+        }
+
         if ($result) {
             $formador->setCodigo($this->db->insert_id);
-            $this->registarLog("INSERT", "Formador " . $formador->getNome() . " " . $formador->getApelido() . " foi cadastrado");
+            $this->registarLog("INSERT", "Formador " . $nome . " " . $apelido . " foi cadastrado");
         }
         return $result;
     }
@@ -94,25 +119,40 @@ class FormadorDao {
     }
 
     public function update(Formador $formador) {
+        $nome        = $formador->getNome();
+        $apelido     = $formador->getApelido();
+        $email       = $formador->getEmail();
+        $genero      = $formador->getGenero();
+        $estadoCivil = $formador->getEstadoCivil();
+        $contacto    = (int) $formador->getContacto();
+        $valorHora   = (int) $formador->getValorHoras();
+        $horasMes    = (int) $formador->getHorasMes();
+        $salario     = $formador->getSalario();
+        $codCampo    = (int) $formador->getCodCampo();
+        $codigo      = (int) $formador->getCodigo();
+
+        if ($this->existeContacto($contacto, $codigo)) {
+            throw new Exception("Já existe outro formador com o contacto " . $contacto . ".");
+        }
+
         $sql = "update Formador set nome = ?, apelido = ?, email = ?, genero = ?, estadoCivil = ?, contacto = ?, valor_hora = ?, horas_mes = ?, salario = ?, codCampo = ? where codigo = ?";
         $stmt = $this->db->prepare($sql);
-
         $stmt->bind_param("sssssiiidii",
-            $formador->getNome(),
-            $formador->getApelido(),
-            $formador->getEmail(),
-            $formador->getGenero(),
-            $formador->getEstadoCivil(),
-            $formador->getContacto(),
-            $formador->getValorHoras(),
-            $formador->getHorasMes(),
-            $formador->getSalario(),
-            $formador->getCodCampo(),
-            $formador->getCodigo()
+            $nome, $apelido, $email, $genero, $estadoCivil,
+            $contacto, $valorHora, $horasMes, $salario, $codCampo, $codigo
         );
-        $result = $stmt->execute();
+
+        try {
+            $result = $stmt->execute();
+        } catch (mysqli_sql_exception $e) {
+            if ($e->getCode() == 1062) {
+                throw new Exception("Já existe outro formador com o contacto " . $contacto . ".");
+            }
+            throw $e;
+        }
+
         if ($result) {
-            $this->registarLog("UPDATE", "Formador " . $formador->getNome() . " " . $formador->getApelido() . " (ID: " . $formador->getCodigo() . ") foi atualizado");
+            $this->registarLog("UPDATE", "Formador " . $nome . " " . $apelido . " (ID: " . $codigo . ") foi atualizado");
         }
         return $result;
     }
@@ -128,56 +168,56 @@ class FormadorDao {
         return $result;
     }
 
-private function consultarLista($sql, $codigoFormador) {
-    try {
-        $stmt = $this->db->prepare($sql);
-        $stmt->bind_param("i", $codigoFormador);
-        $stmt->execute();
-        $result = $stmt->get_result();
+    private function consultarLista($sql, $codigoFormador) {
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->bind_param("i", $codigoFormador);
+            $stmt->execute();
+            $result = $stmt->get_result();
 
-        $lista = [];
-        while ($rs = $result->fetch_assoc()) {
-            $lista[] = $rs;
+            $lista = [];
+            while ($rs = $result->fetch_assoc()) {
+                $lista[] = $rs;
+            }
+            return $lista;
+        } catch (mysqli_sql_exception $e) {
+            return [];
         }
-        return $lista;
-    } catch (mysqli_sql_exception $e) {
-        return [];
     }
-}
 
-public function listarTurmasQueDirige($codigoFormador) {
-    return $this->consultarLista(
-        "select t.nome as turma,
-                concat(q.titulo, ', ', n.nome) as qualificacao,
-                t.ano_lectivo as ano_letivo,
-                t.turno as turno
-         from Turma t
-         join Quali_Nivel qn on qn.codigo_Quali_Nivel = t.id_Quali_Nivel
-         join Qualificacao q on q.cod_Quali = qn.cod_Quali
-         join Nivel n on n.codigo = qn.cod_Nivel
-         where t.id_Diretor_Turma = ?
-         order by t.ano_lectivo desc, t.nome",
-        $codigoFormador
-    );
-}
+    public function listarTurmasQueDirige($codigoFormador) {
+        return $this->consultarLista(
+            "select t.nome as turma,
+                    concat(q.titulo, ', ', n.nome) as qualificacao,
+                    t.ano_lectivo as ano_letivo,
+                    t.turno as turno
+             from Turma t
+             join Quali_Nivel qn on qn.codigo_Quali_Nivel = t.id_Quali_Nivel
+             join Qualificacao q on q.cod_Quali = qn.cod_Quali
+             join Nivel n on n.codigo = qn.cod_Nivel
+             where t.id_Diretor_Turma = ?
+             order by t.ano_lectivo desc, t.nome",
+            $codigoFormador
+        );
+    }
 
-public function listarQualificacoesQueCoordena($codigoFormador) {
-    return $this->consultarLista(
-        "select q.titulo as qualificacao,
-                (select group_concat(c.nome order by c.nome separator ', ')
-                 from Classificacao cl
-                 join Campo c on c.codigo = cl.cod_Campo
-                 where cl.cod_Qualificacao = q.cod_Quali) as campo,
-                (select group_concat(n.nome order by n.nome separator ', ')
-                 from Quali_Nivel qn
-                 join Nivel n on n.codigo = qn.cod_Nivel
-                 where qn.cod_Quali = q.cod_Quali) as niveis
-         from Qualificacao q
-         where q.cod_Coordenador = ?
-         order by q.titulo",
-        $codigoFormador
-    );
-}
+    public function listarQualificacoesQueCoordena($codigoFormador) {
+        return $this->consultarLista(
+            "select q.titulo as qualificacao,
+                    (select group_concat(c.nome order by c.nome separator ', ')
+                     from Classificacao cl
+                     join Campo c on c.codigo = cl.cod_Campo
+                     where cl.cod_Qualificacao = q.cod_Quali) as campo,
+                    (select group_concat(n.nome order by n.nome separator ', ')
+                     from Quali_Nivel qn
+                     join Nivel n on n.codigo = qn.cod_Nivel
+                     where qn.cod_Quali = q.cod_Quali) as niveis
+             from Qualificacao q
+             where q.cod_Coordenador = ?
+             order by q.titulo",
+            $codigoFormador
+        );
+    }
 
     private function registarLog($acao, $descricao) {
         $usuario = Sessao::obterUtilizador();

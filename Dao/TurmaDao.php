@@ -18,9 +18,9 @@ class TurmaDao {
         $this->db = $database->getConnection();
     }
 
-    // Número de formandos (matrículas) já associados a uma turma
+    // Número de formandos (matrículas) já colocados na turma
     private function contarInscritos($codTurma) {
-        $stmt = $this->db->prepare("select count(*) as total from Turma_Formando where cod_Turma = ?");
+        $stmt = $this->db->prepare("select count(*) as total from Matricula where cod_Turma = ?");
         $stmt->bind_param("i", $codTurma);
         $stmt->execute();
         return (int) $stmt->get_result()->fetch_assoc()['total'];
@@ -71,15 +71,18 @@ class TurmaDao {
             throw new Exception("A capacidade máxima não pode ser inferior ao número de formandos inscritos ($inscritos).");
         }
 
-        // Não deixa mudar a qualificação/nível se já há formandos inscritos,
+        // Não deixa mudar a qualificação/nível nem o ano lectivo se já há formandos,
         // porque as matrículas deixariam de ser compatíveis com a turma
         if ($inscritos > 0) {
-            $stmtQn = $this->db->prepare("select id_Quali_Nivel from Turma where codigo = ?");
+            $stmtQn = $this->db->prepare("select id_Quali_Nivel, ano_lectivo from Turma where codigo = ?");
             $stmtQn->bind_param("i", $codigo);
             $stmtQn->execute();
             $atual = $stmtQn->get_result()->fetch_assoc();
             if ($atual !== null && (int) $atual['id_Quali_Nivel'] !== $codigoQualiNivel) {
-                throw new Exception("Não é possível alterar a qualificação/nível de uma turma que já tem formandos inscritos.");
+                throw new Exception("Não é possível alterar a qualificação/nível de uma turma que já tem formandos.");
+            }
+            if ($atual !== null && (int) $atual['ano_lectivo'] !== (int) $turma->getAnoIngresso()) {
+                throw new Exception("Não é possível alterar o ano lectivo de uma turma que já tem formandos.");
             }
         }
 
@@ -118,7 +121,7 @@ class TurmaDao {
                        (select min(cl.cod_Campo)
                           from Classificacao cl
                          where cl.cod_Qualificacao = Quali_Nivel.cod_Quali) as campo_cod,
-                       (select count(*) from Turma_Formando tf where tf.cod_Turma = Turma.codigo) as inscritos
+                       (select count(*) from Matricula m where m.cod_Turma = Turma.codigo) as inscritos
                 from Turma
                 join Diretor_Turma on cod_Formador = id_Diretor_Turma
                 join Formador on Formador.codigo = cod_Formador
@@ -265,30 +268,10 @@ class TurmaDao {
         );
     }
 
-    public function listarFormandos($codigoTurma) {
-        $sql = "select f.codigo_formando, f.nome_formando, f.apelido_formando,
-                       group_concat(m.data separator ', ') as datas_matricula
-                from Matricula m
-                join Formando f on f.codigo_formando = m.cod_formando
-                where m.cod_Turma = ?
-                group by f.codigo_formando, f.nome_formando, f.apelido_formando
-                order by f.nome_formando, f.apelido_formando";
-        $stmt = $this->db->prepare($sql);
-        $stmt->bind_param("i", $codigoTurma);
-        $stmt->execute();
-        $result = $stmt->get_result();
-
-        $formandos = [];
-        while ($rs = $result->fetch_assoc()) {
-            $formandos[] = $rs;
-        }
-        return $formandos;
-    }
-
     public function delete($codigo) {
         // Não deixa eliminar uma turma que ainda tem formandos associados
         if ($this->contarInscritos($codigo) > 0) {
-            throw new Exception("Remova primeiro os formandos desta turma antes de a eliminar.");
+            throw new Exception("Retire primeiro os formandos desta turma (editando as matrículas) antes de a eliminar.");
         }
 
         $sql = "delete from Turma where codigo = ?";
@@ -317,8 +300,29 @@ class TurmaDao {
         return $rs['total'] > 0;
     }
 
+    // Formandos colocados numa turma (via Matricula.cod_Turma)
+    public function listarFormandos($codigoTurma) {
+        $sql = "select f.codigo_formando, f.nome_formando, f.apelido_formando,
+                       group_concat(m.data separator ', ') as datas_matricula
+                from Matricula m
+                join Formando f on f.codigo_formando = m.cod_formando
+                where m.cod_Turma = ?
+                group by f.codigo_formando, f.nome_formando, f.apelido_formando
+                order by f.nome_formando, f.apelido_formando";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("i", $codigoTurma);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $formandos = [];
+        while ($rs = $result->fetch_assoc()) {
+            $formandos[] = $rs;
+        }
+        return $formandos;
+    }
+
     public function getByQualiNivel($codigoQualiNivel) {
-        $sql = "select Turma.codigo, Turma.nome, ano_lectivo, turno,
+        $sql = "select Turma.codigo, Turma.nome, ano_lectivo, turno, Turma.capacidade_maxima,
                        Turma.id_Diretor_Turma, Turma.id_Quali_Nivel,
                        Quali_Nivel.cod_Quali as cod_quali, Quali_Nivel.cod_Nivel as cod_nivel,
                        Formador.nome as diretor_turma, Qualificacao.titulo as titulo, Nivel.nome as nivel
@@ -347,7 +351,7 @@ class TurmaDao {
             $qualiNivel->setQualificacao($qualificacao);
             $qualiNivel->setNivel($nivel);
 
-            $turmas[] = new Turma($rs['codigo'], $rs['nome'], $rs['ano_lectivo'], $rs['turno'], $diretorTurma, $qualificacao, $qualiNivel);
+            $turmas[] = new Turma($rs['codigo'], $rs['nome'], $rs['ano_lectivo'], $rs['turno'], $diretorTurma, $qualificacao, $qualiNivel, (int) $rs['capacidade_maxima']);
         }
         return $turmas;
     }

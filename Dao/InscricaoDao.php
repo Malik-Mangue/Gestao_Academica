@@ -5,6 +5,7 @@ require_once __DIR__ . '/../model/Formando.php';
 require_once __DIR__ . '/../model/Modulo.php';
 require_once __DIR__ . '/../model/Quali_Nivel.php';
 require_once __DIR__ . '/../model/Qualificacao.php';
+require_once __DIR__ . '/../model/Turma.php';
 require_once __DIR__ . '/../model/Logs.php';
 require_once __DIR__ . '/LogDao.php';
 
@@ -16,16 +17,25 @@ class InscricaoDao {
         $this->db = $database->getConnection();
     }
 
+    /**
+     * Constrói o objeto Turma a partir da linha do SELECT.
+     * Se o construtor de Turma for diferente, ajuste apenas este método.
+     */
+    private function montarTurma($codigo, $nome) {
+        return new Turma($codigo, $nome, null, null, null);
+    }
+
     public function create(Inscricao $inscricao) {
-        $sql = "insert into Inscricao (codigo_formando, codigo_modulo, semestre, data_inscricao) values (?, ?, ?, ?)";
+        $sql = "insert into Inscricao (codigo_formando, codigo_modulo, semestre, data_inscricao, codigo_turma) values (?, ?, ?, ?, ?)";
         $stmt = $this->db->prepare($sql);
 
         $codigoFormando = $inscricao->getFormando()->getCodigo();
         $codigoModulo = $inscricao->getModulo()->getCodigo();
         $semestre = $inscricao->getSemestre();
         $dataInscricao = $inscricao->getDataInscricao();
+        $codigoTurma = $inscricao->getTurma() !== null ? (int) $inscricao->getTurma()->getCodigo() : null;
 
-        $stmt->bind_param("iiss", $codigoFormando, $codigoModulo, $semestre, $dataInscricao);
+        $stmt->bind_param("iissi", $codigoFormando, $codigoModulo, $semestre, $dataInscricao, $codigoTurma);
         $result = $stmt->execute();
 
         if ($result) {
@@ -65,6 +75,7 @@ class InscricaoDao {
 
     public function getAll($pesquisa = null, $codCampo = null) {
         $sql = "select i.codigo_inscricao, i.codigo_formando, i.codigo_modulo, i.semestre, i.data_inscricao,
+                       i.codigo_turma, t.nome as nome_turma,
                        f.nome_formando, f.apelido_formando, m.nome_modulo,
                        qn.codigo_Quali_Nivel, q.cod_Quali, q.titulo,
                        (select min(cl.cod_Campo)
@@ -73,6 +84,7 @@ class InscricaoDao {
                 from Inscricao i
                 join Formando f on f.codigo_formando = i.codigo_formando
                 join Modulo m on m.codigo = i.codigo_modulo
+                left join Turma t on t.codigo = i.codigo_turma
                 left join Quali_Nivel qn on qn.codigo_Quali_Nivel = m.id_Quali_Nivel
                 left join Qualificacao q on q.cod_Quali = qn.cod_Quali
                 where (i.semestre like ?
@@ -80,6 +92,7 @@ class InscricaoDao {
                    or f.apelido_formando like ?
                    or m.nome_modulo like ?
                    or q.titulo like ?
+                   or t.nome like ?
                    or CAST(i.data_inscricao as CHAR) like ?)";
         if ($codCampo !== null && (int) $codCampo > 0) {
             $sql .= " and f.codCampo = ?";
@@ -87,9 +100,9 @@ class InscricaoDao {
         $stmt = $this->db->prepare($sql);
         $busca = "%" . $pesquisa . "%";
         if ($codCampo !== null && (int) $codCampo > 0) {
-            $stmt->bind_param("ssssssi", $busca, $busca, $busca, $busca, $busca, $busca, $codCampo);
+            $stmt->bind_param("sssssssi", $busca, $busca, $busca, $busca, $busca, $busca, $busca, $codCampo);
         } else {
-            $stmt->bind_param("ssssss", $busca, $busca, $busca, $busca, $busca, $busca);
+            $stmt->bind_param("sssssss", $busca, $busca, $busca, $busca, $busca, $busca, $busca);
         }
         $stmt->execute();
         $result = $stmt->get_result();
@@ -114,6 +127,11 @@ class InscricaoDao {
                 $rs['semestre'],
                 $rs['data_inscricao']
             );
+
+            if ($rs['codigo_turma'] !== null) {
+                $inscricao->setTurma($this->montarTurma($rs['codigo_turma'], $rs['nome_turma']));
+            }
+
             $inscricoes[] = $inscricao;
         }
         return $inscricoes;

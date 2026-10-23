@@ -12,7 +12,7 @@ class InscricaoController {
         $this->dao = new InscricaoDao();
     }
 
-    public function cadastrarInscricao($formando, $modulo, $semestre, $data_inscricao) {
+    public function cadastrarInscricao($formando, $modulo, $semestre, $data_inscricao, $turma = null) {
         if ($formando != null && $modulo != null && $semestre != null && strlen($semestre) > 0
             && $data_inscricao != null && strlen($data_inscricao) > 0) {
 
@@ -21,6 +21,7 @@ class InscricaoController {
             }
 
             $inscricao = new Inscricao(null, $formando, $modulo, $semestre, $data_inscricao);
+            $inscricao->setTurma($turma);
             return $this->dao->create($inscricao);
         }
         return false;
@@ -32,8 +33,10 @@ class InscricaoController {
      * Quando $semestre é null, o semestre de cada módulo é obtido a partir da
      * respetiva associação Quali_modulo, permitindo selecionar módulos de
      * semestres diferentes no mesmo pedido.
+     *
+     * $turma (opcional) é associada a todas as inscrições criadas.
      */
-    public function cadastrarInscricoes($formando, $modulos, $semestre, $data_inscricao) {
+    public function cadastrarInscricoes($formando, $modulos, $semestre, $data_inscricao, $turma = null) {
         if ($formando == null || !is_array($modulos) || empty($modulos)
             || $data_inscricao == null || strlen($data_inscricao) === 0) {
             return false;
@@ -67,7 +70,10 @@ class InscricaoController {
             }
 
             $modulosVistos[$codigoModulo] = true;
-            $inscricoes[] = new Inscricao(null, $formando, $modulo, $semestreModulo, $data_inscricao);
+
+            $inscricao = new Inscricao(null, $formando, $modulo, $semestreModulo, $data_inscricao);
+            $inscricao->setTurma($turma);
+            $inscricoes[] = $inscricao;
         }
 
         return $this->dao->createMany($inscricoes);

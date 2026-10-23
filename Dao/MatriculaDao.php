@@ -16,33 +16,114 @@ class MatriculaDao {
         $this->db = $database->getConnection();
     }
 
-    public function create(Matricula $matricula) {
-        $sql = "insert into Matricula (cod_formando, cod_Quali, id_Quali_Nivel, cod_Turma, data) values (?, ?, ?, ?, ?)";
-        $stmt = $this->db->prepare($sql);
+    
+    private function anoDaData($data) {
+        if (!is_string($data) || !preg_match('/^(\d{4})-\d{2}-\d{2}$/', $data, $m)) {
+            return null;
+        }
+        return $m[1];
+    }
 
+
+    public function existeMatriculaNoAno($codFormando, $data, $ignorarCodigo = 0) {
+        $ano = $this->anoDaData($data);
+        if ($ano === null) {
+            return false;
+        }
+        $sql = "select count(*) as total from Matricula
+                where cod_formando = ? and left(`data`, 4) = ? and codigo <> ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bind_param("isi", $codFormando, $ano, $ignorarCodigo);
+        $stmt->execute();
+        return (int) $stmt->get_result()->fetch_assoc()['total'] > 0;
+    }
+
+    private function validarAno($codFormando, $data, $ignorarCodigo = 0) {
+        $ano = $this->anoDaData($data);
+        if ($ano === null) {
+            throw new Exception("A data da matrícula deve estar no formato AAAA-MM-DD.");
+        }
+        if ($this->existeMatriculaNoAno($codFormando, $data, $ignorarCodigo)) {
+            throw new Exception("Este formando já tem matrícula no ano " . $ano . ".");
+        }
+    }
+
+    // Turma: tem de existir, ser da mesma qualificação, do mesmo ano e ter vaga.
+    private function validarTurma($codTurma, $codQuali, $data, $ignorarMatricula = 0) {
+        if (!$codTurma) {
+            return;
+        }
+
+        $stmt = $this->db->prepare(
+            "select t.nome, t.ano_lectivo, t.capacidade_maxima, qn.cod_Quali
+             from Turma t
+             join Quali_Nivel qn on qn.codigo_Quali_Nivel = t.id_Quali_Nivel
+             where t.codigo = ? for update"
+        );
+        $stmt->bind_param("i", $codTurma);
+        $stmt->execute();
+        $turma = $stmt->get_result()->fetch_assoc();
+
+        if (!$turma) {
+            throw new Exception("Turma inexistente.");
+        }
+        if ((int) $turma['cod_Quali'] !== (int) $codQuali) {
+            throw new Exception("A turma " . $turma['nome'] . " não corresponde à qualificação da matrícula.");
+        }
+        $ano = $this->anoDaData($data);
+        if ((string) $turma['ano_lectivo'] !== (string) $ano) {
+            throw new Exception("A turma " . $turma['nome'] . " é do ano " . $turma['ano_lectivo'] . " e a matrícula é do ano " . $ano . ".");
+        }
+
+        $stmtC = $this->db->prepare("select count(*) as total from Matricula where cod_Turma = ? and codigo <> ?");
+        $stmtC->bind_param("ii", $codTurma, $ignorarMatricula);
+        $stmtC->execute();
+        $inscritos = (int) $stmtC->get_result()->fetch_assoc()['total'];
+        if ($inscritos >= (int) $turma['capacidade_maxima']) {
+            throw new Exception("A turma " . $turma['nome'] . " já atingiu a capacidade máxima (" . $turma['capacidade_maxima'] . ").");
+        }
+    }
+
+    public function create(Matricula $matricula) {
         $codigoFormando = $matricula->getFormando()->getCodigo();
         $codigoQuali = $matricula->getQualificacao()->getCodigo();
         $idQualiNivel = $matricula->getId_quali_nivel();
         $codTurma = $matricula->getCodTurma();
         $dataMatricula = $matricula->getDataMatricula();
 
-        $stmt->bind_param("iiiis", $codigoFormando, $codigoQuali, $idQualiNivel, $codTurma, $dataMatricula);
+        $this->db->begin_transaction();
         try {
+            $this->validarAno($codigoFormando, $dataMatricula);
+            $this->validarTurma($codTurma, $codigoQuali, $dataMatricula);
+
+            $sql = "insert into Matricula (cod_formando, cod_Quali, id_Quali_Nivel, cod_Turma, data) values (?, ?, ?, ?, ?)";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bind_param("iiiis", $codigoFormando, $codigoQuali, $idQualiNivel, $codTurma, $dataMatricula);
             $result = $stmt->execute();
-        } catch (mysqli_sql_exception $e) {
-            return false;
-        }
-
-        if ($result) {
-            $usuario = Sessao::obterUtilizador();
-            if ($usuario != null) {
-                $log = new Logs(null, "INSERT", "Matrícula para a data " . $dataMatricula . " foi cadastrada", $usuario);
-                $log->setData(date('d/m/Y H:i:s'));
-                (new LogDao())->salvar($log);
+            if (!$result) {
+                $this->db->rollback();
+                return false;
             }
+            $this->db->commit();
+        } catch (mysqli_sql_exception $e) {
+            $this->db->rollback();
+            if ($e->getCode() == 1062) {
+                throw new Exception("Este formando já tem matrícula no ano " . $this->anoDaData($dataMatricula) . ".");
+            }
+            return false;
+        } catch (Exception $e) {
+            $this->db->rollback();
+            throw $e;
         }
 
-        return $result;
+        $usuario = Sessao::obterUtilizador();
+        if ($usuario != null) {
+            $log = new Logs(null, "INSERT", "Matrícula para a data " . $dataMatricula . " foi cadastrada", $usuario);
+            $log->setData(date('d/m/Y H:i:s'));
+            (new LogDao())->salvar($log);
+        }
+
+        return true;
     }
 
     public function getAll($nome, $codCampo = null) {
@@ -95,33 +176,46 @@ class MatriculaDao {
     }
 
     public function update(Matricula $matricula) {
-        $sql = "update Matricula set cod_formando = ?, cod_Quali = ?, id_Quali_Nivel = ?, cod_Turma = ?, data = ? where codigo = ?";
-        $stmt = $this->db->prepare($sql);
-
         $codigoFormando = $matricula->getFormando()->getCodigo();
         $codigoQuali = $matricula->getQualificacao()->getCodigo();
         $idQualiNivel = $matricula->getId_quali_nivel();
         $codTurma = $matricula->getCodTurma();
         $dataMatricula = $matricula->getDataMatricula();
-        $codigo = $matricula->getCodigo();
+        $codigo = (int) $matricula->getCodigo();
 
-        $stmt->bind_param("iiiisi", $codigoFormando, $codigoQuali, $idQualiNivel, $codTurma, $dataMatricula, $codigo);
+        $this->db->begin_transaction();
         try {
+            $this->validarAno($codigoFormando, $dataMatricula, $codigo);
+            $this->validarTurma($codTurma, $codigoQuali, $dataMatricula, $codigo);
+
+            $sql = "update Matricula set cod_formando = ?, cod_Quali = ?, id_Quali_Nivel = ?, cod_Turma = ?, data = ? where codigo = ?";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bind_param("iiiisi", $codigoFormando, $codigoQuali, $idQualiNivel, $codTurma, $dataMatricula, $codigo);
             $result = $stmt->execute();
-        } catch (mysqli_sql_exception $e) {
-            return false;
-        }
-
-        if ($result) {
-            $usuario = Sessao::obterUtilizador();
-            if ($usuario != null) {
-                $log = new Logs(null, "UPDATE", "Matrícula (ID: " . $codigo . ") para a data " . $dataMatricula . " foi atualizada", $usuario);
-                $log->setData(date('d/m/Y H:i:s'));
-                (new LogDao())->salvar($log);
+            if (!$result) {
+                $this->db->rollback();
+                return false;
             }
+            $this->db->commit();
+        } catch (mysqli_sql_exception $e) {
+            $this->db->rollback();
+            if ($e->getCode() == 1062) {
+                throw new Exception("Este formando já tem matrícula no ano " . $this->anoDaData($dataMatricula) . ".");
+            }
+            return false;
+        } catch (Exception $e) {
+            $this->db->rollback();
+            throw $e;
         }
 
-        return $result;
+        $usuario = Sessao::obterUtilizador();
+        if ($usuario != null) {
+            $log = new Logs(null, "UPDATE", "Matrícula (ID: " . $codigo . ") para a data " . $dataMatricula . " foi atualizada", $usuario);
+            $log->setData(date('d/m/Y H:i:s'));
+            (new LogDao())->salvar($log);
+        }
+
+        return true;
     }
 
     public function delete($codigo) {

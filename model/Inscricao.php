@@ -5,14 +5,16 @@ class Inscricao {
     private $modulo;
     private $semestre;
     private $data_inscricao;
+    private $turma = null;
 
-    public function __construct($codigo, $formando, $modulo, $semestre, $data_inscricao)
+    public function __construct($codigo, $formando, $modulo, $semestre, $data_inscricao, $turma = null)
     {
         $this->codigo = $codigo;
         $this->formando = $formando;
         $this->modulo = $modulo;
         $this->semestre = $semestre;
         $this->data_inscricao = $data_inscricao;
+        $this->turma = $turma;
     }
 
     public function getCodigo(){ return $this->codigo; }
@@ -29,5 +31,8 @@ class Inscricao {
 
     public function getDataInscricao(){ return $this->data_inscricao; }
     public function setDataInscricao($data_inscricao){ $this->data_inscricao = $data_inscricao; }
+
+    public function getTurma(){ return $this->turma; }
+    public function setTurma($turma){ $this->turma = $turma; }
 }
 ?>

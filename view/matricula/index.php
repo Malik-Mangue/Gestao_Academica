@@ -53,13 +53,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $qualificacao = new Qualificacao($qualiNivel->getCod_quali(), null, null);
             $nivel        = new Nivel($qualiNivel->getCod_nivel(), null);
 
-            $sucesso = $acao === 'gravar'
-                ? $controller->cadastrarMatricula($formando, $qualificacao, $nivel, $idQualiNivel, $data, $codTurma)
-                : $controller->atualizarMatricula($codigo, $formando, $qualificacao, $nivel, $idQualiNivel, $data, $codTurma);
+            try {
+                $sucesso = $acao === 'gravar'
+                    ? $controller->cadastrarMatricula($formando, $qualificacao, $nivel, $idQualiNivel, $data, $codTurma)
+                    : $controller->atualizarMatricula($codigo, $formando, $qualificacao, $nivel, $idQualiNivel, $data, $codTurma);
 
-            $_SESSION['flash'] = $sucesso
-                ? ['type' => 'success', 'msg' => $acao === 'gravar' ? 'Matrícula registada com sucesso!' : 'Matrícula atualizada com sucesso!']
-                : ['type' => 'danger', 'msg' => 'Não foi possível gravar a matrícula.'];
+                $_SESSION['flash'] = $sucesso
+                    ? ['type' => 'success', 'msg' => $acao === 'gravar' ? 'Matrícula registada com sucesso!' : 'Matrícula atualizada com sucesso!']
+                    : ['type' => 'danger', 'msg' => 'Não foi possível gravar a matrícula.'];
+            } catch (Exception $e) {
+                $_SESSION['flash'] = ['type' => 'danger', 'msg' => $e->getMessage()];
+            }
         }
         header('Location: index.php');
         exit;
@@ -94,12 +98,21 @@ function codQualificacaoDoPar($idQualiNivel): ?int {
     return $qn ? (int) $qn->getCod_quali() : null;
 }
 
-function filtrarTurmasPorQualificacao(array $turmas, ?int $codQuali): array {
+
+function anoDaData(?string $data): ?string {
+    return ($data && preg_match('/^(\d{4})-\d{2}-\d{2}$/', $data, $m)) ? $m[1] : null;
+}
+
+
+function filtrarTurmasPorQualificacao(array $turmas, ?int $codQuali, ?string $ano = null): array {
     if (!$codQuali) {
         return [];
     }
-    return array_values(array_filter($turmas, function ($t) use ($codQuali) {
-        return (int) $t->getQualiNivel()->getCod_quali() === $codQuali;
+    return array_values(array_filter($turmas, function ($t) use ($codQuali, $ano) {
+        if ((int) $t->getQualiNivel()->getCod_quali() !== $codQuali) {
+            return false;
+        }
+        return $ano === null || (string) $t->getAnoIngresso() === $ano;
     }));
 }
 
@@ -227,10 +240,10 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                     $buscaEdit = $editAtivo ? $ctxBusca : '';
                                                     $formandosEdit = filtrarFormandos($formandosEdit, $buscaEdit);
                                                     $qnSel = $editAtivo ? $ctxQualiNivel : (int) $matricula->getId_quali_nivel();
-                                                    $turmasEdit = filtrarTurmasPorQualificacao($turmas, codQualificacaoDoPar($qnSel));
+                                                    $dataEdit = $editAtivo ? trim($_GET['data'] ?? '') : $matricula->getDataMatricula();
+                                                    $turmasEdit = filtrarTurmasPorQualificacao($turmas, codQualificacaoDoPar($qnSel), anoDaData($dataEdit));
                                                     $formandoSel = $editAtivo ? $ctxFormando : (int) $matricula->getFormando()->getCodigo();
                                                     $turmaSel = $editAtivo ? (int) $ctxTurma : (int) $matricula->getCodTurma();
-                                                    $dataEdit = $editAtivo ? trim($_GET['data'] ?? '') : $matricula->getDataMatricula();
                                                     ?>
                                                     <input type="hidden" name="modal" value="<?= htmlspecialchars($sufixo) ?>">
                                                     <input type="hidden" name="pesquisa" value="<?= htmlspecialchars($pesquisa) ?>">
@@ -265,31 +278,33 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                                 </option>
                                                             <?php endforeach; ?>
                                                         </select>
+                                                    </div>
+
+                                                    <!-- 3. Data: define o ano das turmas disponíveis -->
+                                                    <div class="form-group">
+                                                        <label for="e-d-<?= $matricula->getCodigo() ?>">Data <span class="required">*</span></label>
+                                                        <input type="date" id="e-d-<?= $matricula->getCodigo() ?>" name="data" class="form-control"
+                                                               value="<?= htmlspecialchars($dataEdit) ?>" required>
                                                         <button type="submit" name="carregar" value="1"
                                                                 formmethod="get" formnovalidate
                                                                 formaction="index.php#modal-editar-<?= (int) $matricula->getCodigo() ?>"
                                                                 class="btn btn-secondary btn-sm">Carregar turmas</button>
                                                     </div>
 
-                                                    <!-- 3. Turma (carregada de acordo com a qualificação) -->
+                                                    <!-- 4. Turma (mesma qualificação e mesmo ano da data) -->
                                                     <div class="form-group">
                                                         <label for="e-t-<?= $matricula->getCodigo() ?>">Turma</label>
                                                         <select id="e-t-<?= $matricula->getCodigo() ?>" name="codTurma" class="form-control">
-                                                            <option value="">Selecione a turma...</option>
+                                                            <option value="">Sem turma</option>
                                                             <?php foreach ($turmasEdit as $t): ?>
                                                                 <option value="<?= (int) $t->getCodigo() ?>"
                                                                     <?= $turmaSel === (int) $t->getCodigo() ? 'selected' : '' ?>>
-                                                                    <?= htmlspecialchars($t->getNome()) ?>
+                                                                    <?= htmlspecialchars($t->getNome() . ' (' . $t->getAnoIngresso() . ')') ?>
                                                                 </option>
                                                             <?php endforeach; ?>
                                                         </select>
                                                     </div>
 
-                                                    <div class="form-group">
-                                                        <label for="e-d-<?= $matricula->getCodigo() ?>">Data <span class="required">*</span></label>
-                                                        <input type="date" id="e-d-<?= $matricula->getCodigo() ?>" name="data" class="form-control"
-                                                               value="<?= htmlspecialchars($dataEdit) ?>" required>
-                                                    </div>
                                                     <div class="form-group">
                                                         <label for="e-bf-<?= $matricula->getCodigo() ?>">Pesquisar formando</label>
                                                         <input type="text" id="e-bf-<?= $matricula->getCodigo() ?>" name="buscaFormando" class="form-control"
@@ -384,10 +399,10 @@ require_once __DIR__ . '/../partials/sidebar.php';
                         $buscaNovo = $novoAtivo ? $ctxBusca : '';
                         $formandosNovo = filtrarFormandos($formandosNovo, $buscaNovo);
                         $qnNovoSel = $novoAtivo ? $ctxQualiNivel : null;
-                        $turmasNovo = filtrarTurmasPorQualificacao($turmas, codQualificacaoDoPar($qnNovoSel));
+                        $dataNovo = $novoAtivo ? trim($_GET['data'] ?? '') : '';
+                        $turmasNovo = filtrarTurmasPorQualificacao($turmas, codQualificacaoDoPar($qnNovoSel), anoDaData($dataNovo));
                         $formandoNovoSel = $novoAtivo ? $ctxFormando : null;
                         $turmaNovoSel = $novoAtivo ? (int) $ctxTurma : 0;
-                        $dataNovo = $novoAtivo ? trim($_GET['data'] ?? '') : '';
                         ?>
                         <input type="hidden" name="modal" value="novo">
                         <input type="hidden" name="pesquisa" value="<?= htmlspecialchars($pesquisa) ?>">
@@ -422,31 +437,33 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                        </div>
+
+                        <!-- 3. Data: define o ano das turmas disponíveis -->
+                        <div class="form-group">
+                            <label for="n-d">Data <span class="required">*</span></label>
+                            <input type="date" id="n-d" name="data" class="form-control"
+                                   value="<?= htmlspecialchars($dataNovo) ?>" required>
                             <button type="submit" name="carregar" value="1"
                                     formmethod="get" formnovalidate
                                     formaction="index.php#modal-novo"
                                     class="btn btn-secondary btn-sm">Carregar turmas</button>
                         </div>
 
-                        <!-- 3. Turma (carregada de acordo com a qualificação) -->
+                        <!-- 4. Turma (mesma qualificação e mesmo ano da data) -->
                         <div class="form-group">
                             <label for="n-t">Turma</label>
                             <select id="n-t" name="codTurma" class="form-control">
-                                <option value="">Selecione a turma...</option>
+                                <option value="">Sem turma</option>
                                 <?php foreach ($turmasNovo as $t): ?>
                                     <option value="<?= (int) $t->getCodigo() ?>"
                                         <?= $turmaNovoSel === (int) $t->getCodigo() ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($t->getNome()) ?>
+                                        <?= htmlspecialchars($t->getNome() . ' (' . $t->getAnoIngresso() . ')') ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
 
-                        <div class="form-group">
-                            <label for="n-d">Data <span class="required">*</span></label>
-                            <input type="date" id="n-d" name="data" class="form-control"
-                                   value="<?= htmlspecialchars($dataNovo) ?>" required>
-                        </div>
                         <div class="form-group">
                             <label for="n-bf">Pesquisar formando</label>
                             <input type="text" id="n-bf" name="buscaFormando" class="form-control"

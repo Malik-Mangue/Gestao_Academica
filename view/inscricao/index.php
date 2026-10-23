@@ -190,7 +190,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        $sucesso = $controller->cadastrarInscricoes($formando, $modulosParaGravar, null, $data);
+
+        $sucesso = $controller->cadastrarInscricoes($formando, $modulosParaGravar, null, $data, $turma);
 
         if ($sucesso) {
             $_SESSION['flash'] = [
@@ -506,6 +507,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             <th>Formando</th>
                             <th>Módulo</th>
                             <th>Qualificação</th>
+                            <th>Turma</th>
                             <th>Semestre</th>
                             <th>Data de Inscrição</th>
                             <?php if ($pode_editar || $pode_remover): ?>
@@ -516,7 +518,7 @@ require_once __DIR__ . '/../partials/sidebar.php';
                     <tbody>
                         <?php if (empty($inscricoes)): ?>
                             <tr>
-                                <td colspan="<?= $pode_editar || $pode_remover ? 7 : 6 ?>" class="table-empty">
+                                <td colspan="<?= $pode_editar || $pode_remover ? 8 : 7 ?>" class="table-empty">
                                     Nenhuma inscrição encontrada.
                                 </td>
                             </tr>
@@ -529,6 +531,11 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     <td><?= htmlspecialchars(
                                             $inscricao->getModulo()->getQualiNivel() && $inscricao->getModulo()->getQualiNivel()->getQualificacao()
                                                 ? $inscricao->getModulo()->getQualiNivel()->getQualificacao()->getTitulo()
+                                                : '-'
+                                        ) ?></td>
+                                    <td><?= htmlspecialchars(
+                                            method_exists($inscricao, 'getTurma') && $inscricao->getTurma() !== null
+                                                ? $inscricao->getTurma()->getNome()
                                                 : '-'
                                         ) ?></td>
                                     <td><?= htmlspecialchars($inscricao->getSemestre()) ?></td>

@@ -38,15 +38,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Valor por hora e horas por mês devem ser positivos.'];
         } elseif (!$codCampo) {
             $_SESSION['flash'] = ['type' => 'danger', 'msg' => 'Selecione o campo (área) do formador.'];
-        } else {
-            $sucesso = $controller->cadastrarFormador(
-                $nome, $apelido, $email, $genero, $estadoCivil,
-                (int) $contacto, (int) $valorHora, (int) $horasMes,
-                (int) $salario, $isDiretor, $isCoordenador, (int) $codCampo
-            );
-            $_SESSION['flash'] = $sucesso
-                ? ['type' => 'success', 'msg' => 'Formador cadastrado com sucesso!']
-                : ['type' => 'danger', 'msg' => 'Não foi possível gravar o registo. Verifique os dados.'];
+                } else {
+            try {
+                $sucesso = $controller->cadastrarFormador(
+                    $nome, $apelido, $email, $genero, $estadoCivil,
+                    (int) $contacto, (int) $valorHora, (int) $horasMes,
+                    (int) $salario, $isDiretor, $isCoordenador, (int) $codCampo
+                );
+                $_SESSION['flash'] = $sucesso
+                    ? ['type' => 'success', 'msg' => 'Formador cadastrado com sucesso!']
+                    : ['type' => 'danger', 'msg' => 'Não foi possível gravar o registo. Verifique os dados.'];
+            } catch (Exception $e) {
+                $_SESSION['flash'] = ['type' => 'danger', 'msg' => $e->getMessage()];
+            }
         }
         header('Location: index.php');
         exit;

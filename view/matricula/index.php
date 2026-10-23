@@ -285,10 +285,6 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                         <label for="e-d-<?= $matricula->getCodigo() ?>">Data <span class="required">*</span></label>
                                                         <input type="date" id="e-d-<?= $matricula->getCodigo() ?>" name="data" class="form-control"
                                                                value="<?= htmlspecialchars($dataEdit) ?>" required>
-                                                        <button type="submit" name="carregar" value="1"
-                                                                formmethod="get" formnovalidate
-                                                                formaction="index.php#modal-editar-<?= (int) $matricula->getCodigo() ?>"
-                                                                class="btn btn-secondary btn-sm">Carregar turmas</button>
                                                     </div>
 
                                                     <!-- 4. Turma (mesma qualificação e mesmo ano da data) -->
@@ -303,6 +299,10 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                                                 </option>
                                                             <?php endforeach; ?>
                                                         </select>
+                                                        <button type="submit" name="carregar" value="1"
+                                                                formmethod="get" formnovalidate
+                                                                formaction="index.php#modal-editar-<?= (int) $matricula->getCodigo() ?>"
+                                                                class="btn btn-secondary btn-sm">Carregar turmas</button>
                                                     </div>
 
                                                     <div class="form-group">
@@ -444,10 +444,6 @@ require_once __DIR__ . '/../partials/sidebar.php';
                             <label for="n-d">Data <span class="required">*</span></label>
                             <input type="date" id="n-d" name="data" class="form-control"
                                    value="<?= htmlspecialchars($dataNovo) ?>" required>
-                            <button type="submit" name="carregar" value="1"
-                                    formmethod="get" formnovalidate
-                                    formaction="index.php#modal-novo"
-                                    class="btn btn-secondary btn-sm">Carregar turmas</button>
                         </div>
 
                         <!-- 4. Turma (mesma qualificação e mesmo ano da data) -->
@@ -462,6 +458,10 @@ require_once __DIR__ . '/../partials/sidebar.php';
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                            <button type="submit" name="carregar" value="1"
+                                    formmethod="get" formnovalidate
+                                    formaction="index.php#modal-novo"
+                                    class="btn btn-secondary btn-sm">Carregar turmas</button>
                         </div>
 
                         <div class="form-group">
